@@ -52,9 +52,17 @@ function tryOrder(maxLevels: number): Slot[] {
   ]).flat()
 }
 
+function sideFirstOrder(maxLevels: number, side: Slot['side']): Slot[] {
+  const other = side === 'above' ? 'below' : 'above'
+  return [
+    ...Array.from({ length: maxLevels }, (_, level): Slot => ({ side, level })),
+    ...Array.from({ length: maxLevels }, (_, level): Slot => ({ side: other, level })),
+  ]
+}
+
 /**
  * Naive O(n²) oracle: each item keeps its previous slot if that row was free when it was placed,
- * otherwise it takes the first free slot in try order.
+ * otherwise it takes the first free row on its previous side, then the first free slot in try order.
  */
 function checkOracle(
   items: readonly PlaceableItem[],
@@ -69,7 +77,7 @@ function checkOracle(
     const free = (s: Slot) =>
       s.level < maxLevels && !placed.some((q) => sameRow(q.slot, s) && conflicts(q.item, it, gap))
     const prev = previous?.get(it.id)
-    const expected = prev && free(prev) ? prev : order.find(free)
+    const expected = prev && free(prev) ? prev : (prev ? sideFirstOrder(maxLevels, prev.side) : order).find(free)
     const actual = p.slots.get(it.id)
     if (expected === undefined) {
       expect(actual).toBeUndefined()
@@ -233,11 +241,15 @@ describe('placeItems', () => {
       ])
       const p = placeItems(items, prevBelow)
       expect(p.slots.get('major')).toEqual({ side: 'below', level: 0 })
-      expect(p.slots.get('minor')).toEqual({ side: 'above', level: 0 })
+      // Stays on its side, one row further out, instead of changing sides.
+      expect(p.slots.get('minor')).toEqual({ side: 'below', level: 1 })
       const prevAbove = new Map<string, Slot>([['minor', { side: 'above', level: 0 }]])
       const q = placeItems(items, prevAbove)
       expect(q.slots.get('major')).toEqual({ side: 'above', level: 0 })
-      expect(q.slots.get('minor')).toEqual({ side: 'below', level: 0 })
+      expect(q.slots.get('minor')).toEqual({ side: 'above', level: 1 })
+      // Only when its side is full does it cross over.
+      const r = placeItems(items, prevAbove, { maxLevels: 1 })
+      expect(r.slots.get('minor')).toEqual({ side: 'below', level: 0 })
     })
 
     it('ignores previous entries for unknown ids and invalid slots', () => {
@@ -248,9 +260,9 @@ describe('placeItems', () => {
       expect(placeItems([item('a', 0, 100)], prev).slots.get('a')).toEqual({ side: 'above', level: 0 })
     })
 
-    it('ignores a previous slot beyond maxLevels', () => {
+    it('keeps only the side of a previous slot beyond maxLevels', () => {
       const prev = new Map<string, Slot>([['a', { side: 'below', level: 3 }]])
-      expect(placeItems([item('a', 0, 100)], prev).slots.get('a')).toEqual({ side: 'above', level: 0 })
+      expect(placeItems([item('a', 0, 100)], prev).slots.get('a')).toEqual({ side: 'below', level: 0 })
     })
 
     it('never produces overlaps with arbitrary previous slots', () => {
@@ -337,6 +349,20 @@ describe('usedLevels', () => {
         ],
       })
       expect(p.overflow).toEqual(['a'])
+    })
+  })
+
+  describe('hysteresis keeps the side', () => {
+    it('moves to another row on the same side before changing sides', () => {
+      const blocker = { id: 'b', x0: 0, x1: 100, importance: 3, order: 0 }
+      const item = { id: 'a', x0: 10, x1: 110, importance: 1, order: 1 }
+      const previous = new Map([['a', { side: 'below' as const, level: 0 }]])
+      // 'b' takes above 0; the previous below 0 is blocked, so 'a' should go to below 1, not above 1.
+      const p = placeItems([blocker, item], previous, {
+        maxLevels: 2,
+        blocked: [{ side: 'below', level: 0, x0: 0, x1: 200 }],
+      })
+      expect(p.slots.get('a')).toEqual({ side: 'below', level: 1 })
     })
   })
 })

@@ -109,7 +109,19 @@ function candidateSlots(maxLevels: number): Slot[] {
   return out
 }
 
-/** `previous` slots are kept when the item still fits there (hysteresis). */
+/** Hysteresis: every row on the previous side first (nearest the axis first), then the other side. */
+function candidateSlotsKeepingSide(maxLevels: number, side: Side): Slot[] {
+  const other: Side = side === 'above' ? 'below' : 'above'
+  const out: Slot[] = []
+  for (let level = 0; level < maxLevels; level++) out.push({ side, level })
+  for (let level = 0; level < maxLevels; level++) out.push({ side: other, level })
+  return out
+}
+
+/**
+ * `previous` slots are kept when the item still fits there (hysteresis); if not, the item
+ * first tries the other rows on its previous side before changing sides.
+ */
 export function placeItems(
   items: readonly PlaceableItem[],
   previous: ReadonlyMap<string, Slot> | null,
@@ -146,7 +158,9 @@ export function placeItems(
     const fits = (slot: Slot) => rows[slot.side]?.[slot.level]?.isFree(x0, x1) ?? false
     const prev = previous?.get(item.id)
     const keepPrev = prev !== undefined && fits(prev)
-    const found = keepPrev ? prev : candidates.find(fits)
+    const found = keepPrev
+      ? prev
+      : (prev && rows[prev.side] ? candidateSlotsKeepingSide(maxLevels, prev.side) : candidates).find(fits)
     const slot = found && { side: found.side, level: found.level }
 
     const row = slot && rows[slot.side][slot.level]

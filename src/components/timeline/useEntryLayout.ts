@@ -6,12 +6,14 @@ import { buildClusterTree, cutTree, isGroup, minGapFromPx, type Cluster, type Cl
 import { entryAnchor } from '@/lib/time'
 import { placeItems, type BlockedInterval, type PlaceableItem, type Slot } from '@/lib/placement'
 import { CARD_WIDTH_PX } from './EntryCard'
-import { CLUSTER_MIN_GAP_PX } from './constants'
+import { CLUSTER_MIN_GAP_PX, MAX_GROUP_SPAN_PX } from './constants'
+import { GROUP_MARKER_SIZE_PX } from './GroupMarker'
 
 /** One thing to draw on a side of the axis: a single card or a group stack. */
 export interface LayoutItem {
   id: string
-  kind: 'card' | 'group'
+  /** 'marker': shown only as its marker on the axis, because no card or stack slot was free. */
+  kind: 'card' | 'group' | 'marker'
   /** Anchor time (ms UTC); the caller maps it to x every frame. */
   t: number
   /** Chronological members; one entry for a card. */
@@ -77,10 +79,14 @@ function extentOf(x: number, width: number): { x0: number; x1: number; alignEnd:
   return alignEnd ? { x0: x - CARD_WIDTH_PX, x1: x, alignEnd } : { x0: x, x1: x + CARD_WIDTH_PX, alignEnd }
 }
 
+/** Groups whose markers would overlap on the axis. */
+const MARKER_GAP_PX = GROUP_MARKER_SIZE_PX + 4
+
 /**
  * Lays out points as cards and groups. Points closer than CLUSTER_MIN_GAP_PX always form a
  * group (they would sit on one spot). Cards go above the axis, then below, then to the next
- * row; only cards that fit nowhere are merged into groups by climbing the cluster tree.
+ * row; only cards that fit nowhere are merged into groups by climbing the cluster tree, and a
+ * cluster that can't be merged further is shown as a bare marker on the axis.
  * `previous` slots are kept where they still fit, so cards don't flip sides needlessly.
  */
 export function layoutEntries(
@@ -90,24 +96,36 @@ export function layoutEntries(
   previous: ReadonlyMap<string, Slot> | null,
 ): EntryLayout {
   const { points, timeToX, msPerPx, width, maxLevels, groupLevels, gapPx } = input
+  if (points.length === 0 || width <= 0) return { items: [], groups: [] }
   const byId = new Map(points.map((e) => [e.id, e]))
   let cut = cutTree(root, minGapFromPx(CLUSTER_MIN_GAP_PX, msPerPx))
+  const markerOnly = new Set<string>()
 
-  for (let round = 0; round < 32; round++) {
-    // Groups first: they are always at level 0 and block the rows above them.
+  const toItem = (c: Cluster, kind: LayoutItem['kind'], slot: Slot, alignEnd: boolean): LayoutItem => ({
+    id: c.id,
+    kind,
+    t: c.t,
+    entries: c.members.map((id) => byId.get(id)).filter((e): e is Entry => e !== undefined),
+    slot,
+    alignEnd,
+  })
+
+  // Every round either shrinks the cut or turns a cluster into a bare marker, so this terminates.
+  const lastRound = 2 * points.length + 1
+  for (let round = 0; round <= lastRound; round++) {
     const groupItems: PlaceableItem[] = []
     const cardItems: PlaceableItem[] = []
     const extents = new Map<string, ReturnType<typeof extentOf>>()
     for (const c of cut) {
       const ext = extentOf(timeToX(c.t), width)
       extents.set(c.id, ext)
-      const importance = isGroup(c)
-        ? 10 + c.count
-        : (byId.get(c.id)?.importance ?? 1)
+      if (markerOnly.has(c.id)) continue
+      const importance = isGroup(c) ? 10 + c.count : (byId.get(c.id)?.importance ?? 1)
       const item = { id: c.id, x0: ext.x0, x1: ext.x1, importance, order: c.t }
       ;(isGroup(c) ? groupItems : cardItems).push(item)
     }
 
+    // Groups first: they sit at level 0 and block the rows their stack covers.
     const groupPlacement = placeItems(groupItems, previous, { gapPx, maxLevels: 1 })
     const blocked: BlockedInterval[] = []
     for (const [id, slot] of groupPlacement.slots) {
@@ -115,44 +133,62 @@ export function layoutEntries(
       for (let level = 0; level < groupLevels; level++) blocked.push({ ...slot, level, x0: ext.x0, x1: ext.x1 })
     }
     const cardPlacement = placeItems(cardItems, previous, { gapPx, maxLevels, blocked })
-    const overflow = [...groupPlacement.overflow, ...cardPlacement.overflow]
+    const overflow = new Set([...groupPlacement.overflow, ...cardPlacement.overflow])
 
-    if (overflow.length === 0 || round === 31) {
+    // Markers of neighbouring groups must not overlap on the axis either.
+    let lastMarkerX = -Infinity
+    for (const c of cut) {
+      if (!isGroup(c) && !markerOnly.has(c.id)) continue
+      const x = timeToX(c.t)
+      if (x - lastMarkerX < MARKER_GAP_PX && !markerOnly.has(c.id)) overflow.add(c.id)
+      else lastMarkerX = x
+    }
+
+    if (round === lastRound) for (const id of overflow) markerOnly.add(id)
+    if (overflow.size === 0 || round === lastRound) {
       const items: LayoutItem[] = []
       const groups: LayoutItem[] = []
       for (const c of cut) {
+        const ext = extents.get(c.id)!
+        if (markerOnly.has(c.id)) {
+          const item = toItem(c, 'marker', { side: 'above', level: 0 }, false)
+          items.push(item)
+          groups.push(item)
+          continue
+        }
         const slot = groupPlacement.slots.get(c.id) ?? cardPlacement.slots.get(c.id)
         if (!slot) continue
-        const entries = c.members.map((id) => byId.get(id)).filter((e): e is Entry => e !== undefined)
-        const item: LayoutItem = {
-          id: c.id,
-          kind: isGroup(c) ? 'group' : 'card',
-          t: c.t,
-          entries,
-          slot,
-          alignEnd: extents.get(c.id)!.alignEnd,
-        }
+        const item = toItem(c, isGroup(c) ? 'group' : 'card', slot, ext.alignEnd)
         items.push(item)
         if (item.kind === 'group') groups.push(item)
       }
       return { items, groups }
     }
 
-    // Merge each overflowing cluster with its sibling and try again.
-    let merged = false
+    // Merge each overflowing cluster with its sibling, widest parents first so nested ones are skipped.
+    const candidates: ClusterNode[] = []
     for (const id of overflow) {
-      const node = cut.find((c) => c.id === id)
-      const parent = node && parents.get(node.id)
-      if (!parent) continue
+      const parent = parents.get(id)
+      if (!parent) {
+        markerOnly.add(id)
+        continue
+      }
+      const span = Math.abs(timeToX(parent.tMax) - timeToX(parent.tMin))
+      if (span > MAX_GROUP_SPAN_PX) markerOnly.add(id)
+      else candidates.push(parent)
+    }
+    candidates.sort((a, b) => b.count - a.count)
+    const merged = new Set<string>()
+    for (const parent of candidates) {
+      if (parent.members.every((m) => merged.has(m))) continue
       cut = mergeInto(cut, parent)
-      merged = true
-      break
+      for (const m of parent.members) merged.add(m)
     }
-    if (!merged) {
-      // Nothing left to merge (a lone card wider than the timeline): drop the overflow from the layout.
-      cut = cut.filter((c) => !overflow.includes(c.id))
-    }
+    // A merged cluster is placed afresh; its former parts are no longer bare markers.
+    const inCut = new Set(cut.map((c) => c.id))
+    for (const id of markerOnly) if (!inCut.has(id)) markerOnly.delete(id)
   }
+  /* istanbul ignore next -- the loop always returns */
   return { items: [], groups: [] }
 }
 
