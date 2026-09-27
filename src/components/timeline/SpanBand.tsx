@@ -3,7 +3,7 @@
 import type { JSX } from 'react'
 import clsx from 'clsx'
 import { isSpan, type Entry } from '@/lib/entry'
-import { layoutSpans, type SpanBar, type SpanInput } from '@/lib/spans'
+import { DEFAULT_MIN_WIDTH_PX, layoutSpans, type SpanBar, type SpanInput } from '@/lib/spans'
 import { entryRange } from '@/lib/time'
 import { SpanBarView, type ShortSpanStyle } from './SpanBar'
 
@@ -30,12 +30,16 @@ export const DEFAULT_CHAR_WIDTH_PX = 7
 /**
  * Bars and lane count for the given spans at the current zoom.
  * The band needs `laneCount * laneHeightPx` of height.
+ * No stretched bar is drawn past today: `options.maxX` defaults to
+ * `timeToX(today)`. A span whose true end lies after today (e.g. a finished
+ * span with end `{year: <current year>}`, which runs to the end of that year)
+ * is not clipped.
  */
 export function spanBandLayout(
   spans: Entry[],
   timeToX: (t: number) => number,
   today: number,
-  options: { minWidthPx: number; charWidthPx: number },
+  options: { minWidthPx: number; charWidthPx: number; maxX?: number },
 ): { bars: Map<string, SpanBar>; laneCount: number } {
   const inputs: SpanInput[] = []
   for (const e of spans) {
@@ -52,7 +56,10 @@ export function spanBandLayout(
       labelWidthPx: e.title.length * options.charWidthPx,
     })
   }
-  const layout = layoutSpans(inputs, { minWidthPx: options.minWidthPx })
+  const layout = layoutSpans(inputs, {
+    minWidthPx: options.minWidthPx,
+    maxX: options.maxX ?? timeToX(today),
+  })
   return { bars: new Map(layout.bars.map((b) => [b.id, b])), laneCount: layout.laneCount }
 }
 
@@ -62,7 +69,7 @@ export function SpanBand({
   timeToX,
   today,
   laneHeightPx,
-  minWidthPx = 64,
+  minWidthPx = DEFAULT_MIN_WIDTH_PX,
   shortSpanStyle,
   highlightedId = null,
   onOpen,
@@ -71,10 +78,10 @@ export function SpanBand({
   className,
 }: SpanBandProps): JSX.Element {
   const { bars, laneCount } = spanBandLayout(spans, timeToX, today, { minWidthPx, charWidthPx })
-  // DOM (and tab) order follows position on the axis.
+  // DOM (and tab) order is chronological: true start, then id.
   const ordered = spans
     .filter((e) => bars.has(e.id))
-    .sort((a, b) => bars.get(a.id)!.x0 - bars.get(b.id)!.x0)
+    .sort((a, b) => bars.get(a.id)!.trueX0 - bars.get(b.id)!.trueX0 || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0))
 
   return (
     <div className={clsx('relative', className)} style={{ height: laneCount * laneHeightPx }}>

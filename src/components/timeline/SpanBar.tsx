@@ -42,6 +42,8 @@ export function spanBarLabel(entry: Entry): string {
 
 /**
  * One time span drawn as a bar at [bar.x0, bar.x1] in lane `bar.lane`.
+ * In 'faded' style a stretched bar is solid over its true extent
+ * [trueX0, trueX1] and fades out over the extension on either side.
  * Tooltip is the native `title` attribute for now.
  */
 export function SpanBarView({
@@ -58,7 +60,9 @@ export function SpanBarView({
   // A stretched faded bar has no room for a legible label on its solid part.
   const showLabel = bar.labelFits && !faded
   const width = bar.x1 - bar.x0
-  const solidWidth = Math.max(0, bar.trueX1 - bar.x0)
+  // Offsets within the bar: [0, solidLeft] fades in, [solidLeft, solidRight] is the true span, the rest fades out.
+  const solidLeft = Math.max(0, bar.trueX0 - bar.x0)
+  const solidRight = Math.min(width, Math.max(solidLeft, bar.trueX1 - bar.x0))
 
   const style = {
     left: bar.x0,
@@ -79,18 +83,30 @@ export function SpanBarView({
     <>
       {faded && (
         <>
+          {solidLeft > 0 && (
+            <span
+              aria-hidden
+              data-part="fade"
+              data-side="start"
+              className={clsx('absolute inset-y-0 left-0 bg-linear-to-l to-transparent', FADE[entry.region])}
+              style={{ width: solidLeft }}
+            />
+          )}
           <span
             aria-hidden
             data-part="solid"
-            className={clsx('absolute inset-y-0 left-0', SOLID[entry.region])}
-            style={{ width: solidWidth }}
+            className={clsx('absolute inset-y-0', SOLID[entry.region])}
+            style={{ left: solidLeft, width: solidRight - solidLeft }}
           />
-          <span
-            aria-hidden
-            data-part="fade"
-            className={clsx('absolute inset-y-0 bg-linear-to-r to-transparent', FADE[entry.region])}
-            style={{ left: solidWidth, width: Math.max(0, width - solidWidth) }}
-          />
+          {solidRight < width && (
+            <span
+              aria-hidden
+              data-part="fade"
+              data-side="end"
+              className={clsx('absolute inset-y-0 bg-linear-to-r to-transparent', FADE[entry.region])}
+              style={{ left: solidRight, width: width - solidRight }}
+            />
+          )}
         </>
       )}
       {showLabel && (

@@ -34,6 +34,7 @@ describe('layoutSpans: extent and minimum width', () => {
     for (const s of input) {
       const bar = byId(bars, s.id)
       expect(bar.x0).toBe(s.x0)
+      expect(bar.trueX0).toBe(s.x0)
       expect(bar.trueX1).toBe(s.x1)
       expect(bar.x1).toBeGreaterThanOrEqual(bar.trueX1)
     }
@@ -61,6 +62,78 @@ describe('layoutSpans: extent and minimum width', () => {
   it('treats x1 < x0 as a zero-length span', () => {
     const { bars } = layoutSpans([span('a', 10, 5)])
     expect(only(bars)).toMatchObject({ x0: 10, trueX1: 10, x1: 74, extended: true })
+  })
+})
+
+describe('layoutSpans: maxX', () => {
+  it('extends a short span ending at maxX to the left', () => {
+    // An ongoing span ending at today, shorter than the minimum width.
+    const bar = only(layoutSpans([span('ongoing', 973, 1000)], { maxX: 1000 }).bars)
+    expect(bar).toMatchObject({ x0: 1000 - 64, x1: 1000, trueX0: 973, trueX1: 1000, extended: true })
+  })
+
+  it('still extends a short span far from maxX to the right', () => {
+    const bar = only(layoutSpans([span('a', 500, 502)], { maxX: 1000 }).bars)
+    expect(bar).toMatchObject({ x0: 500, x1: 564, trueX0: 500, trueX1: 502, extended: true })
+  })
+
+  it('extends to both sides when there is not enough room on the right', () => {
+    const bar = only(layoutSpans([span('a', 960, 970)], { maxX: 1000 }).bars)
+    expect(bar).toMatchObject({ x0: 936, x1: 1000, trueX0: 960, trueX1: 970 })
+    expect(bar.x0).toBeLessThan(bar.trueX0)
+    expect(bar.x1).toBeGreaterThan(bar.trueX1)
+  })
+
+  it('extends exactly up to maxX without moving x0', () => {
+    const bar = only(layoutSpans([span('a', 936, 940)], { maxX: 1000 }).bars)
+    expect(bar).toMatchObject({ x0: 936, x1: 1000, trueX0: 936 })
+  })
+
+  it('never clips the true extent of a span crossing maxX', () => {
+    const { bars } = layoutSpans([span('short', 990, 1010), span('long', 0, 1100)], { maxX: 1000 })
+    expect(byId(bars, 'short')).toMatchObject({ x0: 1010 - 64, x1: 1010, trueX0: 990, trueX1: 1010 })
+    expect(byId(bars, 'long')).toMatchObject({ x0: 0, x1: 1100, extended: false })
+  })
+
+  it('does not change long spans and ignores a non-finite maxX', () => {
+    const input = [span('a', 900, 1000), span('b', 990, 995)]
+    expect(only(layoutSpans([input[0]!], { maxX: 1000 }).bars)).toMatchObject({ x0: 900, x1: 1000, extended: false })
+    expect(layoutSpans(input, { maxX: NaN })).toEqual(layoutSpans(input))
+    expect(layoutSpans(input, { maxX: Infinity })).toEqual(layoutSpans(input))
+  })
+
+  it('uses the left-extended extent for overlap and sorts by drawn x0', () => {
+    // 'end' is drawn over [936, 1000] and collides with 'mid' at [900, 940].
+    const { bars } = layoutSpans([span('mid', 900, 940), span('end', 990, 1000)], { maxX: 1000 })
+    expect(byId(bars, 'mid').lane).not.toBe(byId(bars, 'end').lane)
+    assertNoOverlapInLanes(bars, 4)
+    const { bars: shared } = layoutSpans([span('left', 0, 930), span('end', 990, 1000)], { maxX: 1000 })
+    expect(shared.map((b) => b.id)).toEqual(['left', 'end'])
+    expect(byId(shared, 'end').lane).toBe(0)
+  })
+
+  it('handles spans at and entirely past maxX', () => {
+    expect(only(layoutSpans([span('a', 1000, 1000)], { maxX: 1000 }).bars)).toMatchObject({ x0: 936, x1: 1000 })
+    expect(only(layoutSpans([span('a', 1020, 1030)], { maxX: 1000 }).bars)).toMatchObject({
+      x0: 1030 - 64,
+      x1: 1030,
+      trueX0: 1020,
+    })
+  })
+
+  it('ignores float noise at the boundary', () => {
+    const bar = only(layoutSpans([span('a', 1000 - 64 + 1e-12, 940)], { maxX: 1000 }).bars)
+    expect(bar.x0).toBe(bar.trueX0)
+  })
+
+  it('does not depend on the input order with maxX', () => {
+    const input = [span('a', 900, 940), span('b', 990, 1000), span('c', 950, 960), span('d', 0, 1000, 2)]
+    expect(layoutSpans([...input].reverse(), { maxX: 1000 })).toEqual(layoutSpans(input, { maxX: 1000 }))
+  })
+
+  it('measures labelFits against the drawn width', () => {
+    const bar = only(layoutSpans([span('a', 990, 1000, 1, 52)], { maxX: 1000 }).bars)
+    expect(bar.labelFits).toBe(true)
   })
 })
 
@@ -226,7 +299,8 @@ describe('layoutSpans: sample data', () => {
     x1: e.end === 'ongoing' ? (2027 - startYear) * pxPerYear : toPx(e.end!),
     importance: e.importance,
   }))
-  const { bars, laneCount } = layoutSpans(input)
+  const maxX = (2027 - startYear) * pxPerYear
+  const { bars, laneCount } = layoutSpans(input, { maxX })
 
   it('lays out every span', () => {
     expect(bars).toHaveLength(input.length)
@@ -248,5 +322,13 @@ describe('layoutSpans: sample data', () => {
     const bar = byId(bars, 'kubakrise')
     expect(bar.extended).toBe(true)
     expect(bar.x1 - bar.x0).toBeCloseTo(64, 9)
+  })
+
+  it('ends the stretched ongoing war at maxX', () => {
+    const bar = byId(bars, 'russischer-angriffskrieg-gegen-die-ukraine')
+    expect(bar.extended).toBe(true)
+    expect(bar.x1).toBe(maxX)
+    expect(bar.x1 - bar.x0).toBeCloseTo(64, 9)
+    for (const b of bars) expect(b.x1).toBeLessThanOrEqual(maxX)
   })
 })

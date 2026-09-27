@@ -19,16 +19,28 @@ export interface SpanLayoutOptions {
   gapPx?: number
   /** Inner padding subtracted from the bar width before deciding whether the label fits, default 12. */
   labelPaddingPx?: number
+  /**
+   * Right edge no stretched bar may cross (e.g. the "today" x). When extending
+   * a short bar to the right would pass maxX, it is extended to the left
+   * instead, so that x1 = maxX (or trueX1, if the span itself already ends
+   * past maxX; the true extent is never clipped). Undefined or non-finite:
+   * no limit, bars only extend to the right.
+   */
+  maxX?: number
 }
 
 export interface SpanBar {
   id: string
   /**
-   * Drawn extent. x0 is always the true start; a bar shorter than minWidthPx
-   * is extended to the right only (x1 = x0 + minWidthPx).
+   * Drawn extent, containing [trueX0, trueX1]. A bar shorter than minWidthPx
+   * is extended to the right (x1 = trueX0 + minWidthPx); if that would cross
+   * maxX it ends at max(maxX, trueX1) and extends to the left instead
+   * (x0 = x1 - minWidthPx), partly or entirely.
    */
   x0: number
   x1: number
+  /** True start of the span in px, ≥ x0. Equals x0 without maxX. */
+  trueX0: number
   /** True end of the span in px, ≤ x1. */
   trueX1: number
   /** Whether the bar was stretched to the minimum width. */
@@ -54,15 +66,16 @@ function compareIds(a: string, b: string): number {
 /**
  * Assigns each span to a lane so that no two bars in one lane overlap.
  *
- * The minimum width is applied first; the drawn (possibly extended) extent is
- * what must not overlap, with at least gapPx between bars in a lane. Greedy
- * interval coloring: spans are processed by importance desc, then x0 asc, then
+ * The minimum width is applied first (see SpanBar and SpanLayoutOptions.maxX);
+ * the drawn (possibly extended) extent is what must not overlap, with at least gapPx between bars in a lane. Greedy
+ * interval coloring: spans are processed by importance desc, then true x0 asc, then
  * id, and each takes the lowest lane where it fits.
  *
  * Inputs must be finite and ids unique. A malformed span with x1 < x0 is
  * treated as zero-length (trueX1 = x0).
  *
- * Bars are returned sorted by lane, then x0, then id (not in input order), so
+ * Spans are ordered for placement by their true start; bars are returned
+ * sorted by lane, then drawn x0, then id (not in input order), so
  * the result does not depend on the input order.
  */
 export function layoutSpans(
@@ -72,6 +85,7 @@ export function layoutSpans(
   const minWidth = Math.max(0, options.minWidthPx ?? DEFAULT_MIN_WIDTH_PX)
   const gap = Math.max(0, options.gapPx ?? DEFAULT_GAP_PX)
   const labelPadding = Math.max(0, options.labelPaddingPx ?? DEFAULT_LABEL_PADDING_PX)
+  const maxX = Number.isFinite(options.maxX) ? (options.maxX as number) : Infinity
 
   const order = [...spans].sort(
     (a, b) => b.importance - a.importance || a.x0 - b.x0 || compareIds(a.id, b.id),
@@ -81,12 +95,22 @@ export function layoutSpans(
   const bars: SpanBar[] = []
 
   for (const span of order) {
-    const trueX1 = Math.max(span.x0, span.x1)
-    const extended = trueX1 - span.x0 < minWidth
-    const x1 = extended ? span.x0 + minWidth : trueX1
+    const trueX0 = span.x0
+    const trueX1 = Math.max(trueX0, span.x1)
+    const extended = trueX1 - trueX0 < minWidth
+    let x0 = trueX0
+    let x1 = trueX1
+    if (extended) {
+      x1 = trueX0 + minWidth
+      // Epsilon: float noise at the boundary must not shift the bar left.
+      if (x1 > maxX + 1e-6) {
+        x1 = Math.max(maxX, trueX1)
+        x0 = x1 - minWidth
+      }
+    }
 
     let lane = lanes.findIndex((laneBars) =>
-      laneBars.every((other) => span.x0 >= other.x1 + gap || other.x0 >= x1 + gap),
+      laneBars.every((other) => x0 >= other.x1 + gap || other.x0 >= x1 + gap),
     )
     let laneBars = lanes[lane]
     if (!laneBars) {
@@ -96,9 +120,9 @@ export function layoutSpans(
     }
 
     const labelFits =
-      span.labelWidthPx !== undefined && span.labelWidthPx + labelPadding <= x1 - span.x0
+      span.labelWidthPx !== undefined && span.labelWidthPx + labelPadding <= x1 - x0
 
-    const bar: SpanBar = { id: span.id, x0: span.x0, x1, trueX1, extended, lane, labelFits }
+    const bar: SpanBar = { id: span.id, x0, x1, trueX0, trueX1, extended, lane, labelFits }
     laneBars.push(bar)
     bars.push(bar)
   }
