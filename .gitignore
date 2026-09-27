@@ -1,0 +1,19 @@
+# dependencies
+node_modules/
+
+# Next.js / build output
+.next/
+out/
+build/
+*.tsbuildinfo
+next-env.d.ts
+
+# environment (commit only .env.example)
+.env*
+!.env.example
+
+# tooling
+.vercel/
+coverage/
+.DS_Store
+*.log
