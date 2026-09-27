@@ -1,21 +1,10 @@
-'use client'
+import type { Metadata } from 'next'
 
-import { useState } from 'react'
-import { Timeline } from '@/components/timeline/Timeline'
-import { entries } from '@/data/entries'
+export const metadata: Metadata = {
+  title: 'Zeitleiste',
+}
 
+/** The start page: only the full-screen timeline, which lives in the layout. */
 export default function HomePage() {
-  const [openEntryId, setOpenEntryId] = useState<string | null>(null)
-
-  return (
-    <main>
-      <h1 className="sr-only">Zeitleiste: Russland und der Westen</h1>
-      <Timeline
-        entries={entries}
-        collapsed={openEntryId !== null}
-        focusEntryId={openEntryId}
-        onOpenEntry={setOpenEntryId}
-      />
-    </main>
-  )
+  return null
 }
