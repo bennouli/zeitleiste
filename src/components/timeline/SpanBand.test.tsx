@@ -28,7 +28,6 @@ function renderBand(props: Partial<SpanBandProps> = {}) {
       today={TODAY}
       laneHeightPx={LANE}
       minWidthPx={64}
-      shortSpanStyle="uniform"
       onOpen={onOpen}
       {...props}
     />,
@@ -112,75 +111,6 @@ describe('SpanBand', () => {
     expect(px(el.style.left) + px(el.style.width)).toBeCloseTo(timeToX(TODAY), 6)
   })
 
-  it('stretches a short ongoing span to the left so it still ends at today', () => {
-    const id = 'russischer-angriffskrieg-gegen-die-ukraine'
-    const { bars } = spanBandLayout(spans, wide, TODAY, { minWidthPx: 64, charWidthPx: 7 })
-    const bar = bars.get(id)!
-    expect(bar.extended).toBe(true)
-    expect(bar.x1).toBe(wide(TODAY))
-    expect(bar.trueX1).toBe(wide(TODAY))
-    expect(bar.x1 - bar.x0).toBeCloseTo(64, 9)
-    expect(bar.trueX0).toBe(wide(startOf(spans.find((e) => e.id === id)!.start)))
-    expect(bar.x0).toBeLessThan(bar.trueX0)
-    for (const b of bars.values()) expect(b.x1).toBeLessThanOrEqual(wide(TODAY))
-
-    const { container } = renderBand({ shortSpanStyle: 'faded' })
-    const el = barEl(container, id)
-    expect(px(el.style.left) + px(el.style.width)).toBeCloseTo(wide(TODAY), 6)
-    expect(px(el.style.width)).toBeCloseTo(64, 6)
-    // Solid over the true extent, fading in from the left; nothing fades out past today.
-    const start = el.querySelector<HTMLElement>('[data-part="fade"][data-side="start"]')!
-    const solid = el.querySelector<HTMLElement>('[data-part="solid"]')!
-    expect(start.className).toContain('bg-linear-to-l')
-    expect(start.className).toContain('to-transparent')
-    expect(px(start.style.width)).toBeCloseTo(bar.trueX0 - bar.x0, 6)
-    expect(px(solid.style.left)).toBeCloseTo(bar.trueX0 - bar.x0, 6)
-    expect(px(solid.style.left) + px(solid.style.width)).toBeCloseTo(64, 6)
-    expect(el.querySelector('[data-side="end"]')).toBeNull()
-  })
-
-  it('fades over both extensions when a bar is stretched to both sides', () => {
-    // Ten days ending one week before today: too close to today to extend only to the right.
-    const recent: Entry = {
-      ...withPost,
-      id: 'kurz-vor-heute',
-      start: { year: 2026, month: 9, day: 10 },
-      end: { year: 2026, month: 9, day: 20 },
-    }
-    const { container } = renderBand({ spans: [recent], shortSpanStyle: 'faded' })
-    const { bars } = spanBandLayout([recent], wide, TODAY, { minWidthPx: 64, charWidthPx: 7 })
-    const bar = bars.get('kurz-vor-heute')!
-    expect(bar.x0).toBeLessThan(bar.trueX0)
-    expect(bar.x1).toBeGreaterThan(bar.trueX1)
-    expect(bar.x1).toBe(wide(TODAY))
-    const el = barEl(container, 'kurz-vor-heute')
-    const start = el.querySelector<HTMLElement>('[data-side="start"]')!
-    const solid = el.querySelector<HTMLElement>('[data-part="solid"]')!
-    const end = el.querySelector<HTMLElement>('[data-side="end"]')!
-    expect(end.className).toContain('bg-linear-to-r')
-    expect(px(start.style.width) + px(solid.style.width) + px(end.style.width)).toBeCloseTo(64, 6)
-    expect(px(end.style.left)).toBeCloseTo(bar.trueX1 - bar.x0, 6)
-  })
-
-  it("draws extended bars with a gradient in 'faded' only", () => {
-    const uniform = renderBand({ shortSpanStyle: 'uniform' })
-    expect(barEl(uniform.container, 'kubakrise').querySelector('[data-part="fade"]')).toBeNull()
-    expect(uniform.container.querySelector('[data-part="fade"]')).toBeNull()
-    uniform.unmount()
-
-    const faded = renderBand({ shortSpanStyle: 'faded' })
-    const el = barEl(faded.container, 'kubakrise')
-    const fade = el.querySelector<HTMLElement>('[data-part="fade"]')
-    expect(fade).not.toBeNull()
-    expect(fade!.className).toContain('bg-linear-to-r')
-    expect(fade!.dataset.side).toBe('end')
-    expect(el.querySelector('[data-side="start"]')).toBeNull()
-    const solid = el.querySelector<HTMLElement>('[data-part="solid"]')!
-    expect(px(solid.style.width) + px(fade!.style.width)).toBeCloseTo(64)
-    // Long bars stay solid.
-    expect(barEl(faded.container, 'sowjetunion').querySelector('[data-part="fade"]')).toBeNull()
-  })
-
   it('opens a span with a post on click, unless it was a drag', async () => {
     const user = userEvent.setup()
     const wasDrag = vi.fn(() => false)
@@ -243,26 +173,12 @@ describe('SpanBand', () => {
     expect(barEl(container, 'kalter-krieg').className).not.toContain('ring-2')
   })
 
-  it('has no axe violations in either style', async () => {
-    for (const shortSpanStyle of ['uniform', 'faded'] as const) {
-      const { container, unmount } = renderBand({ shortSpanStyle })
+  it('has no axe violations', async () => {
+    {
+      const { container, unmount } = renderBand()
       expect(await axe(container, { rules: { 'color-contrast': { enabled: false } } })).toHaveNoViolations()
       unmount()
     }
-  })
-
-  it('hides the label on a stretched faded bar even when it would fit', () => {
-    const short: Entry = { ...withPost, id: 'kurz', title: 'Kurz', start: { year: 1900 }, end: { year: 1901 } }
-    const timeToX = linear(startOf({ year: 1900 }), startOf({ year: 2000 }), 1000)
-    const { bars } = spanBandLayout([short], timeToX, TODAY, { minWidthPx: 64, charWidthPx: 7 })
-    expect(bars.get('kurz')).toMatchObject({ extended: true, labelFits: true })
-    const faded = renderBand({ spans: [short], timeToX, shortSpanStyle: 'faded' })
-    expect(faded.container.querySelector('[data-part="label"]')).toBeNull()
-    expect(faded.container.querySelector('[data-part="fade"]')!.className).toContain('from-russia')
-    faded.unmount()
-    const uniform = renderBand({ spans: [short], timeToX, shortSpanStyle: 'uniform' })
-    expect(uniform.container.querySelector('[data-part="label"]')).toHaveTextContent('Kurz')
-    expect(barEl(uniform.container, 'kurz').className).toContain('bg-russia')
   })
 
   it('opens with the keyboard even if the last pointer gesture was a drag', async () => {
@@ -290,24 +206,13 @@ describe('SpanBand', () => {
 
   it('draws a left-extended uniform bar solid from x0, and honours an explicit maxX', () => {
     const id = 'russischer-angriffskrieg-gegen-die-ukraine'
-    const { container } = renderBand({ shortSpanStyle: 'uniform' })
+    const { container } = renderBand()
     const { bars } = spanBandLayout(spans, wide, TODAY, { minWidthPx: 64, charWidthPx: 7 })
     const el = barEl(container, id)
     expect(px(el.style.left)).toBeCloseTo(bars.get(id)!.x0, 6)
     expect(el.querySelector('[data-part]')).toBeNull()
     const limited = spanBandLayout(spans, wide, TODAY, { minWidthPx: 64, charWidthPx: 7, maxX: Infinity })
     expect(limited.bars.get(id)!.x0).toBe(bars.get(id)!.trueX0)
-  })
-
-  it('draws a zero-length faded span at today as a single fade', () => {
-    const now: Entry = { ...withPost, id: 'jetzt', start: { year: 2026, month: 9, day: 27 }, end: 'ongoing' }
-    const timeToX = (t: number) => Math.min(wide(t), wide(TODAY))
-    const { container } = renderBand({ spans: [now], timeToX, shortSpanStyle: 'faded' })
-    const el = barEl(container, 'jetzt')
-    expect(px(el.style.left) + px(el.style.width)).toBeCloseTo(wide(TODAY), 6)
-    expect(px(el.querySelector<HTMLElement>('[data-part="solid"]')!.style.width)).toBe(0)
-    expect(px(el.querySelector<HTMLElement>('[data-side="start"]')!.style.width)).toBeCloseTo(64, 6)
-    expect(el.querySelector('[data-side="end"]')).toBeNull()
   })
 
   it('renders an empty band for no spans and skips non-finite positions', () => {

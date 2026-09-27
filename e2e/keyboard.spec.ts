@@ -169,12 +169,3 @@ test('+ and - zoom, the arrow keys pan the focused timeline', async ({ page }) =
   await page.keyboard.press('-')
   await expect.poll(async () => (await view(page)).span).toBeGreaterThan(v3.span)
 })
-
-test('keys in the prototype switches do not move the timeline', async ({ page }) => {
-  await ready(page)
-  const v0 = await view(page)
-  await page.getByRole('combobox').first().focus()
-  await page.keyboard.press('+')
-  await page.keyboard.press('ArrowLeft')
-  expect(await view(page)).toEqual(v0)
-})

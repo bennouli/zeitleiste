@@ -5,7 +5,7 @@ import clsx from 'clsx'
 import { isSpan, type Entry } from '@/lib/entry'
 import { DEFAULT_MIN_WIDTH_PX, layoutSpans, type SpanBar, type SpanInput } from '@/lib/spans'
 import { entryRange } from '@/lib/time'
-import { SpanBarView, type ShortSpanStyle } from './SpanBar'
+import { SpanBarView } from './SpanBar'
 
 export interface SpanBandProps {
   /** Span entries only (isSpan); points are ignored. */
@@ -16,7 +16,6 @@ export interface SpanBandProps {
   laneHeightPx: number
   /** 4rem in px, measured by the caller (default 64). */
   minWidthPx?: number
-  shortSpanStyle: ShortSpanStyle
   highlightedId?: string | null
   onOpen: (id: string) => void
   wasDrag?: () => boolean
@@ -72,7 +71,6 @@ export function SpanBand({
   today,
   laneHeightPx,
   minWidthPx = DEFAULT_MIN_WIDTH_PX,
-  shortSpanStyle,
   highlightedId = null,
   onOpen,
   wasDrag,
@@ -106,7 +104,6 @@ export function SpanBand({
             entry={entry}
             bar={bar}
             laneHeightPx={laneHeightPx}
-            shortSpanStyle={shortSpanStyle}
             highlighted={entry.id === highlightedId}
             onOpen={onOpen}
             wasDrag={wasDrag}

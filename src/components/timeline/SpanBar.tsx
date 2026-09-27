@@ -11,13 +11,11 @@ import { EntryTooltipContent } from './EntryCard'
 import { Tooltip } from './Tooltip'
 
 /** How a bar stretched to the minimum width is drawn. */
-export type ShortSpanStyle = 'uniform' | 'faded'
 
 export interface SpanBarProps {
   entry: Entry
   bar: SpanBar
   laneHeightPx: number
-  shortSpanStyle: ShortSpanStyle
   highlighted?: boolean
   onOpen: (id: string) => void
   wasDrag?: () => boolean
@@ -32,11 +30,6 @@ const SOLID: Record<Region, string> = {
   both: 'bg-both',
 }
 
-const FADE: Record<Region, string> = {
-  russia: 'from-russia',
-  west: 'from-west',
-  both: 'from-both',
-}
 
 /** Accessible name of a span bar. */
 export function spanBarLabel(entry: Entry): string {
@@ -45,16 +38,14 @@ export function spanBarLabel(entry: Entry): string {
 }
 
 /**
- * One time span drawn as a bar at [bar.x0, bar.x1] in lane `bar.lane`.
- * In 'faded' style a stretched bar is solid over its true extent
- * [trueX0, trueX1] and fades out over the extension on either side.
+ * One time span drawn as a bar at [bar.x0, bar.x1] in lane `bar.lane`
+ * (a short span is stretched to the minimum width as one uniform bar).
  * Hovering or keyboard focus shows the entry's summary in a tooltip.
  */
 export function SpanBarView({
   entry,
   bar,
   laneHeightPx,
-  shortSpanStyle,
   highlighted = false,
   onOpen,
   wasDrag,
@@ -78,13 +69,8 @@ export function SpanBarView({
     document.addEventListener('keydown', onKey)
     return () => document.removeEventListener('keydown', onKey)
   }, [open])
-  const faded = shortSpanStyle === 'faded' && bar.extended
-  // A stretched faded bar has no room for a legible label on its solid part.
-  const showLabel = bar.labelFits && !faded
+  const showLabel = bar.labelFits
   const width = bar.x1 - bar.x0
-  // Offsets within the bar: [0, solidLeft] fades in, [solidLeft, solidRight] is the true span, the rest fades out.
-  const solidLeft = Math.max(0, bar.trueX0 - bar.x0)
-  const solidRight = Math.min(width, Math.max(solidLeft, bar.trueX1 - bar.x0))
 
   const style = {
     left: bar.x0,
@@ -97,41 +83,13 @@ export function SpanBarView({
     'absolute flex cursor-pointer items-center overflow-hidden rounded-sm text-left text-xs',
     // Inset: the lowest lane touches the timeline's clipping edge.
     'focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-focus',
-    !faded && SOLID[entry.region],
+    SOLID[entry.region],
     'text-surface',
     highlighted && 'ring-2 ring-focus focus-visible:-outline-offset-4',
   )
 
   const content = (
     <>
-      {faded && (
-        <>
-          {solidLeft > 0 && (
-            <span
-              aria-hidden
-              data-part="fade"
-              data-side="start"
-              className={clsx('absolute inset-y-0 left-0 bg-linear-to-l to-transparent', FADE[entry.region])}
-              style={{ width: solidLeft }}
-            />
-          )}
-          <span
-            aria-hidden
-            data-part="solid"
-            className={clsx('absolute inset-y-0', SOLID[entry.region])}
-            style={{ left: solidLeft, width: solidRight - solidLeft }}
-          />
-          {solidRight < width && (
-            <span
-              aria-hidden
-              data-part="fade"
-              data-side="end"
-              className={clsx('absolute inset-y-0 bg-linear-to-r to-transparent', FADE[entry.region])}
-              style={{ left: solidRight, width: width - solidRight }}
-            />
-          )}
-        </>
-      )}
       {showLabel && (
         <span aria-hidden data-part="label" className="relative truncate px-1.5">
           {entry.title}

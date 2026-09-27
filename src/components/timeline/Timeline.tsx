@@ -19,10 +19,7 @@ import {
 } from './constants'
 import { CARD_HEIGHT_PX, CONNECTOR_MIN_PX } from './EntryCard'
 import { GROUP_STACK_CONTROLS_HEIGHT_PX, groupStackHeightPx } from './GroupStack'
-import { BRACKET_LANE_PX, bracketLayout, LongSpans, type LongSpanVariant } from './LongSpans'
-import { PrototypeSwitches } from './PrototypeSwitches'
 import { SpanBand, spanBandLayout } from './SpanBand'
-import type { ShortSpanStyle } from './SpanBar'
 import { TimelineContext, type TimelineContextValue } from './TimelineContext'
 import { useEntryLayout } from './useEntryLayout'
 import { useGestures } from './useGestures'
@@ -141,8 +138,6 @@ export function Timeline({ entries, collapsed, focusEntryId, onOpenEntry }: Time
   const helpId = useId()
   const vp = useViewport({ bounds, width })
   const { viewport } = vp
-  const [shortSpanStyle, setShortSpanStyle] = useState<ShortSpanStyle>('uniform')
-  const [longSpanVariant, setLongSpanVariant] = useState<LongSpanVariant>('bar')
 
   const actions = useMemo(
     () => ({
@@ -206,10 +201,8 @@ export function Timeline({ entries, collapsed, focusEntryId, onOpenEntry }: Time
     const spanLayout = spanBandLayout(spans, toX, today, { minWidthPx: spanMinWidthPx, charWidthPx: 7 })
     const spanLanes = Math.max(1, spanLayout.laneCount)
     const lanes = new Map([...spanLayout.bars].map(([id, bar]) => [id, bar.lane]))
-    const bracketLanes = longSpanVariant === 'bracket' ? bracketLayout(spans, toX, today).laneCount : 0
     const spansHeight = spanLanes * SPAN_LANE_HEIGHT_PX
-    const bracketHeight = bracketLanes * BRACKET_LANE_PX
-    const bandHeight = Math.max(0, (height - AXIS_HEIGHT_PX - spansHeight - bracketHeight) / 2)
+    const bandHeight = Math.max(0, (height - AXIS_HEIGHT_PX - spansHeight) / 2)
     const maxLevels = Math.max(MIN_BAND_LEVELS, Math.floor(bandHeight / CARD_ROW_HEIGHT_PX))
     const phone = width < PHONE_WIDTH_PX
     const wanted = phone ? 1 : collapsed ? 2 : 3
@@ -217,9 +210,9 @@ export function Timeline({ entries, collapsed, focusEntryId, onOpenEntry }: Time
     const visibleCount = Math.max(1, Math.min(wanted, fitting))
     const stackHeight = groupStackHeightPx(visibleCount + 1, visibleCount, SLOT_HEIGHT_PX) + CONNECTOR_MIN_PX
     const groupLevels = Math.max(1, Math.ceil(stackHeight / CARD_ROW_HEIGHT_PX))
-    return { spansHeight, bracketHeight, maxLevels, visibleCount, groupLevels, lanes }
+    return { spansHeight, maxLevels, visibleCount, groupLevels, lanes }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- recomputed per gesture end via layoutKey
-  }, [layoutKey, spans, today, spanMinWidthPx, longSpanVariant])
+  }, [layoutKey, spans, today, spanMinWidthPx])
 
   const layout = useEntryLayout(
     entries,
@@ -318,14 +311,6 @@ export function Timeline({ entries, collapsed, focusEntryId, onOpenEntry }: Time
         </p>
         {width > 0 && (
           <>
-            {longSpanVariant === 'background' && (
-              <LongSpans spans={spans} timeToX={toX} today={today} variant="background" heightPx={height} />
-            )}
-            {longSpanVariant === 'bracket' && (
-              <div data-layer="brackets" className="relative z-10 shrink-0" style={{ height: bands.bracketHeight }}>
-                <LongSpans spans={spans} timeToX={toX} today={today} variant="bracket" heightPx={height} />
-              </div>
-            )}
             {/* Flex spacers: the cards themselves live in the axis band, in one chronological order. */}
             <div data-layer="above" className="min-h-0 flex-1" />
             <div data-layer="axis" className="relative z-10 shrink-0" style={{ height: AXIS_HEIGHT_PX }}>
@@ -349,7 +334,6 @@ export function Timeline({ entries, collapsed, focusEntryId, onOpenEntry }: Time
                 laneHeightPx={SPAN_LANE_HEIGHT_PX}
                 minWidthPx={spanMinWidthPx}
                 lanes={bands.lanes}
-                shortSpanStyle={shortSpanStyle}
                 highlightedId={focusEntryId}
                 onOpen={open}
                 wasDrag={gestures.wasDrag}
@@ -362,12 +346,6 @@ export function Timeline({ entries, collapsed, focusEntryId, onOpenEntry }: Time
           canZoomOut={vp.canZoomOut}
           onZoomIn={vp.zoomIn}
           onZoomOut={vp.zoomOut}
-        />
-        <PrototypeSwitches
-          shortSpanStyle={shortSpanStyle}
-          onShortSpanStyle={setShortSpanStyle}
-          longSpanVariant={longSpanVariant}
-          onLongSpanVariant={setLongSpanVariant}
         />
       </section>
     </TimelineContext>

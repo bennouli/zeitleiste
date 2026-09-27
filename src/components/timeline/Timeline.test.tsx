@@ -356,8 +356,10 @@ describe('Timeline', () => {
     it('keys typed into a form control neither zoom nor pan', () => {
       const { region } = renderTimeline()
       const before = view(region)
-      const select = screen.getAllByRole('combobox')[0]!
-      for (const key of ['+', '-', 'ArrowLeft', 'ArrowRight']) fireEvent.keyDown(select, { key })
+      // Any form control inside the region, e.g. a future filter box.
+      const input = document.createElement('input')
+      region.appendChild(input)
+      for (const key of ['+', '-', 'ArrowLeft', 'ArrowRight']) fireEvent.keyDown(input, { key })
       flush()
       expect(view(region)).toEqual(before)
     })
