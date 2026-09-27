@@ -22,6 +22,15 @@ describe('Post', () => {
     for (const p of paras) expect(screen.getByText(p.trim())).toBeInTheDocument()
   })
 
+  it('has a heading that can receive focus programmatically but is not in the tab order', () => {
+    render(<Post entry={okt} />)
+    const heading = screen.getByRole('heading', { level: 2, name: okt.title })
+    expect(heading).toHaveAttribute('tabindex', '-1')
+    heading.focus()
+    expect(heading).toHaveFocus()
+    expect(heading).toHaveClass('focus-visible:outline-2')
+  })
+
   it('calls close from the context', async () => {
     const close = vi.fn()
     render(

@@ -210,6 +210,18 @@ describe('GroupStack', () => {
     expect(screen.getByText('1 von 7')).toBeInTheDocument()
   })
 
+  it('keeps the window when initialIndex changes to undefined', () => {
+    const entries = makeEntries(7)
+    const renderCard = (e: Entry) => <span>{e.title}</span>
+    const props = { entries, visibleCount: 3, slotHeightPx: SLOT, renderCard, label: 'G' }
+    const { rerender } = render(<GroupStack {...props} initialIndex={4} />)
+    expect(screen.getByText('5 von 7')).toBeInTheDocument()
+    rerender(<GroupStack {...props} initialIndex={undefined} />)
+    expect(screen.getByText('5 von 7')).toBeInTheDocument()
+    rerender(<GroupStack {...props} initialIndex={1} />)
+    expect(screen.getByText('2 von 7')).toBeInTheDocument()
+  })
+
   it('re-clamps when visibleCount grows', () => {
     const entries = makeEntries(4)
     const renderCard = (e: Entry) => <span>{e.title}</span>

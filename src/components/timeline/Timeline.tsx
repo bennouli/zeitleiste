@@ -1,12 +1,14 @@
 'use client'
 
-import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import type { FocusEvent } from 'react'
 import clsx from 'clsx'
 import { isSpan, type Entry } from '@/lib/entry'
+import { findFocusTarget } from './focusTarget'
 import { entryAnchor, MS_PER_YEAR, startOf, todayMs } from '@/lib/time'
-import { msPerPx, timeToX, xToTime, type Bounds } from '@/lib/viewport'
-import { Axis, AXIS_LINE_Y_PX } from './Axis'
-import { CardLayer, groupLabel } from './CardLayer'
+import { msPerPx, panBy as panViewport, timeToX, xToTime, type Bounds } from '@/lib/viewport'
+import { Axis } from './Axis'
+import { CardLayer } from './CardLayer'
 import {
   AXIS_HEIGHT_PX,
   CARD_ROW_HEIGHT_PX,
@@ -15,8 +17,7 @@ import {
   SPAN_LANE_HEIGHT_PX,
 } from './constants'
 import { CARD_HEIGHT_PX, CONNECTOR_MIN_PX } from './EntryCard'
-import { GroupMarker } from './GroupMarker'
-import { groupStackHeightPx } from './GroupStack'
+import { GROUP_STACK_CONTROLS_HEIGHT_PX, groupStackHeightPx } from './GroupStack'
 import { BRACKET_LANE_PX, bracketLayout, LongSpans, type LongSpanVariant } from './LongSpans'
 import { PrototypeSwitches } from './PrototypeSwitches'
 import { SpanBand, spanBandLayout } from './SpanBand'
@@ -43,6 +44,48 @@ const SLOT_HEIGHT_PX = CARD_HEIGHT_PX + STACK_GAP_PX
 const PHONE_WIDTH_PX = 640
 /** Room kept free for the "Heute" label and the zoom buttons. */
 const MIN_BAND_LEVELS = 1
+
+/** Distance kept between a revealed entry and the timeline's edges. */
+const REVEAL_MARGIN_PX = 16
+/** An element wider than the view counts as visible once this much of it shows. */
+const REVEAL_MIN_VISIBLE_PX = 48
+
+/**
+ * Horizontal pan (px, positive moves content right) that brings the extent
+ * [left, right] (px from the timeline's left edge) into view; 0 if it is visible.
+ */
+export function revealDelta(left: number, right: number, width: number): number {
+  const lo = REVEAL_MARGIN_PX
+  const hi = width - REVEAL_MARGIN_PX
+  if (right - left > hi - lo) {
+    const visible = Math.min(right, hi) - Math.max(left, lo)
+    return visible >= Math.min(REVEAL_MIN_VISIBLE_PX, right - left) ? 0 : lo - left
+  }
+  if (left < lo) return lo - left
+  if (right > hi) return hi - right
+  return 0
+}
+
+interface FocusedItem {
+  el: HTMLElement
+  /** Entries the focused element stands for (a card, a stack, a marker). */
+  ids: string[]
+}
+
+function entryIdsOf(el: HTMLElement): string[] {
+  const holder = el.closest<HTMLElement>('[data-entry-id], [data-entry-ids], [data-span-id]')
+  if (!holder) return []
+  const { entryId, entryIds, spanId } = holder.dataset
+  return entryId ? [entryId] : spanId ? [spanId] : (entryIds ?? '').split(' ').filter(Boolean)
+}
+
+function isFocusVisible(el: HTMLElement): boolean {
+  try {
+    return el.matches(':focus-visible')
+  } catch {
+    return true
+  }
+}
 
 function computeBounds(entries: Entry[], today: number): Bounds {
   let min = Infinity
@@ -153,8 +196,8 @@ export function Timeline({ entries, collapsed, focusEntryId, onOpenEntry }: Time
     const bandHeight = Math.max(0, (height - AXIS_HEIGHT_PX - spansHeight - bracketHeight) / 2)
     const maxLevels = Math.max(MIN_BAND_LEVELS, Math.floor(bandHeight / CARD_ROW_HEIGHT_PX))
     const phone = width < PHONE_WIDTH_PX
-    const wanted = collapsed ? 2 : phone ? 1 : 3
-    const fitting = Math.floor((bandHeight - CONNECTOR_MIN_PX - 36) / SLOT_HEIGHT_PX)
+    const wanted = phone ? 1 : collapsed ? 2 : 3
+    const fitting = Math.floor((bandHeight - CONNECTOR_MIN_PX - GROUP_STACK_CONTROLS_HEIGHT_PX) / SLOT_HEIGHT_PX)
     const visibleCount = Math.max(1, Math.min(wanted, fitting))
     const stackHeight = groupStackHeightPx(visibleCount + 1, visibleCount, SLOT_HEIGHT_PX) + CONNECTOR_MIN_PX
     const groupLevels = Math.max(1, Math.ceil(stackHeight / CARD_ROW_HEIGHT_PX))
@@ -186,8 +229,51 @@ export function Timeline({ entries, collapsed, focusEntryId, onOpenEntry }: Time
     if (!first || !last) return
     const t0 = entryAnchor(first)
     const t1 = entryAnchor(last)
-    zoomToTime((t0 + t1) / 2, Math.max((t1 - t0) * 3, 2 * MS_PER_YEAR), { animate: true })
+    // At most half the current span, or a group spanning the whole view would not zoom at all.
+    const span = Math.min((viewport.end - viewport.start) / 2, Math.max((t1 - t0) * 3, 2 * MS_PER_YEAR))
+    zoomToTime((t0 + t1) / 2, span, { animate: true })
   }
+
+  // Keyboard focus on an entry outside the visible width pans the timeline to it.
+  const sectionRef = elRef
+  const focusedRef = useRef<FocusedItem | null>(null)
+  const onFocus = (e: FocusEvent<HTMLElement>) => {
+    const target = e.target
+    if (target === e.currentTarget) return
+    focusedRef.current = { el: target, ids: entryIdsOf(target) }
+    if (width <= 0 || !isFocusVisible(target)) return
+    const r = target.getBoundingClientRect()
+    // No layout (jsdom): nothing to judge.
+    if (r.width === 0 && r.height === 0) return
+    const left = r.left - e.currentTarget.getBoundingClientRect().left
+    const dx = revealDelta(left, left + r.width, width)
+    if (dx === 0) return
+    const next = panViewport(viewport, width, dx, bounds)
+    zoomToTime((next.start + next.end) / 2, next.end - next.start, { animate: true })
+  }
+
+  // Focus leaving the timeline ends the tracking.
+  useEffect(() => {
+    const onFocusIn = (e: globalThis.FocusEvent) => {
+      if (!(e.target instanceof Node) || !sectionRef.current?.contains(e.target)) focusedRef.current = null
+    }
+    document.addEventListener('focusin', onFocusIn)
+    return () => document.removeEventListener('focusin', onFocusIn)
+  }, [sectionRef])
+
+  // A relayout can unmount the focused card (merged into a group, a group split up, a marker zoomed into)
+  // or hide it in a stack (inert); focus would drop to <body> and Tab restart at the top.
+  // Move it to the same entry's new element instead.
+  useLayoutEffect(() => {
+    const f = focusedRef.current
+    const section = sectionRef.current
+    if (!f || !section || (f.el.isConnected && !f.el.closest('[inert]'))) return
+    const active = document.activeElement
+    if (active && active !== document.body && active.isConnected) return
+    focusedRef.current = null
+    const next = findFocusTarget(section, f.ids) ?? section
+    next.focus({ preventScroll: true })
+  })
 
   return (
     <TimelineContext value={ctx}>
@@ -201,13 +287,15 @@ export function Timeline({ entries, collapsed, focusEntryId, onOpenEntry }: Time
         data-view-start={width > 0 ? viewport.start : undefined}
         data-view-end={width > 0 ? viewport.end : undefined}
         className={clsx(
-          'relative flex w-full touch-pan-y flex-col overflow-hidden bg-surface text-fg select-none',
+          // clip, not hidden: a clipped box is no scroll container, so focusing an off-screen card can't scroll it.
+          'relative flex w-full touch-pan-y flex-col overflow-clip bg-surface text-fg select-none',
           'transition-[height] duration-350 ease-out motion-reduce:transition-none',
           'focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-focus',
           gestures.isDragging ? 'cursor-grabbing [&_*]:cursor-grabbing' : 'cursor-grab',
         )}
         style={{ height: collapsed ? COLLAPSED_HEIGHT : '100dvh' }}
         {...gestures.handlers}
+        onFocus={onFocus}
       >
         <p id={helpId} className="sr-only">
           Mit Plus und Minus zoomen, mit den Pfeiltasten links und rechts in der Zeit verschieben.
@@ -222,53 +310,21 @@ export function Timeline({ entries, collapsed, focusEntryId, onOpenEntry }: Time
                 <LongSpans spans={spans} timeToX={toX} today={today} variant="bracket" heightPx={height} />
               </div>
             )}
-            <div data-layer="above" className="relative z-20 min-h-0 flex-1">
-              <CardLayer
-                side="above"
-                items={layout.items}
-                rowHeightPx={CARD_ROW_HEIGHT_PX}
-                visibleCount={bands.visibleCount}
-                slotHeightPx={SLOT_HEIGHT_PX}
-                focusEntryId={focusEntryId}
-                onOpen={open}
-              />
-            </div>
+            {/* Flex spacers: the cards themselves live in the axis band, in one chronological order. */}
+            <div data-layer="above" className="min-h-0 flex-1" />
             <div data-layer="axis" className="relative z-10 shrink-0" style={{ height: AXIS_HEIGHT_PX }}>
               <Axis />
-              {layout.groups.map((g) => {
-                const x = toX(g.t)
-                if (x < -40 || x > width + 40) return null
-                const highlighted = g.entries.some((e) => e.id === focusEntryId)
-                return (
-                  <div
-                    key={g.id}
-                    data-group-marker={g.id}
-                    className="absolute -translate-x-1/2 -translate-y-1/2"
-                    style={{ left: x, top: AXIS_LINE_Y_PX }}
-                  >
-                    <GroupMarker
-                      count={g.entries.length}
-                      label={groupLabel(g.entries)}
-                      highlighted={highlighted}
-                      onActivate={() => {
-                        if (!gestures.wasDrag()) zoomIntoGroup(g.entries)
-                      }}
-                    />
-                  </div>
-                )
-              })}
-            </div>
-            <div data-layer="below" className="relative z-20 min-h-0 flex-1">
               <CardLayer
-                side="below"
                 items={layout.items}
                 rowHeightPx={CARD_ROW_HEIGHT_PX}
                 visibleCount={bands.visibleCount}
                 slotHeightPx={SLOT_HEIGHT_PX}
                 focusEntryId={focusEntryId}
                 onOpen={open}
+                onZoomIntoGroup={zoomIntoGroup}
               />
             </div>
+            <div data-layer="below" className="min-h-0 flex-1" />
             <div data-layer="spans" className="relative z-10 shrink-0" style={{ height: bands.spansHeight }}>
               <SpanBand
                 spans={spans}

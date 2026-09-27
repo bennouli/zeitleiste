@@ -11,7 +11,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "check:tokens": "bash scripts/check-tokens.sh",
-    "check": "pnpm lint && pnpm typecheck && pnpm test && pnpm check:tokens"
+    "check": "pnpm lint && pnpm typecheck && pnpm test && pnpm check:tokens",
+    "e2e": "playwright test"
   },
   "dependencies": {
     "clsx": "^2.1.1",
@@ -22,6 +23,7 @@
     "react-dom": "19.2.8"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.13.0",
     "@playwright/test": "^1.63.0",
     "@tailwindcss/postcss": "^4",
     "@testing-library/dom": "^10.4.2",

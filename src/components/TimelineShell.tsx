@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, type ReactNode } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
 import { PostContext } from '@/components/PostContext'
+import { findFocusTarget } from '@/components/timeline/focusTarget'
 import { Timeline } from '@/components/timeline/Timeline'
 import type { Entry } from '@/lib/entry'
 import { findEntry, postHref, slugFromPathname } from '@/lib/posts'
@@ -79,6 +80,15 @@ function scrollToPost(el: HTMLElement, animate: boolean, onlyIfBelowFold = false
   return stop
 }
 
+/** Focuses the heading of the page below the timeline (the post's title); false if there is none yet. */
+function focusPostHeading(container: HTMLElement): boolean {
+  const heading = container.querySelector<HTMLElement>('[data-post-heading], h1, h2')
+  if (!heading) return false
+  if (!heading.hasAttribute('tabindex')) heading.tabIndex = -1
+  heading.focus({ preventScroll: true })
+  return true
+}
+
 /**
  * The persistent app frame: the timeline (kept mounted across post routes, so it
  * keeps its state) followed by the page content, i.e. the open post.
@@ -96,16 +106,18 @@ export function TimelineShell({ entries, children }: { entries: Entry[]; childre
   // StrictMode-safe "is this still the initial address" check.
   const initialKey = useRef(pageKey)
   const navigated = useRef(false)
-  // The element focused when a post was opened, to restore focus on close.
-  const opener = useRef<HTMLElement | null>(null)
+  // The element focused when a post was opened (and its entry), to restore focus on close.
+  const opener = useRef<{ el: HTMLElement; id: string } | null>(null)
 
   const close = useCallback(() => router.push('/', { scroll: false }), [router])
 
   const openEntry = useCallback(
     (id: string) => {
       if (id === openSlug || !findEntry(entries, id)) return
-      if (openSlug === null && document.activeElement instanceof HTMLElement) {
-        opener.current = document.activeElement
+      // Remember the entry that opened it (also when switching posts), so closing returns there.
+      const active = document.activeElement
+      if (active instanceof HTMLElement && active.closest('[role="region"]')) {
+        opener.current = { el: active, id }
       }
       router.push(postHref(id), { scroll: false })
     },
@@ -119,16 +131,32 @@ export function TimelineShell({ entries, children }: { entries: Entry[]; childre
     if (pageKey === null) {
       // The post is gone, so the document is short and the browser clamps anyway.
       if (window.scrollY > 0) window.scrollTo({ top: 0, behavior: 'auto' })
-      const el = opener.current
+      const from = opener.current
       opener.current = null
-      if (el?.isConnected && document.activeElement === document.body) el.focus({ preventScroll: true })
+      if (from && document.activeElement === document.body) {
+        // The collapse relayouts the timeline; the opening card may have been replaced meanwhile.
+        const region = document.querySelector<HTMLElement>('section[role="region"]')
+        const el =
+          from.el.isConnected && !from.el.closest('[inert]')
+            ? from.el
+            : ((region && findFocusTarget(region, [from.id])) ?? region)
+        el?.focus({ preventScroll: true })
+      }
       return
     }
     const el = postRef.current
     if (!el) return
+    // Opened from within the page: move focus to the post so keyboard and screen reader users land in it.
+    let focusFrame = 0
+    if (!first) {
+      if (!focusPostHeading(el)) focusFrame = window.requestAnimationFrame(() => focusPostHeading(el))
+    }
     // A direct link keeps the collapsed timeline fully in view and only scrolls if the post starts below the fold.
-    if (first) return scrollToPost(el, false, true)
-    return scrollToPost(el, !prefersReducedMotion())
+    const stopScroll = first ? scrollToPost(el, false, true) : scrollToPost(el, !prefersReducedMotion())
+    return () => {
+      window.cancelAnimationFrame(focusFrame)
+      stopScroll()
+    }
   }, [pageKey])
 
   useEffect(() => {

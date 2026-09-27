@@ -149,6 +149,10 @@ export function EntryCard({
     'block cursor-pointer overflow-hidden rounded-md border border-l-3 border-border bg-surface-raised px-2 py-1.5 text-left text-fg shadow-sm',
     'transition-transform duration-150 motion-reduce:transition-none',
     'focus-visible:outline-2 focus-visible:outline-focus',
+    // Inside a stack the card fills the clipping window, so an outer outline would be cut off.
+    inline && 'focus-visible:-outline-offset-2',
+    // The highlight ring sits where the outline would; keep the focus outline apart from it.
+    highlighted && (inline ? 'focus-visible:-outline-offset-4' : 'focus-visible:outline-offset-2'),
     CARD_BORDER[entry.region],
     highlighted && 'ring-2 ring-focus',
     highlighted && (side === 'above' ? '-translate-y-0.5' : 'translate-y-0.5'),
@@ -204,14 +208,7 @@ export function EntryCard({
         align={alignEnd ? 'end' : 'start'}
         anchorRef={bodyRef}
       >
-        {/* The card's label already names the title. */}
-        <p className="font-medium" aria-hidden="true">
-          {entry.title}
-        </p>
-        <p className="text-xs text-fg-muted">
-          {formatEntryDate(entry, 'long')} · {CATEGORY_LABEL[entry.category]}
-        </p>
-        <p className="mt-2">{entry.summary}</p>
+        <EntryTooltipContent entry={entry} />
       </Tooltip>
     </div>
   )
@@ -252,5 +249,20 @@ export function EntryCard({
       />
       {body}
     </div>
+  )
+}
+
+/** Tooltip body of an entry; the title is hidden from screen readers because the anchor's label names it. */
+export function EntryTooltipContent({ entry }: { entry: Entry }) {
+  return (
+    <>
+      <p className="font-medium" aria-hidden="true">
+        {entry.title}
+      </p>
+      <p className="text-xs text-fg-muted">
+        {formatEntryDate(entry, 'long')} · {CATEGORY_LABEL[entry.category]}
+      </p>
+      <p className="mt-2">{entry.summary}</p>
+    </>
   )
 }

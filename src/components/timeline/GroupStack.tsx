@@ -14,7 +14,10 @@ export interface GroupStackProps {
   slotHeightPx: number
   /** Renders one card (the caller passes EntryCard with `inline`). */
   renderCard: (entry: Entry, index: number) => ReactNode
-  /** Initially scrolled-to index (e.g. to show the highlighted entry); default 0. */
+  /**
+   * Scrolled-to index (e.g. to show the highlighted entry); default 0. A later
+   * change scrolls to the new index; a change to `undefined` keeps the window.
+   */
   initialIndex?: number
   /** Accessible name of the group, e.g. "Gruppe: 1914–1922". */
   label: string
@@ -72,19 +75,19 @@ export function GroupStack({
   visibleCount,
   slotHeightPx,
   renderCard,
-  initialIndex = 0,
+  initialIndex,
   label,
   onIndexChange,
   className,
 }: GroupStackProps) {
   const visible = normalizeVisible(visibleCount)
   const maxIndex = Math.max(0, entries.length - visible)
-  const [rawIndex, setRawIndex] = useState(() => clamp(initialIndex, maxIndex))
+  const [rawIndex, setRawIndex] = useState(() => clamp(initialIndex ?? 0, maxIndex))
   // Follow a changed initialIndex (e.g. another entry got highlighted).
   const [prevInitial, setPrevInitial] = useState(initialIndex)
   if (prevInitial !== initialIndex) {
     setPrevInitial(initialIndex)
-    setRawIndex(clamp(initialIndex, maxIndex))
+    if (initialIndex !== undefined) setRawIndex(clamp(initialIndex, maxIndex))
   }
   const topIndex = clamp(rawIndex, maxIndex)
   const swipe = useRef<Swipe | null>(null)

@@ -16,17 +16,23 @@ vi.mock('next/navigation', () => ({
 
 vi.mock('@/components/timeline/Timeline', () => ({
   Timeline: ({ entries, collapsed, focusEntryId, onOpenEntry }: TimelineProps) => (
-    <div
+    <section
+      role="region"
+      aria-label="Zeitleiste"
+      tabIndex={0}
       data-testid="timeline"
       data-collapsed={String(collapsed)}
       data-focus={focusEntryId ?? ''}
     >
+      {/* Keyed by `collapsed`: like the real timeline's relayout, opening a post replaces the cards. */}
       {entries.map((e) => (
-        <button key={e.id} type="button" onClick={() => onOpenEntry(e.id)}>
-          {e.title}
-        </button>
+        <div key={`${e.id}:${collapsed}`} data-entry-id={e.id}>
+          <button type="button" onClick={() => onOpenEntry(e.id)}>
+            {e.title}
+          </button>
+        </div>
       ))}
-    </div>
+    </section>
   ),
 }))
 
@@ -211,7 +217,43 @@ describe('TimelineShell', () => {
     screen.getByRole('button', { name: 'Beitrag schließen' }).focus()
     nav.pathname = '/'
     rerender(<TimelineShell entries={entries}>{null}</TimelineShell>)
-    expect(opener).toHaveFocus()
+    // The opening button was replaced by the relayout; focus goes to the same entry's new card.
+    expect(opener.isConnected).toBe(false)
+    expect(screen.getByRole('button', { name: okt.title })).toHaveFocus()
+  })
+
+  it('returns focus to the entry that opened the current post after a direct link and a switch', async () => {
+    const { rerender } = renderAt('/post/oktoberrevolution')
+    await userEvent.click(screen.getByRole('button', { name: otherPost.title }))
+    nav.pathname = `/post/${otherPost.id}`
+    rerender(<TimelineShell entries={entries}><Post entry={otherPost} /></TimelineShell>)
+    expect(screen.getByRole('heading', { level: 2, name: otherPost.title })).toHaveFocus()
+    nav.pathname = '/'
+    rerender(<TimelineShell entries={entries}>{null}</TimelineShell>)
+    expect(screen.getByRole('button', { name: otherPost.title })).toHaveFocus()
+  })
+
+  it('falls back to the timeline region when the entry is gone', async () => {
+    const { rerender } = renderAt('/')
+    await userEvent.click(screen.getByRole('button', { name: okt.title }))
+    nav.pathname = '/post/oktoberrevolution'
+    rerender(<TimelineShell entries={entries}><Post entry={okt} /></TimelineShell>)
+    nav.pathname = '/'
+    rerender(<TimelineShell entries={entries.filter((e) => e.id !== okt.id)}>{null}</TimelineShell>)
+    expect(screen.getByRole('region', { name: 'Zeitleiste' })).toHaveFocus()
+  })
+
+  it('moves focus to the post heading when a post opens from the timeline', async () => {
+    const { rerender } = renderAt('/')
+    await userEvent.click(screen.getByRole('button', { name: okt.title }))
+    nav.pathname = '/post/oktoberrevolution'
+    rerender(<TimelineShell entries={entries}><Post entry={okt} /></TimelineShell>)
+    expect(screen.getByRole('heading', { level: 2, name: okt.title })).toHaveFocus()
+  })
+
+  it('leaves focus alone on a direct link to a post', () => {
+    renderAt('/post/oktoberrevolution')
+    expect(document.body).toHaveFocus()
   })
 
   it('has no detectable accessibility violations', async () => {

@@ -57,7 +57,14 @@ const withPost: Entry = {
   importance: 2,
   post: { body: 'Text' },
 }
-const withoutPost: Entry = { ...withPost, id: 'ohne-beitrag', title: 'Ohne Beitrag', post: undefined, region: 'west' }
+const withoutPost: Entry = {
+  ...withPost,
+  id: 'ohne-beitrag',
+  title: 'Ohne Beitrag',
+  summary: 'Eine kurze Zusammenfassung.',
+  post: undefined,
+  region: 'west',
+}
 
 describe('SpanBand', () => {
   it('renders a bar for every span in the sample data and ignores points', () => {
@@ -208,7 +215,26 @@ describe('SpanBand', () => {
     const tight = linear(startOf({ year: 1900 }), startOf({ year: 1950 }), 40)
     const b = renderBand({ spans: [withPost], timeToX: tight })
     expect(b.container.querySelector('[data-part="label"]')).toBeNull()
-    expect(screen.getByRole('button')).toHaveAttribute('title', 'Mit Beitrag, 1900–1950, Beitrag')
+    expect(screen.getByRole('button', { name: 'Mit Beitrag, 1900–1950, Beitrag' })).not.toHaveAttribute('title')
+  })
+
+  it('shows the summary in a tooltip on keyboard focus and on hover', async () => {
+    const user = userEvent.setup()
+    renderBand({ spans: [withoutPost] })
+    const bar = screen.getByRole('group', { name: /Ohne Beitrag/ })
+    expect(screen.queryByRole('tooltip')).toBeNull()
+    await user.tab()
+    expect(bar).toHaveFocus()
+    const tip = screen.getByRole('tooltip')
+    expect(tip).toHaveTextContent(withoutPost.summary)
+    expect(bar).toHaveAttribute('aria-describedby', tip.id)
+    await user.keyboard('{Escape}')
+    expect(screen.queryByRole('tooltip')).toBeNull()
+    await user.tab({ shift: true })
+    await user.hover(bar)
+    expect(screen.getByRole('tooltip')).toHaveTextContent(withoutPost.summary)
+    await user.unhover(bar)
+    expect(screen.queryByRole('tooltip')).toBeNull()
   })
 
   it('highlights the given span', () => {

@@ -233,7 +233,10 @@ export function useGestures(containerRef: RefObject<HTMLElement | null>, actions
   const onKeyDown = useCallback(
     (e: KeyboardEvent<HTMLElement>) => {
       // Ctrl/Cmd +/- is the browser's page zoom; leave it alone.
-      if (e.ctrlKey || e.metaKey || e.altKey) return
+      if (e.defaultPrevented || e.ctrlKey || e.metaKey || e.altKey) return
+      // Keys typed into a form control (the prototype <select>s) belong to it.
+      const t = e.target
+      if (t instanceof HTMLElement && (t.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(t.tagName))) return
       dragged.current = false
       const step = Math.max(1, width) * KEY_PAN_FRACTION
       switch (e.key) {

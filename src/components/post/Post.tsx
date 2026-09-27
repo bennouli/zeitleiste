@@ -24,7 +24,13 @@ export function Post({ entry }: { entry: Entry }) {
     >
       <header className="flex items-start gap-4">
         <div className="min-w-0 flex-1">
-          <h2 id={titleId} className="font-serif text-3xl leading-tight">
+          {/* Focused by the shell when the post opens. */}
+          <h2
+            id={titleId}
+            tabIndex={-1}
+            data-post-heading
+            className="rounded-sm font-serif text-3xl leading-tight focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-focus"
+          >
             {entry.title}
           </h2>
           <p className="mt-2 text-sm text-fg-muted">
