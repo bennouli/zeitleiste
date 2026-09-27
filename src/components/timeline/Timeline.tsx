@@ -10,6 +10,7 @@ import { msPerPx, panBy as panViewport, timeToX, xToTime, type Bounds } from '@/
 import { Axis } from './Axis'
 import { CardLayer } from './CardLayer'
 import {
+  ANIMATION_MS,
   AXIS_HEIGHT_PX,
   CARD_ROW_HEIGHT_PX,
   COLLAPSED_HEIGHT,
@@ -94,6 +95,17 @@ function computeBounds(entries: Entry[], today: number): Bounds {
   return { min, max: today }
 }
 
+/** The last value that stayed unchanged for `delayMs`; ignores the frames of a height transition. */
+function useSettled<T>(value: T, delayMs: number): T {
+  const [settled, setSettled] = useState(value)
+  useEffect(() => {
+    if (Object.is(value, settled)) return
+    const id = window.setTimeout(() => setSettled(value), delayMs)
+    return () => window.clearTimeout(id)
+  }, [value, settled, delayMs])
+  return settled
+}
+
 function useElementSize() {
   const [size, setSize] = useState({ width: 0, height: 0 })
   const elRef = useRef<HTMLElement | null>(null)
@@ -123,7 +135,9 @@ function remPx(rem: number): number {
 export function Timeline({ entries, collapsed, focusEntryId, onOpenEntry }: TimelineProps) {
   const [today] = useState(todayMs)
   const bounds = useMemo(() => computeBounds(entries, today), [entries, today])
-  const { width, height, ref, elRef } = useElementSize()
+  const { width, height: liveHeight, ref, elRef } = useElementSize()
+  // Wait until the height transition is over, so cards don't reshuffle while the timeline collapses.
+  const height = useSettled(liveHeight, ANIMATION_MS + 50)
   const helpId = useId()
   const vp = useViewport({ bounds, width })
   const { viewport } = vp
@@ -189,7 +203,9 @@ export function Timeline({ entries, collapsed, focusEntryId, onOpenEntry }: Time
   // Band heights are fixed between gestures so nothing resizes while dragging.
   const layoutKey = `${vp.gestureEnd}|${width}|${height}|${collapsed}`
   const bands = useMemo(() => {
-    const spanLanes = Math.max(1, spanBandLayout(spans, toX, today, { minWidthPx: spanMinWidthPx, charWidthPx: 7 }).laneCount)
+    const spanLayout = spanBandLayout(spans, toX, today, { minWidthPx: spanMinWidthPx, charWidthPx: 7 })
+    const spanLanes = Math.max(1, spanLayout.laneCount)
+    const lanes = new Map([...spanLayout.bars].map(([id, bar]) => [id, bar.lane]))
     const bracketLanes = longSpanVariant === 'bracket' ? bracketLayout(spans, toX, today).laneCount : 0
     const spansHeight = spanLanes * SPAN_LANE_HEIGHT_PX
     const bracketHeight = bracketLanes * BRACKET_LANE_PX
@@ -201,7 +217,7 @@ export function Timeline({ entries, collapsed, focusEntryId, onOpenEntry }: Time
     const visibleCount = Math.max(1, Math.min(wanted, fitting))
     const stackHeight = groupStackHeightPx(visibleCount + 1, visibleCount, SLOT_HEIGHT_PX) + CONNECTOR_MIN_PX
     const groupLevels = Math.max(1, Math.ceil(stackHeight / CARD_ROW_HEIGHT_PX))
-    return { spansHeight, bracketHeight, maxLevels, visibleCount, groupLevels }
+    return { spansHeight, bracketHeight, maxLevels, visibleCount, groupLevels, lanes }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- recomputed per gesture end via layoutKey
   }, [layoutKey, spans, today, spanMinWidthPx, longSpanVariant])
 
@@ -332,6 +348,7 @@ export function Timeline({ entries, collapsed, focusEntryId, onOpenEntry }: Time
                 today={today}
                 laneHeightPx={SPAN_LANE_HEIGHT_PX}
                 minWidthPx={spanMinWidthPx}
+                lanes={bands.lanes}
                 shortSpanStyle={shortSpanStyle}
                 highlightedId={focusEntryId}
                 onOpen={open}

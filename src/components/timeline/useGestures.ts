@@ -81,7 +81,8 @@ export function useGestures(containerRef: RefObject<HTMLElement | null>, actions
       const x = localX(e.clientX)
       const map = pointers.current
       // Drop state from a press whose release we never saw (released outside the window, lost capture).
-      if (map.has(e.pointerId) || (map.size > 0 && e.pointerType !== 'touch')) {
+      // A primary touch means no other touch is active, so anything left over is stale.
+      if (map.has(e.pointerId) || (map.size > 0 && (e.pointerType !== 'touch' || e.isPrimary))) {
         map.clear()
         if (mode.current === 'drag' || mode.current === 'pinch') actions.endGesture()
         mode.current = 'idle'
@@ -117,6 +118,7 @@ export function useGestures(containerRef: RefObject<HTMLElement | null>, actions
       const map = pointers.current
       const p = map.get(e.pointerId)
       if (!p) return
+      if (mode.current === 'idle') return
       if (e.pointerType === 'mouse' && e.buttons === 0) {
         // The button was released without a pointerup reaching us.
         finishRef.current(e, true)
@@ -135,8 +137,8 @@ export function useGestures(containerRef: RefObject<HTMLElement | null>, actions
         const dx = Math.abs(x - startX.current)
         const dy = Math.abs(e.clientY - startY.current)
         // Axis lock for touch: a mostly vertical swipe scrolls the page or steps a group stack.
+        // The pointer stays known so a second finger can still start a pinch.
         if (e.pointerType === 'touch' && dy >= DRAG_THRESHOLD_PX && dy > dx) {
-          map.delete(e.pointerId)
           mode.current = 'idle'
           return
         }

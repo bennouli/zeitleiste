@@ -22,6 +22,8 @@ export interface SpanBandProps {
   wasDrag?: () => boolean
   /** Approximate char width for labelFits estimation, default 7. */
   charWidthPx?: number
+  /** Lane per span id, frozen by the timeline between gestures so bars don't jump lanes mid-drag. */
+  lanes?: ReadonlyMap<string, number>
   className?: string
 }
 
@@ -75,9 +77,20 @@ export function SpanBand({
   onOpen,
   wasDrag,
   charWidthPx = DEFAULT_CHAR_WIDTH_PX,
+  lanes,
   className,
 }: SpanBandProps): JSX.Element {
-  const { bars, laneCount } = spanBandLayout(spans, timeToX, today, { minWidthPx, charWidthPx })
+  const live = spanBandLayout(spans, timeToX, today, { minWidthPx, charWidthPx })
+  const bars = live.bars
+  let laneCount = live.laneCount
+  if (lanes) {
+    laneCount = 0
+    for (const [id, bar] of bars) {
+      const lane = lanes.get(id) ?? bar.lane
+      bars.set(id, { ...bar, lane })
+      laneCount = Math.max(laneCount, lane + 1)
+    }
+  }
   // DOM (and tab) order is chronological: true start, then id.
   const ordered = spans
     .filter((e) => bars.has(e.id))
