@@ -1,0 +1,154 @@
+/*
+ * Design tokens — two layers.
+ *
+ * 1. Primitive tokens (`:root`, first block): raw values only — color
+ *    ramps (gray, red = Russia/USSR, blue = the West, violet = both),
+ *    a spacing and a radius scale. The font stacks live in the
+ *    `@theme static` block below and are always emitted on `:root` as
+ *    `--font-sans` / `--font-serif`.
+ *    Change a primitive here and every semantic token pointing to it follows.
+ *
+ * 2. Semantic tokens (`:root`, second block): named by purpose
+ *    (`--surface`, `--fg`, `--russia`, …) and defined only as references to
+ *    primitives. They are registered with Tailwind via `@theme inline`, which
+ *    yields utilities such as `bg-surface`, `text-fg`, `border-border`,
+ *    `bg-accent`, `text-russia`, `bg-west`, `bg-both`, `ring-focus`.
+ *    Tailwind's spacing unit (`p-2`, `gap-4`, …) and radii (`rounded-sm`, …)
+ *    are mapped to the spacing/radius primitives the same way.
+ *    Dark mode (OS setting) redefines ONLY this layer.
+ *
+ * Rule: components and pages use semantic tokens only — never raw color
+ * values, never primitive tokens, never Tailwind's default palette (it is
+ * disabled below). `pnpm check:tokens` enforces this.
+ */
+
+@import "tailwindcss";
+
+/* ---------- Layer 1: primitive tokens ---------- */
+:root {
+  /* Neutral */
+  --gray-50: oklch(0.985 0.002 90);
+  --gray-100: oklch(0.967 0.003 90);
+  --gray-200: oklch(0.922 0.004 90);
+  --gray-300: oklch(0.87 0.005 90);
+  --gray-400: oklch(0.708 0.006 90);
+  --gray-500: oklch(0.556 0.006 90);
+  --gray-600: oklch(0.439 0.006 90);
+  --gray-700: oklch(0.371 0.005 90);
+  --gray-800: oklch(0.269 0.004 90);
+  --gray-900: oklch(0.205 0.003 90);
+  --gray-950: oklch(0.145 0.002 90);
+
+  /* Russia / USSR */
+  --red-100: oklch(0.936 0.032 17.7);
+  --red-300: oklch(0.808 0.114 19.6);
+  --red-400: oklch(0.704 0.191 22.2);
+  --red-500: oklch(0.637 0.237 25.3);
+  --red-600: oklch(0.577 0.245 27.3);
+  --red-700: oklch(0.505 0.213 27.5);
+  --red-900: oklch(0.396 0.141 25.7);
+
+  /* The West */
+  --blue-100: oklch(0.932 0.032 255.6);
+  --blue-300: oklch(0.809 0.105 251.8);
+  --blue-400: oklch(0.707 0.165 254.6);
+  --blue-500: oklch(0.623 0.214 259.8);
+  --blue-600: oklch(0.546 0.245 262.9);
+  --blue-700: oklch(0.488 0.243 264.4);
+  --blue-900: oklch(0.379 0.146 265.5);
+
+  /* Both */
+  --violet-100: oklch(0.943 0.029 294.6);
+  --violet-300: oklch(0.811 0.111 293.6);
+  --violet-400: oklch(0.702 0.183 293.5);
+  --violet-500: oklch(0.606 0.25 292.7);
+  --violet-600: oklch(0.541 0.281 293);
+  --violet-700: oklch(0.491 0.27 292.6);
+  --violet-900: oklch(0.38 0.189 293.7);
+
+  /* Spacing scale */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+
+  /* Radius scale */
+  --radius-1: 0.125rem;
+  --radius-2: 0.25rem;
+  --radius-3: 0.5rem;
+  --radius-4: 1rem;
+}
+
+/* Font stacks (system fonts for now; final fonts later). Declared in a
+ * `@theme static` block so they are always emitted as `--font-sans` /
+ * `--font-serif` on `:root` and power the `font-sans` / `font-serif`
+ * utilities without a self-referencing `var(--font-sans)` cycle. */
+@theme static {
+  --font-sans:
+    ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, sans-serif;
+  --font-serif:
+    ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
+}
+
+/* ---------- Layer 2: semantic tokens ---------- */
+:root {
+  color-scheme: light dark;
+
+  --surface: var(--gray-50);
+  --surface-raised: var(--gray-100);
+  --fg: var(--gray-900);
+  --fg-muted: var(--gray-600);
+  --border: var(--gray-300);
+  --accent: var(--gray-900);
+  --accent-fg: var(--gray-50);
+  --russia: var(--red-600);
+  --west: var(--blue-600);
+  --both: var(--violet-600);
+  --focus: var(--blue-500);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --surface: var(--gray-950);
+    --surface-raised: var(--gray-900);
+    --fg: var(--gray-100);
+    --fg-muted: var(--gray-400);
+    --border: var(--gray-700);
+    --accent: var(--gray-100);
+    --accent-fg: var(--gray-950);
+    --russia: var(--red-400);
+    --west: var(--blue-400);
+    --both: var(--violet-400);
+    --focus: var(--blue-300);
+  }
+}
+
+/* Register the semantic layer with Tailwind. `--color-*: initial` removes
+ * Tailwind's default palette so `bg-red-500` & co. do not exist. */
+@theme inline {
+  --color-*: initial;
+  --color-surface: var(--surface);
+  --color-surface-raised: var(--surface-raised);
+  --color-fg: var(--fg);
+  --color-fg-muted: var(--fg-muted);
+  --color-border: var(--border);
+  --color-accent: var(--accent);
+  --color-accent-fg: var(--accent-fg);
+  --color-russia: var(--russia);
+  --color-west: var(--west);
+  --color-both: var(--both);
+  --color-focus: var(--focus);
+
+  /* Spacing unit: `p-1` = --space-1, `p-4` = 4 × --space-1, … */
+  --spacing: var(--space-1);
+
+  /* Radii: only these four exist. */
+  --radius-*: initial;
+  --radius-xs: var(--radius-1);
+  --radius-sm: var(--radius-2);
+  --radius-md: var(--radius-3);
+  --radius-lg: var(--radius-4);
+}
