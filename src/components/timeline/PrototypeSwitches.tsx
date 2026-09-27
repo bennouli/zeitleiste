@@ -16,7 +16,7 @@ export function PrototypeSwitches({ shortSpanStyle, onShortSpanStyle, longSpanVa
   return (
     <fieldset
       data-no-drag
-      className="absolute bottom-2 left-2 z-40 flex items-center gap-2 rounded-md border border-border bg-surface-raised/90 px-2 py-1 text-xs text-fg-muted"
+      className="absolute top-2 left-2 z-40 flex items-center gap-2 rounded-md border border-border bg-surface-raised/90 px-2 py-1 text-xs text-fg-muted"
     >
       <legend className="sr-only">Prototyp-Schalter</legend>
       <label className="flex items-center gap-1">

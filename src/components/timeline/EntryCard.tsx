@@ -217,7 +217,15 @@ export function EntryCard({
   )
 
   if (inline) {
-    return <div className={clsx('relative', open ? 'z-30' : highlighted && 'z-20')}>{body}</div>
+    return (
+      <div
+        className={clsx('relative', open ? 'z-30' : highlighted && 'z-20')}
+        data-entry-id={entry.id}
+        data-highlighted={highlighted ? 'true' : undefined}
+      >
+        {body}
+      </div>
+    )
   }
 
   const offset = level * rowHeightPx

@@ -431,7 +431,7 @@ describe('EntryCard', () => {
 
     it('renders inline without absolute positioning or connector', () => {
       renderCard({ entry: span, inline: true })
-      expect(document.querySelector('[data-entry-id]')).toBeNull()
+      expect(document.querySelector('[data-entry-id]')).not.toHaveClass('absolute')
       expect(card(span).closest('.absolute')).toBeNull()
     })
 
