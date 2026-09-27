@@ -306,12 +306,140 @@ describe('GroupStack', () => {
     fireEvent.pointerDown(card, { ...touch, clientX: 0, clientY: 100 })
     fireEvent.pointerMove(card, { ...touch, clientX: 0, clientY: 40 })
     fireEvent.pointerUp(card, touch)
-    fireEvent.click(card)
+    // detail 1: a pointer click (detail 0 would be a keyboard activation).
+    fireEvent.click(card, { detail: 1 })
     expect(screen.getByText('2 von 5')).toBeInTheDocument()
     expect(onCardClick).not.toHaveBeenCalled()
     // The next plain tap clicks normally.
     fireEvent.click(screen.getByRole('button', { name: 'Eintrag 2' }))
     expect(onCardClick).toHaveBeenCalledTimes(1)
+  })
+
+  it('lets a touch tap on a card click it, without capturing the pointer', async () => {
+    const user = userEvent.setup()
+    const onCardClick = vi.fn()
+    render(
+      <GroupStack
+        entries={makeEntries(5)}
+        visibleCount={1}
+        slotHeightPx={SLOT}
+        label="G"
+        renderCard={(e) => (
+          <button type="button" onClick={() => onCardClick(e.id)}>
+            {e.title}
+          </button>
+        )}
+      />,
+    )
+    const viewport = screen.getByRole('list').parentElement!
+    const capture = vi.fn()
+    viewport.setPointerCapture = capture
+    const card = screen.getByRole('button', { name: 'Eintrag 1' })
+    await user.pointer({ keys: '[TouchA]', target: card })
+    expect(onCardClick).toHaveBeenCalledExactlyOnceWith('e0')
+    // Capture would retarget the click to the viewport in a real browser.
+    expect(capture).not.toHaveBeenCalled()
+    expect(screen.getByText('1 von 5')).toBeInTheDocument()
+
+    // A short vertical wobble below the threshold is still a tap.
+    const touch = { pointerType: 'touch', pointerId: 3, isPrimary: true }
+    fireEvent.pointerDown(card, { ...touch, clientX: 10, clientY: 100 })
+    fireEvent.pointerMove(card, { ...touch, clientX: 10, clientY: 90 })
+    fireEvent.pointerUp(card, touch)
+    fireEvent.click(card)
+    expect(onCardClick).toHaveBeenCalledTimes(2)
+    expect(capture).not.toHaveBeenCalled()
+  })
+
+  it('captures only once a vertical swipe is recognised and never stops pointer propagation', () => {
+    const outer = { down: vi.fn(), move: vi.fn(), up: vi.fn() }
+    const onCardClick = vi.fn()
+    render(
+      <div onPointerDown={outer.down} onPointerMove={outer.move} onPointerUp={outer.up}>
+        <GroupStack
+          entries={makeEntries(5)}
+          visibleCount={1}
+          slotHeightPx={SLOT}
+          label="G"
+          renderCard={(e) => (
+            <button type="button" onClick={onCardClick}>
+              {e.title}
+            </button>
+          )}
+        />
+      </div>,
+    )
+    const viewport = screen.getByRole('list').parentElement!
+    const capture = vi.fn()
+    viewport.setPointerCapture = capture
+    const card = screen.getByRole('button', { name: 'Eintrag 1' })
+    const touch = { pointerType: 'touch', pointerId: 1, isPrimary: true }
+
+    // Horizontal: no capture, every event reaches the timeline.
+    fireEvent.pointerDown(card, { ...touch, clientX: 0, clientY: 100 })
+    fireEvent.pointerMove(card, { ...touch, clientX: 80, clientY: 60 })
+    fireEvent.pointerUp(card, touch)
+    expect(capture).not.toHaveBeenCalled()
+    expect(outer.down).toHaveBeenCalledTimes(1)
+    expect(outer.move).toHaveBeenCalledTimes(1)
+    expect(outer.up).toHaveBeenCalledTimes(1)
+
+    // Vertical: captured on recognition, steps once, swallows the click.
+    fireEvent.pointerDown(card, { ...touch, clientX: 0, clientY: 100 })
+    fireEvent.pointerMove(card, { ...touch, clientX: 0, clientY: 90 })
+    expect(capture).not.toHaveBeenCalled()
+    fireEvent.pointerMove(card, { ...touch, clientX: 0, clientY: 40 })
+    expect(capture).toHaveBeenCalledExactlyOnceWith(1)
+    fireEvent.pointerMove(viewport, { ...touch, clientX: 0, clientY: -100 })
+    fireEvent.pointerUp(viewport, touch)
+    fireEvent.click(card, { detail: 1 })
+    expect(screen.getByText('2 von 5')).toBeInTheDocument()
+    expect(capture).toHaveBeenCalledTimes(1)
+    expect(onCardClick).not.toHaveBeenCalled()
+    expect(outer.move).toHaveBeenCalledTimes(4)
+  })
+
+  it('does not swallow a later keyboard or mouse click after a swipe that ended without a click', async () => {
+    const user = userEvent.setup()
+    const onCardClick = vi.fn()
+    render(
+      <GroupStack
+        entries={makeEntries(5)}
+        visibleCount={1}
+        slotHeightPx={SLOT}
+        label="G"
+        renderCard={(e) => (
+          <button type="button" onClick={onCardClick}>
+            {e.title}
+          </button>
+        )}
+      />,
+    )
+    const viewport = screen.getByRole('list').parentElement!
+    const touch = { pointerType: 'touch', pointerId: 1, isPrimary: true }
+    fireEvent.pointerDown(viewport, { ...touch, clientX: 0, clientY: 100 })
+    fireEvent.pointerMove(viewport, { ...touch, clientX: 0, clientY: 40 })
+    fireEvent.pointerUp(viewport, touch)
+    expect(screen.getByText('2 von 5')).toBeInTheDocument()
+    // Keyboard activation right away (click with detail 0).
+    screen.getByRole('button', { name: 'Eintrag 2' }).focus()
+    await user.keyboard('{Enter}')
+    expect(onCardClick).toHaveBeenCalledTimes(1)
+    // A mouse click after another click-less swipe.
+    fireEvent.pointerDown(viewport, { ...touch, clientX: 0, clientY: 100 })
+    fireEvent.pointerMove(viewport, { ...touch, clientX: 0, clientY: 40 })
+    fireEvent.pointerUp(viewport, touch)
+    await user.click(screen.getByRole('button', { name: 'Eintrag 3' }))
+    expect(onCardClick).toHaveBeenCalledTimes(2)
+  })
+
+  it('resets the swipe on lostpointercapture', () => {
+    const { viewport } = setup()
+    const touch = { pointerType: 'touch', pointerId: 1, isPrimary: true }
+    fireEvent.pointerDown(viewport, { ...touch, clientX: 0, clientY: 100 })
+    fireEvent.lostPointerCapture(viewport, touch)
+    fireEvent.pointerMove(viewport, { ...touch, clientX: 0, clientY: 0 })
+    expect(screen.getByText('1 von 7')).toBeInTheDocument()
   })
 
   it('animates the transform, except with reduced motion', () => {

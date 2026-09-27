@@ -72,10 +72,18 @@ export function EntryCard({
   useEffect(() => {
     if (!open) return
     const onKey = (e: globalThis.KeyboardEvent) => {
-      if (e.key === 'Escape') setDismissed(true)
+      if (e.key !== 'Escape' || e.defaultPrevented) return
+      const t = e.target
+      if (t instanceof HTMLElement && (t.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(t.tagName))) return
+      setDismissed(true)
+      // This Escape is used up; the shell's window listener must not also close the post.
+      e.preventDefault()
     }
     const onDown = (e: globalThis.PointerEvent) => {
-      if (!bodyRef.current?.contains(e.target as Node)) setTouchOpen(false)
+      const target = e.target as Node
+      // The open bubble lives in a portal, outside the body's DOM.
+      if (bodyRef.current?.contains(target) || document.getElementById(tooltipId)?.contains(target)) return
+      setTouchOpen(false)
     }
     document.addEventListener('keydown', onKey)
     document.addEventListener('pointerdown', onDown)
@@ -83,13 +91,13 @@ export function EntryCard({
       document.removeEventListener('keydown', onKey)
       document.removeEventListener('pointerdown', onDown)
     }
-  }, [open])
+  }, [open, tooltipId])
 
   const hasPost = entry.post !== undefined
   const shortDate = formatEntryDate(entry, 'short')
   const label = hasPost ? `${entry.title}, ${shortDate}, Beitrag` : `${entry.title}, ${shortDate}`
 
-  // On the body (card + bubble) so the pointer can move onto the bubble.
+  // On the body (card + bubble; React events bubble out of the bubble's portal) so the pointer can move onto the bubble.
   const hoverHandlers = {
     onPointerEnter: (e: PointerEvent) => {
       if (e.pointerType === 'touch') return
@@ -127,6 +135,8 @@ export function EntryCard({
       pressedAtRef.current = null
       if (wasDrag?.()) return
       if (hasPost) {
+        // Otherwise the next Escape would only close this tooltip, not the post.
+        setDismissed(true)
         onOpen(entry.id)
       } else if (pointerType === 'touch') {
         setDismissed(false)
@@ -151,7 +161,7 @@ export function EntryCard({
       <span className="flex items-center justify-between gap-2 text-xs leading-4 text-fg-muted">
         <span className="truncate">{shortDate}</span>
         {hasPost && (
-          <span className="shrink-0 font-medium text-accent" aria-hidden="true">
+          <span className="shrink-0 rounded-sm bg-accent px-1 font-medium text-accent-fg" aria-hidden="true">
             Beitrag ›
           </span>
         )}
@@ -192,6 +202,7 @@ export function EntryCard({
         open={open}
         placement={side === 'above' ? 'bottom' : 'top'}
         align={alignEnd ? 'end' : 'start'}
+        anchorRef={bodyRef}
       >
         {/* The card's label already names the title. */}
         <p className="font-medium" aria-hidden="true">
@@ -224,6 +235,7 @@ export function EntryCard({
       className={clsx('absolute', alignEnd && '-translate-x-full', open ? 'z-30' : highlighted ? 'z-20' : 'z-0')}
       style={wrapperStyle}
       data-entry-id={entry.id}
+      data-highlighted={highlighted ? 'true' : undefined}
     >
       <div
         aria-hidden="true"

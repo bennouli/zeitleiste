@@ -146,16 +146,12 @@ export function GroupStack({
     go(next)
   }
 
+  // No capture and no stopPropagation here: a tap must still click the card
+  // under the finger, and horizontal moves must reach the timeline's drag.
   const onPointerDown = (e: PointerEvent<HTMLDivElement>) => {
+    suppressClick.current = false
     if (e.pointerType !== 'touch' || !e.isPrimary) return
     swipe.current = { pointerId: e.pointerId, x: e.clientX, y: e.clientY, stepped: false }
-    suppressClick.current = false
-    // Capture on the viewport: the touched card's slot may turn inert mid-gesture.
-    try {
-      e.currentTarget.setPointerCapture?.(e.pointerId)
-    } catch {
-      // Pointer already released; the gesture still works without capture.
-    }
   }
   const onPointerMove = (e: PointerEvent<HTMLDivElement>) => {
     const s = swipe.current
@@ -165,14 +161,25 @@ export function GroupStack({
     if (Math.abs(dy) < SWIPE_THRESHOLD_PX || Math.abs(dy) <= Math.abs(dx)) return
     s.stepped = true
     suppressClick.current = true
+    // Only now capture on the viewport: the touched card's slot is about to turn inert.
+    try {
+      e.currentTarget.setPointerCapture?.(e.pointerId)
+    } catch {
+      // Pointer already released; the step still applies.
+    }
     // Swipe up → content moves up → later entries.
     go(topIndex + (dy < 0 ? 1 : -1))
   }
   const endSwipe = (e: PointerEvent<HTMLDivElement>) => {
-    if (swipe.current?.pointerId === e.pointerId) swipe.current = null
+    const s = swipe.current
+    if (s?.pointerId !== e.pointerId) return
+    swipe.current = null
+    // A moved touch usually ends without a click; don't let the flag eat a later one.
+    if (s.stepped) setTimeout(() => (suppressClick.current = false), 0)
   }
   const onClickCapture = (e: MouseEvent<HTMLDivElement>) => {
-    if (!suppressClick.current) return
+    // detail 0: a keyboard activation, never the tail of a swipe.
+    if (!suppressClick.current || e.detail === 0) return
     suppressClick.current = false
     e.preventDefault()
     e.stopPropagation()

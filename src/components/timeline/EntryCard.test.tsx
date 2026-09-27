@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { act, fireEvent, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
@@ -171,8 +171,51 @@ describe('EntryCard', () => {
     const user = userEvent.setup()
     renderCard({ entry: span })
     await user.hover(card(span))
-    await user.hover(screen.getByRole('tooltip'))
+    const tip = screen.getByRole('tooltip')
+    // user-event sets no relatedTarget, which React needs to see that the
+    // portalled bubble is inside the card's tree; dispatch the pair by hand.
+    const mouse = { pointerType: 'mouse', pointerId: 1 }
+    act(() => {
+      fireEvent.pointerOut(card(span), { ...mouse, relatedTarget: tip })
+      fireEvent.pointerOver(tip, { ...mouse, relatedTarget: card(span) })
+    })
     expect(screen.getByRole('tooltip')).toBeInTheDocument()
+  })
+
+  it('renders the open tooltip in a portal on the body, outside clipping ancestors', async () => {
+    const user = userEvent.setup()
+    const { container } = renderCard({ entry: span, inline: true })
+    // Closed: an in-place hidden element keeps aria-describedby resolvable.
+    const describedBy = card(span).getAttribute('aria-describedby')!
+    expect(container.querySelector(`[id="${describedBy}"]`)).toHaveAttribute('hidden')
+    await user.hover(card(span))
+    const tip = screen.getByRole('tooltip')
+    expect(tip.id).toBe(describedBy)
+    expect(container).not.toContainElement(tip)
+    expect(tip.parentElement).toBe(document.body)
+    expect(tip).toHaveClass('fixed')
+    // Whether real layout clips it cannot be checked in jsdom.
+  })
+
+  it('consumes Escape only when it closes a tooltip', async () => {
+    const user = userEvent.setup()
+    renderCard({ entry: span })
+    const seen: boolean[] = []
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') seen.push(e.defaultPrevented)
+    }
+    window.addEventListener('keydown', onKey)
+    try {
+      await user.keyboard('{Escape}')
+      await user.hover(card(span))
+      await user.keyboard('{Escape}')
+      expect(screen.queryByRole('tooltip')).toBeNull()
+      // Already dismissed: the next Escape is left to others.
+      await user.keyboard('{Escape}')
+    } finally {
+      window.removeEventListener('keydown', onKey)
+    }
+    expect(seen).toEqual([false, true, false])
   })
 
   it('keeps a keyboard-opened tooltip when the mouse passes over and leaves', async () => {
@@ -214,6 +257,104 @@ describe('EntryCard', () => {
     expect(screen.getByRole('tooltip')).toBeInTheDocument()
     await user.pointer({ keys: '[TouchA]', target: document.body })
     expect(screen.queryByRole('tooltip')).toBeNull()
+  })
+
+  it('does not keep a tooltip open over an opened post, so Escape reaches the shell', async () => {
+    const user = userEvent.setup()
+    const { onOpen } = renderCard({ entry: withPost })
+    const seen: boolean[] = []
+    const onKey = (e: KeyboardEvent) => seen.push(e.defaultPrevented)
+    window.addEventListener('keydown', onKey)
+    try {
+      await user.tab()
+      expect(screen.getByRole('tooltip')).toBeInTheDocument()
+      await user.keyboard('{Enter}')
+      expect(onOpen).toHaveBeenCalled()
+      expect(screen.queryByRole('tooltip')).toBeNull()
+      seen.length = 0
+      await user.keyboard('{Escape}')
+    } finally {
+      window.removeEventListener('keydown', onKey)
+    }
+    expect(seen).toEqual([false])
+  })
+
+  it('leaves Escape in a text field alone', async () => {
+    const user = userEvent.setup()
+    render(<input aria-label="Suche" />)
+    renderCard({ entry: span })
+    await user.hover(card(span))
+    const seen: boolean[] = []
+    const onKey = (e: KeyboardEvent) => seen.push(e.defaultPrevented)
+    window.addEventListener('keydown', onKey)
+    try {
+      screen.getByRole('textbox', { name: 'Suche' }).focus()
+      await user.keyboard('{Escape}')
+    } finally {
+      window.removeEventListener('keydown', onKey)
+    }
+    expect(seen).toEqual([false])
+    expect(screen.getByRole('tooltip')).toBeInTheDocument()
+  })
+
+  describe('portalled bubble position', () => {
+    const rect = (left: number, top: number, width: number, height: number) =>
+      ({ left, top, width, height, right: left + width, bottom: top + height, x: left, y: top, toJSON: () => ({}) }) as DOMRect
+    function mockLayout(anchor: DOMRect) {
+      const root = document.documentElement
+      const spies = [
+        vi.spyOn(root, 'clientWidth', 'get').mockReturnValue(1000),
+        vi.spyOn(root, 'clientHeight', 'get').mockReturnValue(800),
+        vi.spyOn(HTMLElement.prototype, 'offsetWidth', 'get').mockReturnValue(288),
+        vi.spyOn(HTMLElement.prototype, 'offsetHeight', 'get').mockReturnValue(100),
+        vi.spyOn(Element.prototype, 'getBoundingClientRect').mockReturnValue(anchor),
+      ]
+      return () => spies.forEach((s) => s.mockRestore())
+    }
+
+    it.each([
+      ['above, start', 'above', false, rect(100, 400, 176, 56), '100px', '456px'],
+      ['below, end', 'below', true, rect(500, 400, 176, 56), '388px', '300px'],
+      ['clamped right', 'above', false, rect(900, 400, 176, 56), '704px', '456px'],
+      ['clamped left', 'above', true, rect(0, 400, 176, 56), '8px', '456px'],
+    ] as const)('places it from the anchor (%s)', async (_, side, alignEnd, anchor, left, top) => {
+      const restore = mockLayout(anchor)
+      try {
+        const user = userEvent.setup()
+        renderCard({ entry: span, side, alignEnd })
+        await user.hover(card(span))
+        const tip = screen.getByRole('tooltip')
+        expect(tip.style.left).toBe(left)
+        expect(tip.style.top).toBe(top)
+        expect(tip.style.visibility).toBe('')
+      } finally {
+        restore()
+      }
+    })
+
+    it('hides it while the anchor is inert or outside the visible area', () => {
+      const restore = mockLayout(rect(100, 400, 176, 56))
+      try {
+        const { rerender } = render(
+          <div inert>
+            <EntryCard entry={span} x={0} side="above" level={0} rowHeightPx={72} onOpen={() => {}} inline />
+          </div>,
+        )
+        fireEvent.pointerOver(screen.getByRole('note', { hidden: true }), { pointerType: 'mouse' })
+        expect(screen.getByRole('tooltip', { hidden: true }).style.visibility).toBe('hidden')
+        rerender(<div />)
+      } finally {
+        restore()
+      }
+      const restore2 = mockLayout(rect(-400, 400, 176, 56))
+      try {
+        renderCard({ entry: span })
+        fireEvent.pointerOver(card(span), { pointerType: 'mouse' })
+        expect(screen.getByRole('tooltip', { hidden: true }).style.visibility).toBe('hidden')
+      } finally {
+        restore2()
+      }
+    })
   })
 
   it.each([
@@ -271,7 +412,7 @@ describe('EntryCard', () => {
       const user = userEvent.setup()
       renderCard({ entry: span, side: 'below' })
       await user.hover(card(span))
-      expect(screen.getByRole('tooltip')).toHaveClass('bottom-full')
+      expect(screen.getByRole('tooltip')).toHaveAttribute('data-placement', 'top')
     })
 
     it('anchors the right edge with alignEnd', () => {
@@ -285,7 +426,7 @@ describe('EntryCard', () => {
       const user = userEvent.setup()
       renderCard({ entry: span, alignEnd: true })
       await user.hover(card(span))
-      expect(screen.getByRole('tooltip')).toHaveClass('right-0')
+      expect(screen.getByRole('tooltip')).toHaveAttribute('data-align', 'end')
     })
 
     it('renders inline without absolute positioning or connector', () => {
@@ -309,7 +450,8 @@ describe('EntryCard', () => {
     const closed = await axe(container, { rules: { 'color-contrast': { enabled: false } } })
     expect(closed).toHaveNoViolations()
     await user.hover(card(e))
-    const open = await axe(container, { rules: { 'color-contrast': { enabled: false } } })
+    // The open bubble is portalled to the body; the bare fixture has no landmarks.
+    const open = await axe(document.body, { rules: { 'color-contrast': { enabled: false }, region: { enabled: false } } })
     expect(open).toHaveNoViolations()
   })
 })
