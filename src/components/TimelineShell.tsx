@@ -1,21 +1,14 @@
 'use client'
 
-import { createContext, useCallback, useContext, useEffect, useMemo, useRef, type ReactNode } from 'react'
+import { useCallback, useEffect, useMemo, useRef, type ReactNode } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
+import { PostContext } from '@/components/PostContext'
 import { Timeline } from '@/components/timeline/Timeline'
 import type { Entry } from '@/lib/entry'
 import { findEntry, postHref, slugFromPathname } from '@/lib/posts'
 
-export interface PostControls {
-  /** Closes the open post and returns to the full-screen timeline (`/`). */
-  close: () => void
-}
-
-export const PostContext = createContext<PostControls>({ close: () => {} })
-
-export function usePostControls(): PostControls {
-  return useContext(PostContext)
-}
+// Kept for existing importers; new code imports from PostContext directly.
+export { PostContext, usePostControls, type PostControls } from '@/components/PostContext'
 
 /** Where the start of the post should sit, as a fraction of the viewport height from the top. */
 const POST_TOP_RATIO = 0.4

@@ -1,6 +1,6 @@
 'use client'
 
-import { usePostControls } from '@/components/TimelineShell'
+import { usePostControls } from '@/components/PostContext'
 import { CATEGORY_LABEL, REGION_LABEL, type Entry } from '@/lib/entry'
 import { formatEntryDate } from '@/lib/format'
 

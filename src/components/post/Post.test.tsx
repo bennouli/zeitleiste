@@ -2,7 +2,7 @@ import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
-import { PostContext } from '@/components/TimelineShell'
+import { PostContext } from '@/components/PostContext'
 import { entries } from '@/data/entries'
 import { Post } from './Post'
 
