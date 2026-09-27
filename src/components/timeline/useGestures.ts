@@ -44,6 +44,7 @@ export const NO_DRAG_ATTR = 'data-no-drag'
 export function useGestures(containerRef: RefObject<HTMLElement | null>, actions: Actions, width: number): Gestures {
   const pointers = useRef(new Map<number, PointerInfo>())
   const mode = useRef<'idle' | 'press' | 'drag' | 'pinch'>('idle')
+  const startY = useRef(0)
   const startX = useRef(0)
   const lastX = useRef(0)
   const samples = useRef<{ x: number; t: number }[]>([])
@@ -93,6 +94,7 @@ export function useGestures(containerRef: RefObject<HTMLElement | null>, actions
         map.set(e.pointerId, { x, type: e.pointerType })
         mode.current = 'press'
         startX.current = x
+        startY.current = e.clientY
         lastX.current = x
         samples.current = [{ x, t: performance.now() }]
         return
@@ -130,7 +132,15 @@ export function useGestures(containerRef: RefObject<HTMLElement | null>, actions
       }
       p.x = x
       if (mode.current === 'press') {
-        if (Math.abs(x - startX.current) < DRAG_THRESHOLD_PX) return
+        const dx = Math.abs(x - startX.current)
+        const dy = Math.abs(e.clientY - startY.current)
+        // Axis lock for touch: a mostly vertical swipe scrolls the page or steps a group stack.
+        if (e.pointerType === 'touch' && dy >= DRAG_THRESHOLD_PX && dy > dx) {
+          map.delete(e.pointerId)
+          mode.current = 'idle'
+          return
+        }
+        if (dx < DRAG_THRESHOLD_PX) return
         mode.current = 'drag'
         dragged.current = true
         setIsDragging(true)
@@ -145,6 +155,15 @@ export function useGestures(containerRef: RefObject<HTMLElement | null>, actions
       }
     },
     [actions, capture, localX, pinchPair],
+  )
+
+  const onLostPointerCapture = useCallback(
+    (e: PointerEvent<HTMLElement>) => {
+      // Only the container's own capture matters; a card losing its implicit touch capture is normal.
+      if (e.target !== e.currentTarget) return
+      finishRef.current(e, true)
+    },
+    [],
   )
 
   const finish = useCallback(
@@ -242,7 +261,7 @@ export function useGestures(containerRef: RefObject<HTMLElement | null>, actions
   const wasDrag = useCallback(() => dragged.current, [])
 
   return {
-    handlers: { onPointerDown, onPointerMove, onPointerUp, onPointerCancel, onLostPointerCapture: onPointerCancel, onClickCapture, onKeyDown },
+    handlers: { onPointerDown, onPointerMove, onPointerUp, onPointerCancel, onLostPointerCapture, onClickCapture, onKeyDown },
     isDragging,
     wasDrag,
   }

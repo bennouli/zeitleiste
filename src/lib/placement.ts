@@ -22,6 +22,13 @@ export interface PlacementOptions {
   gapPx?: number
   /** Rows per side, default 2 (so 4 rows total). */
   maxLevels?: number
+  /** Intervals already taken before any item is placed, e.g. the rows a group stack covers. */
+  blocked?: readonly BlockedInterval[]
+}
+
+export interface BlockedInterval extends Slot {
+  x0: number
+  x1: number
 }
 
 export interface Placement {
@@ -72,6 +79,19 @@ class Row {
     this.starts.splice(i, 0, x0)
     this.ends.splice(i, 0, x1)
   }
+
+  /** Reserve [x0, x1], merging with anything it touches so the row stays disjoint. */
+  block(x0: number, x1: number): void {
+    const i = this.firstReaching(x0)
+    let j = i
+    while (j < this.starts.length && this.starts[j]! < x1 + this.gap) {
+      x0 = Math.min(x0, this.starts[j]!)
+      x1 = Math.max(x1, this.ends[j]!)
+      j++
+    }
+    this.starts.splice(i, j - i, x0)
+    this.ends.splice(i, j - i, x1)
+  }
 }
 
 function compareItems(a: PlaceableItem, b: PlaceableItem): number {
@@ -103,6 +123,11 @@ export function placeItems(
     rows.below.push(new Row(gap))
   }
   const candidates = candidateSlots(maxLevels)
+  for (const b of options.blocked ?? []) {
+    const x0 = Math.min(b.x0, b.x1)
+    const x1 = Math.max(b.x0, b.x1)
+    if (Number.isFinite(x0) && Number.isFinite(x1)) rows[b.side]?.[b.level]?.block(x0, x1)
+  }
 
   const slots = new Map<string, Slot>()
   const overflow: string[] = []

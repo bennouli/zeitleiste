@@ -2,17 +2,27 @@
 
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
 import clsx from 'clsx'
-import { isSpan, type Entry, type Region } from '@/lib/entry'
-import { entryAnchor, entryRange, MS_PER_YEAR, startOf, todayMs } from '@/lib/time'
+import { isSpan, type Entry } from '@/lib/entry'
+import { entryAnchor, MS_PER_YEAR, startOf, todayMs } from '@/lib/time'
 import { msPerPx, timeToX, xToTime, type Bounds } from '@/lib/viewport'
 import { Axis, AXIS_LINE_Y_PX } from './Axis'
+import { CardLayer, groupLabel } from './CardLayer'
 import {
   AXIS_HEIGHT_PX,
+  CARD_ROW_HEIGHT_PX,
   COLLAPSED_HEIGHT,
   FOCUS_VISIBLE_MS,
   SPAN_LANE_HEIGHT_PX,
 } from './constants'
+import { CARD_HEIGHT_PX, CONNECTOR_MIN_PX } from './EntryCard'
+import { GroupMarker } from './GroupMarker'
+import { groupStackHeightPx } from './GroupStack'
+import { BRACKET_LANE_PX, bracketLayout, LongSpans, type LongSpanVariant } from './LongSpans'
+import { PrototypeSwitches } from './PrototypeSwitches'
+import { SpanBand, spanBandLayout } from './SpanBand'
+import type { ShortSpanStyle } from './SpanBar'
 import { TimelineContext, type TimelineContextValue } from './TimelineContext'
+import { useEntryLayout } from './useEntryLayout'
 import { useGestures } from './useGestures'
 import { useViewport } from './useViewport'
 import { ZoomControls } from './ZoomControls'
@@ -26,14 +36,13 @@ export interface TimelineProps {
   onOpenEntry: (id: string) => void
 }
 
-/** Lanes reserved for the (temporary) span bars. */
-const SPAN_LANES = 3
-
-const REGION_BG: Record<Region, string> = {
-  russia: 'bg-russia',
-  west: 'bg-west',
-  both: 'bg-both',
-}
+/** Vertical gap between cards in a group stack. */
+const STACK_GAP_PX = 8
+const SLOT_HEIGHT_PX = CARD_HEIGHT_PX + STACK_GAP_PX
+/** Below this width the timeline behaves like a phone: one card per group. */
+const PHONE_WIDTH_PX = 640
+/** Room kept free for the "Heute" label and the zoom buttons. */
+const MIN_BAND_LEVELS = 1
 
 function computeBounds(entries: Entry[], today: number): Bounds {
   let min = Infinity
@@ -42,28 +51,13 @@ function computeBounds(entries: Entry[], today: number): Bounds {
   return { min, max: today }
 }
 
-/** Greedy lane assignment by time; temporary until SpanBand (issue #11). */
-function assignLanes(spans: Entry[], today: number): Map<string, number> {
-  const sorted = [...spans].sort((a, b) => entryRange(a, today)[0] - entryRange(b, today)[0])
-  const laneEnds: number[] = []
-  const lanes = new Map<string, number>()
-  for (const e of sorted) {
-    const [s, end] = entryRange(e, today)
-    let lane = laneEnds.findIndex((le) => le <= s)
-    if (lane === -1) lane = laneEnds.length
-    laneEnds[lane] = end
-    lanes.set(e.id, lane % SPAN_LANES)
-  }
-  return lanes
-}
-
-function useElementWidth() {
-  const [width, setWidth] = useState(0)
+function useElementSize() {
+  const [size, setSize] = useState({ width: 0, height: 0 })
   const elRef = useRef<HTMLElement | null>(null)
   const ref = useCallback((el: HTMLElement | null) => {
     elRef.current = el
     if (!el) return
-    const update = () => setWidth(el.clientWidth)
+    const update = () => setSize({ width: el.clientWidth, height: el.clientHeight })
     if (typeof ResizeObserver === 'undefined') {
       update()
       window.addEventListener('resize', update)
@@ -73,16 +67,25 @@ function useElementWidth() {
     ro.observe(el)
     return () => ro.disconnect()
   }, [])
-  return { width, ref, elRef }
+  return { ...size, ref, elRef }
+}
+
+/** 4rem in px, so the span minimum width follows the root font size. */
+function remPx(rem: number): number {
+  if (typeof document === 'undefined') return rem * 16
+  const size = parseFloat(getComputedStyle(document.documentElement).fontSize)
+  return (Number.isFinite(size) && size > 0 ? size : 16) * rem
 }
 
 export function Timeline({ entries, collapsed, focusEntryId, onOpenEntry }: TimelineProps) {
   const [today] = useState(todayMs)
   const bounds = useMemo(() => computeBounds(entries, today), [entries, today])
-  const { width, ref, elRef } = useElementWidth()
+  const { width, height, ref, elRef } = useElementSize()
   const helpId = useId()
   const vp = useViewport({ bounds, width })
   const { viewport } = vp
+  const [shortSpanStyle, setShortSpanStyle] = useState<ShortSpanStyle>('uniform')
+  const [longSpanVariant, setLongSpanVariant] = useState<LongSpanVariant>('bar')
 
   const actions = useMemo(
     () => ({
@@ -119,6 +122,7 @@ export function Timeline({ entries, collapsed, focusEntryId, onOpenEntry }: Time
     if (!focusEntryId) focusedOnce.current = true
   }, [focusEntryId])
 
+  const toX = useCallback((t: number) => timeToX(viewport, width, t), [viewport, width])
   const ctx = useMemo<TimelineContextValue>(
     () => ({
       viewport,
@@ -126,30 +130,64 @@ export function Timeline({ entries, collapsed, focusEntryId, onOpenEntry }: Time
       bounds,
       today,
       msPerPx: msPerPx(viewport, width),
-      timeToX: (t) => timeToX(viewport, width, t),
+      timeToX: toX,
       xToTime: (x) => xToTime(viewport, width, x),
       isGesturing: vp.isGesturing,
       collapsed,
       gestureEnd: vp.gestureEnd,
       wasDrag: gestures.wasDrag,
     }),
-    [viewport, width, bounds, today, vp.isGesturing, collapsed, vp.gestureEnd, gestures.wasDrag],
+    [viewport, width, bounds, today, toX, vp.isGesturing, collapsed, vp.gestureEnd, gestures.wasDrag],
   )
 
   const spans = useMemo(() => entries.filter(isSpan), [entries])
-  const points = useMemo(() => entries.filter((e) => !isSpan(e)), [entries])
-  const lanes = useMemo(() => assignLanes(spans, today), [spans, today])
+  const spanMinWidthPx = useMemo(() => remPx(4), [])
+
+  // Band heights are fixed between gestures so nothing resizes while dragging.
+  const layoutKey = `${vp.gestureEnd}|${width}|${height}|${collapsed}`
+  const bands = useMemo(() => {
+    const spanLanes = Math.max(1, spanBandLayout(spans, toX, today, { minWidthPx: spanMinWidthPx, charWidthPx: 7 }).laneCount)
+    const bracketLanes = longSpanVariant === 'bracket' ? bracketLayout(spans, toX, today).laneCount : 0
+    const spansHeight = spanLanes * SPAN_LANE_HEIGHT_PX
+    const bracketHeight = bracketLanes * BRACKET_LANE_PX
+    const bandHeight = Math.max(0, (height - AXIS_HEIGHT_PX - spansHeight - bracketHeight) / 2)
+    const maxLevels = Math.max(MIN_BAND_LEVELS, Math.floor(bandHeight / CARD_ROW_HEIGHT_PX))
+    const phone = width < PHONE_WIDTH_PX
+    const wanted = collapsed ? 2 : phone ? 1 : 3
+    const fitting = Math.floor((bandHeight - CONNECTOR_MIN_PX - 36) / SLOT_HEIGHT_PX)
+    const visibleCount = Math.max(1, Math.min(wanted, fitting))
+    const stackHeight = groupStackHeightPx(visibleCount + 1, visibleCount, SLOT_HEIGHT_PX) + CONNECTOR_MIN_PX
+    const groupLevels = Math.max(1, Math.ceil(stackHeight / CARD_ROW_HEIGHT_PX))
+    return { spansHeight, bracketHeight, maxLevels, visibleCount, groupLevels }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- recomputed per gesture end via layoutKey
+  }, [layoutKey, spans, today, spanMinWidthPx, longSpanVariant])
+
+  const layout = useEntryLayout(
+    entries,
+    {
+      timeToX: toX,
+      msPerPx: ctx.msPerPx,
+      width,
+      maxLevels: bands.maxLevels,
+      groupLevels: bands.groupLevels,
+      gapPx: 8,
+    },
+    `${layoutKey}|${bands.maxLevels}|${bands.groupLevels}`,
+  )
 
   const open = (id: string) => {
     if (gestures.wasDrag()) return
     onOpenEntry(id)
   }
 
-  const markerClass = (id: string) =>
-    clsx(
-      'absolute cursor-pointer focus-visible:outline-2 focus-visible:outline-focus',
-      id === focusEntryId && 'ring-2 ring-focus ring-offset-2 ring-offset-surface',
-    )
+  const zoomIntoGroup = (groupEntries: Entry[]) => {
+    const first = groupEntries[0]
+    const last = groupEntries[groupEntries.length - 1]
+    if (!first || !last) return
+    const t0 = entryAnchor(first)
+    const t1 = entryAnchor(last)
+    zoomToTime((t0 + t1) / 2, Math.max((t1 - t0) * 3, 2 * MS_PER_YEAR), { animate: true })
+  }
 
   return (
     <TimelineContext value={ctx}>
@@ -176,53 +214,73 @@ export function Timeline({ entries, collapsed, focusEntryId, onOpenEntry }: Time
         </p>
         {width > 0 && (
           <>
-            <div data-layer="above" className="relative min-h-0 flex-1" />
-            <div data-layer="axis" className="relative shrink-0" style={{ height: AXIS_HEIGHT_PX }}>
-              <Axis />
-              {/* temporary until cards/spans are wired (issues #7, #11) */}
-              {points.map((e) => (
-                <button
-                  key={e.id}
-                  type="button"
-                  data-entry-id={e.id}
-                  data-highlighted={e.id === focusEntryId ? 'true' : undefined}
-                  aria-label={e.title}
-                  title={e.title}
-                  onClick={() => open(e.id)}
-                  className={clsx(markerClass(e.id), 'size-3 -translate-x-1/2 -translate-y-1/2 rounded-full', REGION_BG[e.region])}
-                  style={{ left: ctx.timeToX(entryAnchor(e)), top: AXIS_LINE_Y_PX }}
-                />
-              ))}
+            {longSpanVariant === 'background' && (
+              <LongSpans spans={spans} timeToX={toX} today={today} variant="background" heightPx={height} />
+            )}
+            {longSpanVariant === 'bracket' && (
+              <div data-layer="brackets" className="relative z-10 shrink-0" style={{ height: bands.bracketHeight }}>
+                <LongSpans spans={spans} timeToX={toX} today={today} variant="bracket" heightPx={height} />
+              </div>
+            )}
+            <div data-layer="above" className="relative z-20 min-h-0 flex-1">
+              <CardLayer
+                side="above"
+                items={layout.items}
+                rowHeightPx={CARD_ROW_HEIGHT_PX}
+                visibleCount={bands.visibleCount}
+                slotHeightPx={SLOT_HEIGHT_PX}
+                focusEntryId={focusEntryId}
+                onOpen={open}
+              />
             </div>
-            <div data-layer="below" className="relative min-h-0 flex-1" />
-            <div
-              data-layer="spans"
-              className="relative shrink-0"
-              style={{ height: SPAN_LANES * SPAN_LANE_HEIGHT_PX }}
-            >
-              {/* temporary until cards/spans are wired (issues #7, #11) */}
-              {spans.map((e) => {
-                const [s, end] = entryRange(e, today)
-                const x0 = ctx.timeToX(s)
-                const x1 = ctx.timeToX(end)
+            <div data-layer="axis" className="relative z-10 shrink-0" style={{ height: AXIS_HEIGHT_PX }}>
+              <Axis />
+              {layout.groups.map((g) => {
+                const x = toX(g.t)
+                if (x < -40 || x > width + 40) return null
+                const highlighted = g.entries.some((e) => e.id === focusEntryId)
                 return (
-                  <button
-                    key={e.id}
-                    type="button"
-                    data-entry-id={e.id}
-                    data-highlighted={e.id === focusEntryId ? 'true' : undefined}
-                    aria-label={e.title}
-                    title={e.title}
-                    onClick={() => open(e.id)}
-                    className={clsx(markerClass(e.id), 'h-2 rounded-sm', REGION_BG[e.region])}
-                    style={{
-                      left: x0,
-                      width: Math.max(x1 - x0, 2),
-                      top: (lanes.get(e.id) ?? 0) * SPAN_LANE_HEIGHT_PX + (SPAN_LANE_HEIGHT_PX - 8) / 2,
-                    }}
-                  />
+                  <div
+                    key={g.id}
+                    data-group-marker={g.id}
+                    className="absolute -translate-x-1/2 -translate-y-1/2"
+                    style={{ left: x, top: AXIS_LINE_Y_PX }}
+                  >
+                    <GroupMarker
+                      count={g.entries.length}
+                      label={groupLabel(g.entries)}
+                      highlighted={highlighted}
+                      onActivate={() => {
+                        if (!gestures.wasDrag()) zoomIntoGroup(g.entries)
+                      }}
+                    />
+                  </div>
                 )
               })}
+            </div>
+            <div data-layer="below" className="relative z-20 min-h-0 flex-1">
+              <CardLayer
+                side="below"
+                items={layout.items}
+                rowHeightPx={CARD_ROW_HEIGHT_PX}
+                visibleCount={bands.visibleCount}
+                slotHeightPx={SLOT_HEIGHT_PX}
+                focusEntryId={focusEntryId}
+                onOpen={open}
+              />
+            </div>
+            <div data-layer="spans" className="relative z-10 shrink-0" style={{ height: bands.spansHeight }}>
+              <SpanBand
+                spans={spans}
+                timeToX={toX}
+                today={today}
+                laneHeightPx={SPAN_LANE_HEIGHT_PX}
+                minWidthPx={spanMinWidthPx}
+                shortSpanStyle={shortSpanStyle}
+                highlightedId={focusEntryId}
+                onOpen={open}
+                wasDrag={gestures.wasDrag}
+              />
             </div>
           </>
         )}
@@ -231,6 +289,12 @@ export function Timeline({ entries, collapsed, focusEntryId, onOpenEntry }: Time
           canZoomOut={vp.canZoomOut}
           onZoomIn={vp.zoomIn}
           onZoomOut={vp.zoomOut}
+        />
+        <PrototypeSwitches
+          shortSpanStyle={shortSpanStyle}
+          onShortSpanStyle={setShortSpanStyle}
+          longSpanVariant={longSpanVariant}
+          onLongSpanVariant={setLongSpanVariant}
         />
       </section>
     </TimelineContext>

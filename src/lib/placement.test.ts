@@ -296,4 +296,47 @@ describe('usedLevels', () => {
     }
     expect(usedLevels(p)).toEqual({ above: 1, below: 2 })
   })
+
+  describe('blocked intervals', () => {
+    it('keeps items out of blocked rows and lets them use the free ones', () => {
+      const item = { id: 'a', x0: 0, x1: 100, importance: 1, order: 0 }
+      const p = placeItems([item], null, {
+        maxLevels: 2,
+        blocked: [
+          { side: 'above', level: 0, x0: 0, x1: 100 },
+          { side: 'below', level: 0, x0: 50, x1: 60 },
+        ],
+      })
+      expect(p.slots.get('a')).toEqual({ side: 'above', level: 1 })
+    })
+
+    it('respects the gap next to a blocked interval and merges overlapping blocks', () => {
+      const p = placeItems([{ id: 'a', x0: 104, x1: 200, importance: 1, order: 0 }], null, {
+        maxLevels: 1,
+        gapPx: 8,
+        blocked: [
+          { side: 'above', level: 0, x0: 0, x1: 60 },
+          { side: 'above', level: 0, x0: 40, x1: 100 },
+        ],
+      })
+      expect(p.slots.get('a')).toEqual({ side: 'below', level: 0 })
+      const q = placeItems([{ id: 'a', x0: 108, x1: 200, importance: 1, order: 0 }], null, {
+        maxLevels: 1,
+        gapPx: 8,
+        blocked: [{ side: 'above', level: 0, x0: 0, x1: 100 }],
+      })
+      expect(q.slots.get('a')).toEqual({ side: 'above', level: 0 })
+    })
+
+    it('overflows when every row is blocked', () => {
+      const p = placeItems([{ id: 'a', x0: 0, x1: 100, importance: 1, order: 0 }], null, {
+        maxLevels: 1,
+        blocked: [
+          { side: 'above', level: 0, x0: 0, x1: 100 },
+          { side: 'below', level: 0, x0: 0, x1: 100 },
+        ],
+      })
+      expect(p.overflow).toEqual(['a'])
+    })
+  })
 })

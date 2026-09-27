@@ -9,7 +9,12 @@ import { ANIMATION_MS, COLLAPSED_HEIGHT, FOCUS_VISIBLE_MS } from './constants'
 import { Timeline } from './Timeline'
 
 const WIDTH = 1000
+const HEIGHT = 800
 const NOW = Date.UTC(2026, 8, 27, 12)
+/** A point in time with a post that stands alone at the widest zoom. */
+const POST_POINT = entries.find((e) => e.id === 'fall-der-berliner-mauer')!
+/** The first sample entry (a span) plus one card that is never grouped. */
+const FEW: Entry[] = [entries[0]!, POST_POINT]
 
 class ResizeObserverStub {
   constructor(private cb: ResizeObserverCallback) {}
@@ -64,6 +69,7 @@ beforeEach(() => {
   vi.setSystemTime(NOW)
   vi.stubGlobal('ResizeObserver', ResizeObserverStub)
   vi.spyOn(HTMLElement.prototype, 'clientWidth', 'get').mockReturnValue(WIDTH)
+  vi.spyOn(HTMLElement.prototype, 'clientHeight', 'get').mockReturnValue(HEIGHT)
   setReducedMotion(false)
 })
 afterEach(() => {
@@ -82,7 +88,9 @@ describe('Timeline', () => {
     for (const layer of ['above', 'axis', 'below', 'spans']) {
       expect(container.querySelector(`[data-layer="${layer}"]`)).not.toBeNull()
     }
-    expect(screen.getByRole('button', { name: entries[0]!.title })).toHaveClass('cursor-pointer')
+    expect(screen.getByRole('button', { name: new RegExp(POST_POINT.title) })).toHaveClass('cursor-pointer')
+    // The span band shows the first entry (a span without a post) as a bar.
+    expect(screen.getByRole('group', { name: new RegExp(entries[0]!.title) })).toHaveClass('cursor-pointer')
     expect(region).toHaveClass('cursor-grab', 'overflow-hidden', 'touch-pan-y', 'select-none')
   })
 
@@ -175,13 +183,13 @@ describe('Timeline', () => {
   })
 
   it('a press that moves < 6 px opens the entry; a drag from an entry does not', () => {
-    const { onOpenEntry } = renderTimeline()
-    const marker = screen.getByRole('button', { name: entries[0]!.title })
+    const { onOpenEntry } = renderTimeline({ entries: FEW })
+    const marker = screen.getByRole('button', { name: new RegExp(POST_POINT.title) })
     fireEvent.pointerDown(marker, pointer(1, 300))
     fireEvent.pointerMove(marker, pointer(1, 304))
     fireEvent.pointerUp(marker, pointer(1, 304))
     fireEvent.click(marker, { detail: 1 })
-    expect(onOpenEntry).toHaveBeenCalledWith(entries[0]!.id)
+    expect(onOpenEntry).toHaveBeenCalledWith(POST_POINT.id)
 
     onOpenEntry.mockClear()
     fireEvent.pointerDown(marker, pointer(1, 300))
@@ -276,10 +284,21 @@ describe('Timeline', () => {
     expect(view(region)).toEqual(end)
   })
 
+  it('a mostly vertical touch move is left to the page instead of starting a drag', () => {
+    const { region } = renderTimeline()
+    const before = view(region)
+    fireEvent.pointerDown(region, { ...pointer(1, 300, 'touch'), clientY: 100 })
+    fireEvent.pointerMove(region, { ...pointer(1, 304, 'touch'), clientY: 140 })
+    fireEvent.pointerMove(region, { ...pointer(1, 360, 'touch'), clientY: 160 })
+    expect(region).toHaveClass('cursor-grab')
+    expect(view(region)).toEqual(before)
+    fireEvent.pointerUp(region, { ...pointer(1, 360, 'touch'), clientY: 160 })
+  })
+
   it('focusEntryId centers the entry at FOCUS_VISIBLE_MS and highlights it', () => {
-    const entry = entries.find((e) => e.id === 'russlandfeldzug-1812')!
-    const { region, rerender, container } = renderTimeline()
-    rerender(<Timeline entries={entries} collapsed focusEntryId={entry.id} onOpenEntry={() => {}} />)
+    const entry = POST_POINT
+    const { region, rerender, container } = renderTimeline({ entries: FEW })
+    rerender(<Timeline entries={FEW} collapsed focusEntryId={entry.id} onOpenEntry={() => {}} />)
     flush()
     const v = view(region)
     expect(v.span).toBeCloseTo(FOCUS_VISIBLE_MS, -3)
