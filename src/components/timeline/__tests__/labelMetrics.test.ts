@@ -47,15 +47,15 @@ describe('estimateLabelWidthPx', () => {
 
     it("counts a span's date range, with the post suffix and its chevron", () => {
         const tinyTitle: Entry = { ...spanWithPost, title: 'X' }
-        // '16.–28. Okt. 1962 · Beitrag' and the chevron
+        const dateLine = '16.–28. Okt. 1962 · Beitrag'
         expect(estimateLabelWidthPx(tinyTitle)).toBe(
-            27 * DATE_CHAR_WIDTH_PX + POST_CHEVRON_WIDTH_PX
+            dateLine.length * DATE_CHAR_WIDTH_PX + POST_CHEVRON_WIDTH_PX
         )
     })
 
     it("lets a span's range line widen the label past the title cap", () => {
-        // '24. Juni 1812 – Dez. 1812'
-        const rangeWidth = 25 * DATE_CHAR_WIDTH_PX
+        const rangeLine = '24. Juni 1812 – Dez. 1812'
+        const rangeWidth = rangeLine.length * DATE_CHAR_WIDTH_PX
         expect(rangeWidth).toBeGreaterThan(LABEL_MAX_WIDTH_PX)
         expect(estimateLabelWidthPx(spanAcrossMonths)).toBe(rangeWidth)
     })

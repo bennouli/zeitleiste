@@ -321,7 +321,7 @@ describe('layoutEntries', () => {
             ...POINT,
             id: 'early',
             title: 'Ein Punkt mit einem langen Titel',
-            start: { year: 1900, month: 1, day: 1 + 50 },
+            start: dayOf(Date.UTC(1900, 0, 1) + 50 * MS_PER_DAY),
         }
         const late: Entry = {
             ...POINT,

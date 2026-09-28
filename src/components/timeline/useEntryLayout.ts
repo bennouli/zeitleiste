@@ -101,10 +101,9 @@ export function useEntryLayout(
 /**
  * Lays out entries, points and spans alike, as cards and groups at their anchor (a span's start).
  * Entries closer than CLUSTER_MIN_GAP_PX always form a group (they would sit on one spot).
- * Groups are placed first and passed on as preceding items, so
- * placeItems chooses each card's side knowing the groups around it; only cards that fit nowhere
- * are merged into groups by climbing the cluster tree, and a cluster that can't be merged further
- * is shown as a bare marker on the axis.
+ * Groups are placed first and passed on as preceding items, so placeItems chooses each card's side
+ * knowing the groups around it; only cards that fit nowhere are merged into groups by climbing the
+ * cluster tree, and a cluster that can't be merged further is shown as a bare marker on the axis.
  * `previous` slots are kept where they still fit, so cards don't flip sides needlessly.
  */
 function layoutEntries(

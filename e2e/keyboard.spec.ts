@@ -97,7 +97,6 @@ for (const [label, size] of [
                 cardTimes.push(f.t)
             if (f.inSpans && f.t !== null) barTimes.push(f.t)
         }
-        // Points and spans alike have a label in the card layer, in one chronological sequence; the bars follow.
         expect([...labelled].sort()).toEqual(entries.map((e) => e.id).sort())
         expect([...barred].sort()).toEqual(SPAN_IDS)
         expect(cardTimes).toEqual([...cardTimes].sort((a, b) => a - b))
