@@ -63,7 +63,7 @@ tokens pick the light or the dark primitive.
 | -------------------------------------------------- | ----------------------- | ----------------------------- | ------------------------------------------------------------------------------ |
 | `--surface`, `--surface-raised`, `--accent-fg`     | `--paper` `#f3eddf`     | `--paper-dark` `#0f0e0c`      | Page background, hover note, group counter. No raised surfaces in this design. |
 | `--fg`, `--accent`, `--russia`, `--west`, `--both` | `--ink` `#171411`       | `--ink-dark` `#f3eddf`        | Text, axis, dots, connectors of the open entry, accent.                        |
-| `--fg-muted`                                       | `--ink-muted` `#6a6357` | `--ink-muted-dark` `#a39d90`  | Dates, minor tick labels, span label in the header.                            |
+| `--fg-muted`                                       | `--ink-muted` `#6a6357` | `--ink-muted-dark` `#a39d90`  | Dates, minor tick labels.                                                      |
 | `--fg-soft`                                        | `--ink-soft` `#3d382f`  | `--ink-soft-dark` `#cfc8ba`   | Summary text in the hover note.                                                |
 | `--border`                                         | `--fg` at 25 %          | `--fg` at 25 %                | Rule above the post, borders.                                                  |
 | `--focus`                                          | `--focus-blue`          | `--focus-blue-dark` (lighter) | Focus ring: the one colour, because focus must never be missed.                |
