@@ -50,7 +50,8 @@ pnpm payload generate:types          # refreshes src/payload-types.ts, commit it
 ```
 
 Never run `pnpm payload migrate` against your development branch; push and migrations do not mix on one database. The production build runs
-`pnpm run ci` (`payload migrate && pnpm build`), which applies pending migrations before building.
+`pnpm run ci` (`payload migrate && pnpm build`), which applies pending migrations before building. It is the production build command only:
+run locally, it would migrate your development branch.
 
 ## License
 

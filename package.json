@@ -27,7 +27,7 @@
         "d3-scale": "^4.0.2",
         "d3-time": "^3.1.0",
         "effect": "4.0.0-rc.117",
-        "graphql": "^16.14.2",
+        "graphql": "16.14.2",
         "lucide-react": "1.48.0",
         "next": "16.3.6",
         "payload": "3.90.2",

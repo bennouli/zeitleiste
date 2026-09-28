@@ -30,7 +30,7 @@ importers:
         specifier: 4.0.0-rc.117
         version: 4.0.0-rc.117
       graphql:
-        specifier: ^16.14.2
+        specifier: 16.14.2
         version: 16.14.2
       lucide-react:
         specifier: 1.48.0
