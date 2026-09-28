@@ -196,7 +196,6 @@ function placeCut(
     }
 }
 
-/** A card hangs to the right of its anchor everywhere; the bounds keep room for one past today. */
 function extentOf(x: number): CardExtent {
     return { x0: x, x1: x + CARD_WIDTH_PX }
 }

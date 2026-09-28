@@ -206,11 +206,15 @@ describe('Timeline', () => {
         stubReducedMotion(true)
         const { region } = renderTimeline()
         const today = Date.UTC(2026, 8, 27)
-        fireEvent.keyDown(region, { key: '+' })
-        fireEvent.keyDown(region, { key: 'ArrowLeft' })
+        const zoomIn = { key: '+' }
+        const panLeft = { key: 'ArrowLeft' }
+        const panRight = { key: 'ArrowRight' }
+        const stepsPastTheEnd = 20
+        fireEvent.keyDown(region, zoomIn)
+        fireEvent.keyDown(region, panLeft)
         expect(xOf(region, today)).toBeGreaterThan(WIDTH)
-        for (let i = 0; i < 20; i++)
-            fireEvent.keyDown(region, { key: 'ArrowRight' })
+        for (let i = 0; i < stepsPastTheEnd; i++)
+            fireEvent.keyDown(region, panRight)
         expect(xOf(region, today)).toBeCloseTo(
             WIDTH - CARD_WIDTH_PX - CARD_GAP_PX,
             6
