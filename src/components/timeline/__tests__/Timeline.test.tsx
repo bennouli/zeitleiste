@@ -1,7 +1,10 @@
 import { entries } from '@/data/entries'
 import type { Entry } from '@/lib/entry'
 import { entryAnchor, MS_PER_YEAR, startOf } from '@/lib/time'
-import { MAX_VISIBLE_MS, ZOOM_STEP_FACTOR } from '@/lib/viewport'
+import {
+    PRIVATE_UNDER_TESTS as VIEWPORT_UNDER_TESTS,
+    ZOOM_STEP_FACTOR,
+} from '@/lib/viewport'
 import { expectNoAxeViolations } from '@/test/axe'
 import { sampleEntry } from '@/test/entries'
 import { stubReducedMotion } from '@/test/motion'
@@ -17,6 +20,7 @@ import { ANIMATION_MS, COLLAPSED_HEIGHT, FOCUS_VISIBLE_MS } from '../constants'
 import { PRIVATE_UNDER_TESTS, Timeline } from '../Timeline'
 
 const { dataBounds, useSnapshotPerKey } = PRIVATE_UNDER_TESTS
+const { MAX_VISIBLE_MS } = VIEWPORT_UNDER_TESTS
 
 const WIDTH = 1000
 const HEIGHT = 800

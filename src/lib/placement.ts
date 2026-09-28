@@ -39,8 +39,8 @@ export type Placement = {
     overflow: string[]
 }
 
-export const DEFAULT_GAP_PX = 8
-export const DEFAULT_MAX_LEVELS = 2
+const DEFAULT_GAP_PX = 8
+const DEFAULT_MAX_LEVELS = 2
 const MAX_LEVELS_CAP = 64
 
 /**

@@ -4,8 +4,8 @@ import { easeOutCubic } from './easing'
 import { MS_PER_DAY } from './time'
 
 /** Zoom limits: how much time fits across the full width. Change here only. */
-export const MIN_VISIBLE_MS: number = 3 * 30.44 * MS_PER_DAY
-export const MAX_VISIBLE_MS: number = 300 * 365.2425 * MS_PER_DAY
+const MIN_VISIBLE_MS: number = 3 * 30.44 * MS_PER_DAY
+const MAX_VISIBLE_MS: number = 300 * 365.2425 * MS_PER_DAY
 
 /** Factor used by the zoom buttons. */
 export const ZOOM_STEP_FACTOR: number = 2
@@ -66,7 +66,7 @@ function normalizeBounds(bounds: Bounds): Bounds | null {
 }
 
 /** Span of the viewport; 0 for a non-finite viewport so NaN never propagates. */
-export function visibleMs(vp: Viewport): number {
+function visibleMs(vp: Viewport): number {
     const span = vp.end - vp.start
     return Number.isFinite(span) ? span : 0
 }
@@ -82,7 +82,7 @@ export function timeToX(vp: Viewport, width: number, t: number): number {
     return ((t - vp.start) / span) * safeWidth(width)
 }
 
-export function xToTime(vp: Viewport, width: number, x: number): number {
+function xToTime(vp: Viewport, width: number, x: number): number {
     return (
         finiteOr(vp.start, 0) +
         (finiteOr(x, 0) / safeWidth(width)) * visibleMs(vp)
@@ -206,7 +206,7 @@ export function canZoomOut(vp: Viewport, bounds: Bounds): boolean {
 }
 
 /** Interpolate for animation. Span interpolates in log space so zooming looks uniform; center linearly. */
-export function interpolateViewport(
+function interpolateViewport(
     from: Viewport,
     to: Viewport,
     progress: number
@@ -315,4 +315,12 @@ export function estimateVelocity(
     if (!first || recent.length < 2) return 0
     const dt = last.t - first.t
     return dt > 0 ? (last.x - first.x) / dt : 0
+}
+
+export const PRIVATE_UNDER_TESTS = {
+    MIN_VISIBLE_MS,
+    MAX_VISIBLE_MS,
+    visibleMs,
+    xToTime,
+    interpolateViewport,
 }
