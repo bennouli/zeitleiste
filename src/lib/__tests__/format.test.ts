@@ -7,12 +7,16 @@ import {
     formatDay,
     formatEntryDate,
     formatEntryMeta,
+    formatGroupMeta,
+    formatGroupName,
+    formatGroupZoomName,
     formatMonth,
+    formatPosition,
     formatYear,
     PRIVATE_UNDER_TESTS,
 } from '../format'
 
-const { formatHDate } = PRIVATE_UNDER_TESTS
+const { formatHDate, formatGroupYears } = PRIVATE_UNDER_TESTS
 
 const DASH = '–'
 
@@ -251,6 +255,61 @@ describe('formatEntryMeta', () => {
         const range = sampleEntry('grosser-nordischer-krieg')
         expect(formatEntryMeta(range)).toBe(
             '1700 – 10. September 1721 · Krieg · Russland/Sowjetunion'
+        )
+    })
+})
+
+describe('group lines', () => {
+    const revolution = span({ year: 1917 })
+    const civilWar = span({ year: 1920 })
+    const nep = span({ year: 1922 })
+    const threeYears = [revolution, civilWar, nep]
+    const twoInOneYear = [revolution, revolution]
+    const single = [revolution]
+    const none: Entry[] = []
+
+    it('formatGroupYears spans the first to the last start year', () => {
+        expect(formatGroupYears(threeYears)).toBe(`1917${DASH}1922`)
+    })
+
+    it('formatGroupYears names a single year once and nothing for no entries', () => {
+        expect(formatGroupYears(twoInOneYear)).toBe('1917')
+        expect(formatGroupYears(none)).toBe('')
+    })
+
+    it('formatGroupName names the count and the years', () => {
+        expect(formatGroupName(threeYears)).toBe(
+            `Gruppe mit 3 Einträgen, 1917${DASH}1922`
+        )
+        expect(formatGroupName(twoInOneYear)).toBe(
+            'Gruppe mit 2 Einträgen, 1917'
+        )
+        expect(formatGroupName(single)).toBe('Gruppe mit 1 Eintrag, 1917')
+    })
+
+    it('formatGroupName falls back to a bare name for no entries', () => {
+        expect(formatGroupName(none)).toBe('Gruppe')
+    })
+
+    it('formatGroupZoomName prefixes the group name with the zoom action', () => {
+        expect(formatGroupZoomName(threeYears)).toBe(
+            `Hineinzoomen: Gruppe mit 3 Einträgen, 1917${DASH}1922`
+        )
+    })
+
+    it('formatGroupMeta counts the entries before the years', () => {
+        expect(formatGroupMeta(threeYears)).toBe(`3 Einträge · 1917${DASH}1922`)
+        expect(formatGroupMeta(single)).toBe('1 Eintrag · 1917')
+    })
+
+    it('formatPosition counts from one', () => {
+        const firstOfSix = { index: 0, count: 6 }
+        const fifthOfSeven = { index: 4, count: 7 }
+        expect(formatPosition(firstOfSix.index, firstOfSix.count)).toBe(
+            '1 von 6'
+        )
+        expect(formatPosition(fifthOfSeven.index, fifthOfSeven.count)).toBe(
+            '5 von 7'
         )
     })
 })

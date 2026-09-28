@@ -1,6 +1,7 @@
 'use client'
 
 import type { Entry } from '@/lib/entry'
+import { formatGroupName, formatGroupZoomName } from '@/lib/format'
 import { compareIds } from '@/lib/order'
 import type { CSSProperties, ReactNode } from 'react'
 import { AXIS_LINE_Y_PX } from './Axis'
@@ -175,7 +176,8 @@ function GroupItem({
                 slotHeightPx={slotHeightPx}
                 // Without a highlighted member the window stays put (closing a post must not hide its card).
                 initialIndex={focusIndex >= 0 ? focusIndex : undefined}
-                label={groupLabel(item.entries)}
+                label={formatGroupName(item.entries)}
+                side={side}
                 renderCard={(entry) => (
                     <EntryCard
                         entry={entry}
@@ -216,8 +218,9 @@ function MarkerItem({ item, highlighted, onZoomIntoGroup }: MarkerItemProps) {
             }
         >
             <GroupMarker
-                count={item.entries.length}
-                label={markerLabel(item.entries)}
+                entries={item.entries}
+                label={formatGroupZoomName(item.entries)}
+                side={item.slot.side}
                 highlighted={highlighted}
                 onActivate={() => {
                     if (!wasDrag()) onZoomIntoGroup(item.entries)
@@ -226,19 +229,3 @@ function MarkerItem({ item, highlighted, onZoomIntoGroup }: MarkerItemProps) {
         </div>
     )
 }
-
-function groupLabel(entries: Entry[]): string {
-    const first = entries[0]
-    const last = entries[entries.length - 1]
-    if (!first || !last) return 'Gruppe'
-    const from = String(first.start.year)
-    const to = String(last.start.year)
-    return `Gruppe mit ${entries.length} Einträgen, ${from === to ? from : `${from}–${to}`}`
-}
-
-/** Name of a group's axis marker; differs from the stack's name so the two tab stops are distinguishable. */
-function markerLabel(entries: Entry[]): string {
-    return `Hineinzoomen: ${groupLabel(entries)}`
-}
-
-export const PRIVATE_UNDER_TESTS = { groupLabel, markerLabel }

@@ -1,56 +1,88 @@
 'use client'
 
+import type { Entry } from '@/lib/entry'
+import { formatGroupMeta } from '@/lib/format'
+import type { Side } from '@/lib/placement'
 import clsx from 'clsx'
+import { useId, useRef } from 'react'
+import { Tooltip, TooltipBody, TooltipMeta, TooltipTitle } from './Tooltip'
+import { useTooltipTrigger } from './useTooltipTrigger'
 
 export type GroupMarkerProps = {
-    count: number
-    /** Accessible label, e.g. "Gruppe mit 7 Einträgen, 1914–1922" (caller builds the date part). */
+    /** The group's members, chronological. */
+    entries: Entry[]
+    /** Accessible label, e.g. "Hineinzoomen: Gruppe mit 7 Einträgen, 1914–1922". */
     label: string
+    /** The side of the axis the group's stack is on; the hover note opens on the other. */
+    side: Side
     /** Visual only; put anything screen readers need into `label`. */
     highlighted?: boolean
-    /** Optional click → the timeline zooms into the group. */
-    onActivate?: () => void
+    /** Click → the timeline zooms into the group. */
+    onActivate: () => void
 }
 
-/** Diameter of the marker badge in px, for centering it on the axis. */
-export const GROUP_MARKER_SIZE_PX = 32
+/** Diameter of the marker's counter circle in px, for centering it on the axis. */
+export const GROUP_MARKER_SIZE_PX = 22
 
-/** The marker on the axis for a collapsed group: a round badge showing the entry count. */
+/** The marker on the axis for a group: a counter circle showing the entry count, with a hover note naming the members. */
 export function GroupMarker({
-    count,
+    entries,
     label,
+    side,
     highlighted = false,
     onActivate,
 }: GroupMarkerProps) {
-    const className = clsx(
-        'inline-flex items-center justify-center rounded-full bg-accent px-1 text-sm font-semibold tabular-nums text-accent-fg',
-        highlighted && 'outline-2 outline-offset-2 outline-accent'
-    )
-    const style = {
-        minWidth: GROUP_MARKER_SIZE_PX,
-        height: GROUP_MARKER_SIZE_PX,
-    }
-    const content = <span aria-hidden="true">{count}</span>
+    const tooltipId = useId()
+    const anchorRef = useRef<HTMLDivElement>(null)
+    const { open, triggerProps, hoverProps } = useTooltipTrigger({
+        tooltipId,
+        anchorRef,
+    })
 
-    if (onActivate) {
-        return (
+    return (
+        <div ref={anchorRef} className="relative" {...hoverProps}>
             <button
                 type="button"
                 aria-label={label}
+                aria-describedby={tooltipId}
+                {...triggerProps}
                 onClick={onActivate}
                 className={clsx(
-                    className,
-                    'cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus'
+                    'flex cursor-zoom-in items-center justify-center rounded-full border border-fg bg-surface text-label font-medium tabular-nums text-fg',
+                    'hover:bg-accent hover:text-accent-fg focus-visible:bg-accent focus-visible:text-accent-fg',
+                    'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus',
+                    highlighted && 'outline-2 outline-offset-2 outline-accent'
                 )}
-                style={style}
+                style={{
+                    width: GROUP_MARKER_SIZE_PX,
+                    height: GROUP_MARKER_SIZE_PX,
+                }}
             >
-                {content}
+                <span aria-hidden="true">{entries.length}</span>
             </button>
-        )
-    }
+            <Tooltip
+                id={tooltipId}
+                open={open}
+                placement={side === 'above' ? 'bottom' : 'top'}
+                anchorRef={anchorRef}
+            >
+                <GroupTooltipContent entries={entries} />
+            </Tooltip>
+        </div>
+    )
+}
+
+/** Hover note of a group: count and years, the zoom hint, the member titles. */
+function GroupTooltipContent({ entries }: { entries: Entry[] }) {
     return (
-        <span role="img" aria-label={label} className={className} style={style}>
-            {content}
-        </span>
+        <>
+            <TooltipMeta>{formatGroupMeta(entries)}</TooltipMeta>
+            <TooltipTitle aria-hidden="true">
+                Gruppe · Klicken zum Hineinzoomen
+            </TooltipTitle>
+            {entries.map((entry) => (
+                <TooltipBody key={entry.id}>{entry.title}</TooltipBody>
+            ))}
+        </>
     )
 }

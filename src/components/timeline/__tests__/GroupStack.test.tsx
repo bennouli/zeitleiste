@@ -76,6 +76,11 @@ function cardButton(onCardClick: (id: string) => void) {
 }
 
 const translate = (list: HTMLElement) => list.style.transform
+const inViewDots = (group: HTMLElement) =>
+    Array.from(
+        group.querySelectorAll<HTMLElement>('[data-stack-dot]'),
+        (dot) => dot.dataset.inView === 'true'
+    )
 const stackViewport = () => screen.getByRole('list').parentElement!
 const up = () => screen.getByRole('button', { name: 'Einen Eintrag nach oben' })
 const down = () =>
@@ -98,29 +103,34 @@ describe('GroupStack', () => {
         expect(items[3]).toHaveAttribute('aria-hidden', 'true')
     })
 
-    it('steps by one with the buttons and disables them at the ends', async () => {
+    it('steps by one with the buttons and marks them disabled at the ends', async () => {
         const user = userEvent.setup()
         const onIndexChange = vi.fn()
-        const { list, group } = setup({ onIndexChange })
+        const { list } = setup({ onIndexChange })
         expect(screen.getByText('1 von 7')).toHaveAttribute(
             'aria-live',
             'polite'
         )
-        expect(up()).toBeDisabled()
-        expect(down()).toBeEnabled()
+        expect(up()).toHaveAttribute('aria-disabled', 'true')
+        expect(down()).toHaveAttribute('aria-disabled', 'false')
+
+        await user.click(up())
+        expect(screen.getByText('1 von 7')).toBeInTheDocument()
+        expect(onIndexChange).not.toHaveBeenCalled()
 
         await user.click(down())
         expect(screen.getByText('2 von 7')).toBeInTheDocument()
         expect(translate(list)).toBe('translateY(-100px)')
         expect(onIndexChange).toHaveBeenLastCalledWith(1)
-        expect(up()).toBeEnabled()
+        expect(up()).toHaveAttribute('aria-disabled', 'false')
 
         await user.click(down())
         await user.click(down())
         await user.click(down())
         expect(screen.getByText('5 von 7')).toBeInTheDocument()
-        expect(down()).toBeDisabled()
-        expect(group).toHaveFocus()
+        expect(down()).toHaveAttribute('aria-disabled', 'true')
+        expect(down()).toHaveFocus()
+        await user.click(down())
         expect(onIndexChange).toHaveBeenCalledTimes(4)
 
         await user.click(up())
@@ -174,6 +184,87 @@ describe('GroupStack', () => {
         ).toBeNull()
         expect(screen.queryByText(/von 3/)).toBeNull()
         expect(viewport.style.height).toBe('300px')
+        expect(inViewDots(group)).toEqual([true, true, true])
+    })
+
+    it('fills the dots of the entries in view and follows keyboard steps', async () => {
+        const user = userEvent.setup()
+        const sixInTwoSlots = { entries: makeEntries(6), visibleCount: 2 }
+        const { group } = setup(sixInTwoSlots)
+        expect(inViewDots(group)).toEqual([
+            true,
+            true,
+            false,
+            false,
+            false,
+            false,
+        ])
+        group.focus()
+        await user.keyboard('{ArrowDown}{ArrowDown}')
+        expect(inViewDots(group)).toEqual([
+            false,
+            false,
+            true,
+            true,
+            false,
+            false,
+        ])
+        await user.keyboard('{End}')
+        expect(inViewDots(group)).toEqual([
+            false,
+            false,
+            false,
+            false,
+            true,
+            true,
+        ])
+    })
+
+    it('draws no dots for a group of more than six', () => {
+        const { group } = setup()
+        expect(inViewDots(group)).toEqual([])
+        expect(up()).toBeInTheDocument()
+        expect(down()).toBeInTheDocument()
+    })
+
+    it('puts the strip before the cards, level with their axis-side edge', () => {
+        setup()
+        expect(up().parentElement).toHaveClass('right-full', 'top-0')
+    })
+
+    it('puts the strip after the cards when anchored at the end', () => {
+        const anchoredAtEnd = { anchoredAt: 'end' } as const
+        setup(anchoredAtEnd)
+        expect(up().parentElement).toHaveClass('left-full')
+    })
+
+    it('lines the strip up with the bottom of a stack above the axis', () => {
+        const aboveTheAxis = { side: 'above' } as const
+        setup(aboveTheAxis)
+        expect(up().parentElement).toHaveClass('bottom-0')
+    })
+
+    it('reserves the height of a strip taller than its cards', () => {
+        const {
+            STRIP_BUTTON_PX,
+            STRIP_DOT_PX,
+            STRIP_GAP_PX,
+            STRIP_MIN_BUTTON_SPACING_PX,
+        } = PRIVATE_UNDER_TESTS
+        const tinySlot = 1
+        const oneVisible = 1
+        const sixMembers = 6
+        const sevenMembers = 7
+        const stripOfSix =
+            2 * STRIP_BUTTON_PX + 6 * STRIP_DOT_PX + 7 * STRIP_GAP_PX
+        const arrowsAtMinimumSpacing =
+            STRIP_BUTTON_PX + STRIP_MIN_BUTTON_SPACING_PX
+        expect(groupStackHeightPx(sixMembers, oneVisible, tinySlot)).toBe(
+            stripOfSix
+        )
+        expect(groupStackHeightPx(sevenMembers, oneVisible, tinySlot)).toBe(
+            arrowsAtMinimumSpacing
+        )
     })
 
     it('sizes the viewport to the entry count when fewer than visibleCount', () => {
@@ -290,9 +381,7 @@ describe('GroupStack', () => {
             />
         )
         expect(screen.getByText('3 von 4')).toBeInTheDocument()
-        expect(
-            screen.getByRole('button', { name: 'Einen Eintrag nach unten' })
-        ).toBeDisabled()
+        expect(down()).toHaveAttribute('aria-disabled', 'true')
     })
 
     it('keeps focus in the group when the focused card leaves the window', () => {
@@ -542,51 +631,66 @@ describe('stepForKey', () => {
 })
 
 describe('GroupMarker', () => {
-    it('shows the count as an image with the label when not interactive', () => {
-        render(
-            <GroupMarker count={7} label="Gruppe mit 7 Einträgen, 1914–1922" />
-        )
-        const marker = screen.getByRole('img', {
-            name: 'Gruppe mit 7 Einträgen, 1914–1922',
-        })
-        expect(marker).toHaveTextContent('7')
-        expect(screen.queryByRole('button')).toBeNull()
-    })
+    const fourEntries = makeEntries(4)
+    const fourLabel = 'Hineinzoomen: Gruppe mit 4 Einträgen, 1914–1917'
+    const noop = () => {}
 
-    it('is a button calling onActivate when given', async () => {
+    it('is a zoom-in button showing the count and calling onActivate', async () => {
         const user = userEvent.setup()
         const onActivate = vi.fn()
         render(
             <GroupMarker
-                count={4}
-                label="Gruppe mit 4 Einträgen, 1917"
+                entries={fourEntries}
+                label={fourLabel}
+                side="below"
                 onActivate={onActivate}
                 highlighted
             />
         )
-        const button = screen.getByRole('button', {
-            name: 'Gruppe mit 4 Einträgen, 1917',
-        })
+        const button = screen.getByRole('button', { name: fourLabel })
         expect(button).toHaveTextContent('4')
+        expect(button).toHaveClass('cursor-zoom-in')
         await user.click(button)
         button.focus()
         await user.keyboard('{Enter}')
         expect(onActivate).toHaveBeenCalledTimes(2)
     })
 
+    it('describes the group in a note on keyboard focus: count and years, zoom hint, member titles', async () => {
+        const user = userEvent.setup()
+        render(
+            <GroupMarker
+                entries={fourEntries}
+                label={fourLabel}
+                side="above"
+                onActivate={noop}
+            />
+        )
+        await user.tab()
+        const button = screen.getByRole('button')
+        expect(button).toHaveFocus()
+        const note = screen.getByRole('tooltip')
+        expect(button).toHaveAttribute('aria-describedby', note.id)
+        expect(note).toHaveAttribute('data-placement', 'bottom')
+        expect(within(note).getByText('4 Einträge · 1914–1917')).toBeVisible()
+        expect(
+            within(note).getByText('Gruppe · Klicken zum Hineinzoomen')
+        ).toBeVisible()
+        expect(
+            within(note)
+                .getAllByText(/^Eintrag \d$/)
+                .map((line) => line.textContent)
+        ).toEqual(['Eintrag 1', 'Eintrag 2', 'Eintrag 3', 'Eintrag 4'])
+    })
+
     it('has no detectable accessibility violations', async () => {
         const { container } = render(
-            <div>
-                <GroupMarker
-                    count={7}
-                    label="Gruppe mit 7 Einträgen, 1914–1922"
-                />
-                <GroupMarker
-                    count={3}
-                    label="Gruppe mit 3 Einträgen, 1917"
-                    onActivate={() => {}}
-                />
-            </div>
+            <GroupMarker
+                entries={fourEntries}
+                label={fourLabel}
+                side="below"
+                onActivate={noop}
+            />
         )
         await expectNoAxeViolations(container)
     })

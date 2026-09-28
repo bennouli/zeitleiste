@@ -28,7 +28,7 @@ describe('bandGeometry', () => {
     it('shows two cards per stack while collapsed', () => {
         const geometry = bandGeometry(FULL_HEIGHT, DESKTOP_WIDTH, COLLAPSED)
         expect(geometry.visibleCount).toBe(2)
-        expect(geometry.groupLevels).toBe(3)
+        expect(geometry.groupLevels).toBe(2)
     })
 
     it('shows one card per stack on a phone', () => {

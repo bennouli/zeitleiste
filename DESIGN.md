@@ -54,7 +54,7 @@ Offsets use the spacing scale in 0.25 steps of `--spacing` (`gap-0.75` = 3 px, `
 offsets, label width cap, dot sizes) lives in the timeline's JS constants and is applied through `style`.
 
 Icons come from `lucide-react` (pinned, `currentColor`), never text glyphs (arrows, chevrons, bullets as characters) and never hand-drawn
-SVG. `GroupStack`'s hand-drawn arrows move to it in #40.
+SVG.
 
 ## Colours
 

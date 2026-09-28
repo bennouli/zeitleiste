@@ -2,7 +2,10 @@
 
 import { isTypingTarget } from '@/lib/dom'
 import type { Entry } from '@/lib/entry'
+import { formatPosition } from '@/lib/format'
+import type { Side } from '@/lib/placement'
 import clsx from 'clsx'
+import { ArrowDown, ArrowUp } from 'lucide-react'
 import type {
     DOMAttributes,
     KeyboardEvent,
@@ -30,17 +33,30 @@ export type GroupStackProps = {
     label: string
     /** Called when the visible window changes (top index). */
     onIndexChange?: (topIndex: number) => void
+    /** The stack's edge that sits on the anchor; the indicator strip goes on the other side of it. Default `'start'`. */
+    anchoredAt?: 'start' | 'end'
+    /** The side of the axis the stack hangs on; the indicator strip lines up with the stack's axis-side edge. Default `'below'`. */
+    side?: Side
     className?: string
 }
 
-/** Height of the controls row below the cards (incl. its top margin), when present. */
-export const GROUP_STACK_CONTROLS_HEIGHT_PX = 36
+/** Height of the position line below the cards, when present; the last slot's gap sits above it. */
+export const GROUP_STACK_CONTROLS_HEIGHT_PX = 12
 /** Minimum vertical travel of a touch swipe that steps the stack. */
 const SWIPE_THRESHOLD_PX = 30
 
-const CONTROLS_GAP_PX = 4
+const STRIP_BUTTON_PX = 14
+const STRIP_ICON_PX = 12
+const STRIP_DOT_PX = 5
+const STRIP_GAP_PX = 3
+/** Minimum distance between the arrows' centres, the 24 px target spacing of WCAG 2.5.8. */
+const STRIP_MIN_BUTTON_SPACING_PX = 24
+/** Distance between the indicator strip and the cards. */
+const STRIP_OFFSET_PX = 8
+/** Larger groups get the arrows without dots. */
+const MAX_DOT_COUNT = 6
 
-/** Total rendered height of a GroupStack, for positioning it like a card. */
+/** Total rendered height of a GroupStack (the taller of its card column and its indicator strip), for positioning it like a card. */
 export function groupStackHeightPx(
     entryCount: number,
     visibleCount: number,
@@ -48,8 +64,29 @@ export function groupStackHeightPx(
 ): number {
     if (entryCount <= 0) return 0
     const slotCount = normalizeVisible(visibleCount)
-    const controls = entryCount > slotCount ? GROUP_STACK_CONTROLS_HEIGHT_PX : 0
-    return Math.min(slotCount, entryCount) * slotHeightPx + controls
+    const steppable = entryCount > slotCount
+    const controls = steppable ? GROUP_STACK_CONTROLS_HEIGHT_PX : 0
+    const column = Math.min(slotCount, entryCount) * slotHeightPx + controls
+    return Math.max(column, stripHeightPx(entryCount, steppable))
+}
+
+function stripHeightPx(entryCount: number, steppable: boolean): number {
+    const buttonCount = steppable ? 2 : 0
+    const dotCount = hasDots(entryCount) ? entryCount : 0
+    const itemCount = buttonCount + dotCount
+    if (itemCount === 0) return 0
+    const stackedHeight =
+        buttonCount * STRIP_BUTTON_PX +
+        dotCount * STRIP_DOT_PX +
+        (itemCount - 1) * STRIP_GAP_PX
+    const spacedButtonsHeight = steppable
+        ? STRIP_BUTTON_PX + STRIP_MIN_BUTTON_SPACING_PX
+        : 0
+    return Math.max(stackedHeight, spacedButtonsHeight)
+}
+
+function hasDots(entryCount: number): boolean {
+    return entryCount <= MAX_DOT_COUNT
 }
 
 function normalizeVisible(visibleCount: number): number {
@@ -60,13 +97,19 @@ function clamp(i: number, max: number): number {
     return Math.min(Math.max(0, Math.round(i)), max)
 }
 
+function isInWindow(i: number, topIndex: number, slotCount: number): boolean {
+    return i >= topIndex && i < topIndex + slotCount
+}
+
 type StepDirection = 1 | -1
 
 /**
  * A group's entries as a vertical stack of cards, stepped one entry at a time
  * with the arrow buttons, ArrowUp/ArrowDown/Home/End while the group has
- * focus, or a vertical touch swipe. The mouse wheel is deliberately not
- * handled, so the page scrolls over the stack.
+ * focus, or a vertical touch swipe. Beside it an indicator strip shows the
+ * arrows and one dot per entry, filled for the entries in view; below it a
+ * position line. The mouse wheel is deliberately not handled, so it zooms the
+ * timeline over the stack as anywhere else.
  *
  * Trade-off: the viewport sets `touch-action: pan-x` so vertical touch moves
  * reach the swipe handler; a vertical swipe over a stack therefore steps the
@@ -84,6 +127,8 @@ export function GroupStack({
     initialIndex,
     label,
     onIndexChange,
+    anchoredAt = 'start',
+    side = 'below',
     className,
 }: GroupStackProps) {
     const slotCount = normalizeVisible(visibleCount)
@@ -113,7 +158,7 @@ export function GroupStack({
         const slotIndex = focusedSlotIndex(group)
         if (
             slotIndex !== null &&
-            (slotIndex < clampedIndex || slotIndex >= clampedIndex + slotCount)
+            !isInWindow(slotIndex, clampedIndex, slotCount)
         )
             group.focus()
     }
@@ -129,14 +174,9 @@ export function GroupStack({
         go(targetIndex)
     }
 
-    // A button that becomes disabled would drop focus to <body>; keep it on the group.
-    const stepFromButton = (direction: StepDirection) => {
-        const target = clamp(topIndex + direction, maxIndex)
-        go(target)
-        if (target === 0 || target === maxIndex) groupRef.current?.focus()
-    }
-
     if (entries.length === 0) return null
+
+    const steppable = entries.length > slotCount
 
     return (
         <div
@@ -146,10 +186,20 @@ export function GroupStack({
             tabIndex={0}
             onKeyDown={onKeyDown}
             className={clsx(
-                'rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus',
+                'relative focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus',
                 className
             )}
         >
+            <IndicatorStrip
+                entryCount={entries.length}
+                topIndex={topIndex}
+                slotCount={slotCount}
+                maxIndex={maxIndex}
+                steppable={steppable}
+                anchoredAt={anchoredAt}
+                side={side}
+                onStep={(direction) => go(topIndex + direction)}
+            />
             <div
                 className="overflow-hidden"
                 style={{
@@ -166,8 +216,7 @@ export function GroupStack({
                     }}
                 >
                     {entries.map((entry, i) => {
-                        const inWindow =
-                            i >= topIndex && i < topIndex + slotCount
+                        const inWindow = isInWindow(i, topIndex, slotCount)
                         return (
                             <li
                                 key={entry.id}
@@ -183,13 +232,17 @@ export function GroupStack({
                     })}
                 </ul>
             </div>
-            {entries.length > slotCount && (
-                <StackControls
-                    topIndex={topIndex}
-                    maxIndex={maxIndex}
-                    entryCount={entries.length}
-                    onStep={stepFromButton}
-                />
+            {steppable && (
+                <p
+                    aria-live="polite"
+                    className={clsx(
+                        'm-0 small-caps text-label leading-3 tracking-label tabular-nums text-fg-muted',
+                        anchoredAt === 'end' && 'text-right'
+                    )}
+                    style={{ height: GROUP_STACK_CONTROLS_HEIGHT_PX }}
+                >
+                    {formatPosition(topIndex, entries.length)}
+                </p>
             )}
         </div>
     )
@@ -321,77 +374,123 @@ function stepForKey(
     }
 }
 
-const STEP_BUTTON_CLASS =
-    'inline-flex size-8 cursor-pointer items-center justify-center rounded-sm border border-border bg-surface-raised text-fg ' +
-    'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus ' +
-    'disabled:cursor-default disabled:opacity-40'
+const STEP_BUTTON_CLASS = clsx(
+    'flex shrink-0 cursor-pointer items-center justify-center text-fg',
+    'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus',
+    'aria-disabled:cursor-default aria-disabled:text-fg/30'
+)
 
-type StackControlsProps = {
-    topIndex: number
-    maxIndex: number
+type IndicatorStripProps = {
     entryCount: number
+    topIndex: number
+    slotCount: number
+    maxIndex: number
+    steppable: boolean
+    anchoredAt: 'start' | 'end'
+    side: Side
     onStep: (direction: StepDirection) => void
 }
 
-function StackControls({
-    topIndex,
-    maxIndex,
+/** Arrows and one dot per entry beside the cards; the dots of the entries in view are filled. */
+function IndicatorStrip({
     entryCount,
+    topIndex,
+    slotCount,
+    maxIndex,
+    steppable,
+    anchoredAt,
+    side,
     onStep,
-}: StackControlsProps) {
+}: IndicatorStripProps) {
+    const dots = hasDots(entryCount) ? (
+        <span
+            aria-hidden="true"
+            className="flex flex-col items-center"
+            style={{ gap: STRIP_GAP_PX }}
+        >
+            {Array.from({ length: entryCount }, (_, i) => {
+                const inView = isInWindow(i, topIndex, slotCount)
+                return (
+                    <span
+                        key={i}
+                        data-stack-dot
+                        data-in-view={inView ? 'true' : undefined}
+                        className={clsx(
+                            'block rounded-full border border-fg',
+                            inView && 'bg-fg'
+                        )}
+                        style={{ width: STRIP_DOT_PX, height: STRIP_DOT_PX }}
+                    />
+                )
+            })}
+        </span>
+    ) : null
+    if (!steppable && !dots) return null
+
     return (
         <div
-            className="flex items-center justify-between gap-2"
+            className={clsx(
+                'absolute flex flex-col items-center justify-between',
+                anchoredAt === 'end' ? 'left-full' : 'right-full',
+                side === 'above' ? 'bottom-0' : 'top-0'
+            )}
             style={{
-                height: GROUP_STACK_CONTROLS_HEIGHT_PX - CONTROLS_GAP_PX,
-                marginTop: CONTROLS_GAP_PX,
+                gap: STRIP_GAP_PX,
+                width: STRIP_BUTTON_PX,
+                height: stripHeightPx(entryCount, steppable),
+                [anchoredAt === 'end' ? 'marginLeft' : 'marginRight']:
+                    STRIP_OFFSET_PX,
             }}
         >
-            <button
-                type="button"
-                aria-label="Einen Eintrag nach oben"
-                disabled={topIndex === 0}
-                onClick={() => onStep(-1)}
-                className={STEP_BUTTON_CLASS}
-            >
-                <Chevron up />
-            </button>
-            <span
-                aria-live="polite"
-                className="text-sm tabular-nums text-fg-muted"
-            >
-                {topIndex + 1} von {entryCount}
-            </span>
-            <button
-                type="button"
-                aria-label="Einen Eintrag nach unten"
-                disabled={topIndex === maxIndex}
-                onClick={() => onStep(1)}
-                className={STEP_BUTTON_CLASS}
-            >
-                <Chevron />
-            </button>
+            {steppable && (
+                <StepButton
+                    direction={-1}
+                    canStep={topIndex > 0}
+                    onStep={onStep}
+                />
+            )}
+            {dots}
+            {steppable && (
+                <StepButton
+                    direction={1}
+                    canStep={topIndex < maxIndex}
+                    onStep={onStep}
+                />
+            )}
         </div>
     )
 }
 
-function Chevron({ up = false }: { up?: boolean }) {
+type StepButtonProps = {
+    direction: StepDirection
+    canStep: boolean
+    onStep: (direction: StepDirection) => void
+}
+
+function StepButton({ direction, canStep, onStep }: StepButtonProps) {
+    const Icon = direction === -1 ? ArrowUp : ArrowDown
     return (
-        <svg
-            aria-hidden="true"
-            width="16"
-            height="16"
-            viewBox="0 0 16 16"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            className={up ? 'rotate-180' : undefined}
+        <button
+            type="button"
+            aria-label={
+                direction === -1
+                    ? 'Einen Eintrag nach oben'
+                    : 'Einen Eintrag nach unten'
+            }
+            aria-disabled={!canStep}
+            onClick={canStep ? () => onStep(direction) : undefined}
+            className={STEP_BUTTON_CLASS}
+            style={{ width: STRIP_BUTTON_PX, height: STRIP_BUTTON_PX }}
         >
-            <path d="M4 6l4 4 4-4" />
-        </svg>
+            <Icon aria-hidden size={STRIP_ICON_PX} strokeWidth={1.5} />
+        </button>
     )
 }
 
-export const PRIVATE_UNDER_TESTS = { stepForKey }
+export const PRIVATE_UNDER_TESTS = {
+    stepForKey,
+    STRIP_BUTTON_PX,
+    STRIP_DOT_PX,
+    STRIP_GAP_PX,
+    STRIP_MIN_BUTTON_SPACING_PX,
+}
