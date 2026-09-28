@@ -49,15 +49,16 @@ git subtree pull --prefix=repos/effect https://github.com/Effect-TS/effect.git m
 
 # Code Style
 
-`@/` aliases `src/`. Pure logic lives in `src/lib` with its test next to it (`x.test.ts`); components in `src/components` with `X.test.tsx`
-beside them.
+`@/` aliases `src/`. `src/lib` holds logic shared by more than one module, with its test next to it (`x.test.ts`); components in
+`src/components` with `X.test.tsx` beside them.
 
 - Declarative style generally preferred.
 - Run prettier after any coding task (the `commit` skill covers the pre-commit run).
 - DRY: extract when a pattern appears (or is planned to appear) three times.
 - SOLID: single responsibility strictly; open/closed for anything likely to be extended.
 - Types, not interfaces. `interface` only for declaration merging or a class `implements` clause.
-- Colocate what only one module uses.
+- Colocate what only one module uses. Logic specific to one component, pure or not, sits beside that component as its own tested module
+  (`bandGeometry.ts` next to `Timeline.tsx`); `src/lib` is reserved for what more than one module shares.
 - Declarative where it reads better: expressions over mutable accumulators, `map`/`filter`/`flatMap` over index loops, a named predicate
   over an inline boolean chain. A `for...of` with an early exit beats a contorted `reduce`.
 - Name the steps: a function past ~40 lines or with more than three distinct steps is a candidate for extraction. Length prompts a look,
