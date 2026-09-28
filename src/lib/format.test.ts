@@ -3,6 +3,7 @@ import { sampleEntry } from '@/test/entries'
 import { describe, expect, it } from 'vitest'
 import type { Entry, HDate } from './entry'
 import {
+    entryLabel,
     formatDay,
     formatEntryDate,
     formatHDate,
@@ -215,6 +216,22 @@ describe('formatEntryDate (de)', () => {
         )
         expect(formatEntryDate(span({ year: 2022, month: 2 }, 'ongoing'))).toBe(
             'seit Feb. 2022'
+        )
+    })
+})
+
+describe('entryLabel', () => {
+    it('names title and short date', () => {
+        const withoutPost = sampleEntry('dekabristenaufstand')
+        expect(entryLabel(withoutPost)).toBe(
+            'Dekabristenaufstand, 26. Dez. 1825'
+        )
+    })
+
+    it('marks an entry with a post', () => {
+        const withPost = sampleEntry('oktoberrevolution')
+        expect(entryLabel(withPost)).toBe(
+            'Oktoberrevolution, 7. Nov. 1917, Beitrag'
         )
     })
 })

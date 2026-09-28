@@ -5,7 +5,14 @@ import { act, fireEvent, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
-import { CONNECTOR_MIN_PX, EntryCard, type EntryCardProps } from './EntryCard'
+import {
+    CONNECTOR_MIN_PX,
+    EntryCard,
+    PRIVATE_UNDER_TESTS,
+    type EntryCardProps,
+} from './EntryCard'
+
+const { cardPlacement } = PRIVATE_UNDER_TESTS
 
 const point = sampleEntry('dekabristenaufstand')
 const span = sampleEntry('grosser-nordischer-krieg')
@@ -564,5 +571,25 @@ describe('EntryCard', () => {
             },
         })
         expect(open).toHaveNoViolations()
+    })
+})
+
+describe('cardPlacement', () => {
+    it('lifts a card above the axis by its level and reaches the connector down to the axis', () => {
+        expect(cardPlacement('above', 2, 72, 40)).toEqual({
+            wrapperStyle: {
+                left: 40,
+                bottom: 144,
+                paddingBottom: CONNECTOR_MIN_PX,
+            },
+            connectorStyle: { height: 144 + CONNECTOR_MIN_PX, bottom: -144 },
+        })
+    })
+
+    it('lowers a card below the axis by its level and reaches the connector up to the axis', () => {
+        expect(cardPlacement('below', 1, 60, 10)).toEqual({
+            wrapperStyle: { left: 10, top: 60, paddingTop: CONNECTOR_MIN_PX },
+            connectorStyle: { height: 60 + CONNECTOR_MIN_PX, top: -60 },
+        })
     })
 })

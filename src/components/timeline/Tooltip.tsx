@@ -46,53 +46,7 @@ export function Tooltip({
 }: TooltipProps) {
     const portalRef = useRef<HTMLDivElement>(null)
 
-    // Follow the anchor every frame while open: the timeline moves cards with
-    // transforms (pan, zoom, stack steps), which fire no scroll or resize event.
-    useLayoutEffect(() => {
-        if (!open || !anchorRef) return
-        let frame = 0
-        let last = ''
-        let clippers: HTMLElement[] | null = null
-        const update = () => {
-            const anchor = anchorRef.current
-            const el = portalRef.current
-            if (anchor && el) {
-                const rect = anchor.getBoundingClientRect()
-                const vw = document.documentElement.clientWidth
-                const maxWidth = Math.max(0, vw - 2 * VIEWPORT_MARGIN_PX)
-                el.style.maxWidth = `${maxWidth}px`
-                const width = el.offsetWidth
-                const preferred =
-                    align === 'start' ? rect.left : rect.right - width
-                const left = Math.max(
-                    VIEWPORT_MARGIN_PX,
-                    Math.min(preferred, vw - width - VIEWPORT_MARGIN_PX)
-                )
-                const top =
-                    placement === 'top'
-                        ? rect.top - el.offsetHeight
-                        : rect.bottom
-                // The bubble escapes every clipping ancestor, so hide it with an anchor
-                // that left the visible area (stepped out of a stack, panned away).
-                clippers ??= clippingAncestors(anchor)
-                // A zero-size rect means no layout (jsdom); nothing to judge then.
-                const laidOut = rect.width > 0 || rect.height > 0
-                const hidden =
-                    anchor.closest('[inert]') !== null ||
-                    (laidOut && !visibleIn(rect, clipRect(clippers)))
-                const next = `${left}|${top}|${hidden}`
-                if (next !== last) {
-                    last = next
-                    el.style.left = `${left}px`
-                    el.style.top = `${top}px`
-                    el.style.visibility = hidden ? 'hidden' : ''
-                }
-            }
-            frame = requestAnimationFrame(update)
-        }
-        update()
-        return () => cancelAnimationFrame(frame)
-    }, [open, anchorRef, placement, align])
+    useFollowAnchor(open, anchorRef, portalRef, placement, align)
 
     const bubble = <div className={bubbleClass}>{children}</div>
 
@@ -151,6 +105,94 @@ type Box = {
     bottom: number
 }
 
+type Placement = TooltipProps['placement']
+type Align = NonNullable<TooltipProps['align']>
+
+function useFollowAnchor(
+    open: boolean,
+    anchorRef: RefObject<HTMLElement | null> | undefined,
+    bubbleRef: RefObject<HTMLDivElement | null>,
+    placement: Placement,
+    align: Align
+) {
+    useLayoutEffect(() => {
+        if (!open || !anchorRef) return
+        let frame = 0
+        let appliedKey = ''
+        let clippers: HTMLElement[] | null = null
+        const update = () => {
+            const anchor = anchorRef.current
+            const bubbleEl = bubbleRef.current
+            if (anchor && bubbleEl) {
+                const rect = anchor.getBoundingClientRect()
+                const viewportWidth = document.documentElement.clientWidth
+                const maxWidth = Math.max(
+                    0,
+                    viewportWidth - 2 * VIEWPORT_MARGIN_PX
+                )
+                bubbleEl.style.maxWidth = `${maxWidth}px`
+                const bubbleSize = {
+                    width: bubbleEl.offsetWidth,
+                    height: bubbleEl.offsetHeight,
+                }
+                const { left, top } = bubblePosition(
+                    rect,
+                    bubbleSize,
+                    viewportWidth,
+                    placement,
+                    align
+                )
+                clippers ??= clippingAncestors(anchor)
+                const hidden = anchorHidden(anchor, rect, clippers)
+                const positionKey = `${left}|${top}|${hidden}`
+                if (positionKey !== appliedKey) {
+                    appliedKey = positionKey
+                    bubbleEl.style.left = `${left}px`
+                    bubbleEl.style.top = `${top}px`
+                    bubbleEl.style.visibility = hidden ? 'hidden' : ''
+                }
+            }
+            frame = requestAnimationFrame(update)
+        }
+        update()
+        return () => cancelAnimationFrame(frame)
+    }, [open, anchorRef, bubbleRef, placement, align])
+}
+
+function bubblePosition(
+    anchor: Box,
+    bubble: { width: number; height: number },
+    viewportWidth: number,
+    placement: Placement,
+    align: Align
+): { left: number; top: number } {
+    const preferred =
+        align === 'start' ? anchor.left : anchor.right - bubble.width
+    const left = Math.max(
+        VIEWPORT_MARGIN_PX,
+        Math.min(preferred, viewportWidth - bubble.width - VIEWPORT_MARGIN_PX)
+    )
+    const top = placement === 'top' ? anchor.top - bubble.height : anchor.bottom
+    return { left, top }
+}
+
+/**
+ * The bubble escapes every clipping ancestor, so hide it with an anchor that
+ * left the visible area (stepped out of a stack, panned away).
+ */
+function anchorHidden(
+    anchor: Element,
+    rect: DOMRectReadOnly,
+    clippers: Element[]
+): boolean {
+    // A zero-size rect means no layout (jsdom); nothing to judge then.
+    const laidOut = rect.width > 0 || rect.height > 0
+    return (
+        anchor.closest('[inert]') !== null ||
+        (laidOut && !visibleIn(rect, clipRect(clippers)))
+    )
+}
+
 /** Ancestors of `el` that clip overflow (the layout they belong to doesn't change while a bubble is open). */
 function clippingAncestors(el: HTMLElement): HTMLElement[] {
     const out: HTMLElement[] = []
@@ -166,22 +208,26 @@ function clippingAncestors(el: HTMLElement): HTMLElement[] {
 }
 
 /** The visible area: the viewport cut by the clipping ancestors. */
-function clipRect(clippers: HTMLElement[]): Box {
+function clipRect(clippers: Element[]): Box {
     const root = document.documentElement
-    const box: Box = {
+    const viewport: Box = {
         left: 0,
         top: 0,
         right: root.clientWidth,
         bottom: root.clientHeight,
     }
-    for (const c of clippers) {
-        const r = c.getBoundingClientRect()
-        box.left = Math.max(box.left, r.left)
-        box.top = Math.max(box.top, r.top)
-        box.right = Math.min(box.right, r.right)
-        box.bottom = Math.min(box.bottom, r.bottom)
+    return clippers
+        .map((c) => c.getBoundingClientRect())
+        .reduce(intersect, viewport)
+}
+
+function intersect(a: Box, b: Box): Box {
+    return {
+        left: Math.max(a.left, b.left),
+        top: Math.max(a.top, b.top),
+        right: Math.min(a.right, b.right),
+        bottom: Math.min(a.bottom, b.bottom),
     }
-    return box
 }
 
 function visibleIn(rect: Box, clip: Box): boolean {
@@ -192,3 +238,5 @@ function visibleIn(rect: Box, clip: Box): boolean {
         rect.top < clip.bottom
     )
 }
+
+export const PRIVATE_UNDER_TESTS = { bubblePosition, anchorHidden }
