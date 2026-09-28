@@ -11,7 +11,9 @@ export const AXIS_LINE_Y_PX = 24
 export const AXIS_LINE_THICKNESS_PX = 1
 const LABEL_TOP_PX = AXIS_LINE_Y_PX + 14
 const TODAY_MARK_HEIGHT_PX = 16
-const TICK_OPTIONS = { minYearWidthForMonthsPx: 420, charWidthPx: 7.5 }
+const TICK_OPTIONS = { minYearWidthForMonthsPx: 420, charWidthPx: 7.7 }
+/** Tick labels and "Heute" paint over every card layer item (highest: the open entry at 200), so connectors pass behind them. */
+const Z_AXIS_LABEL = 300
 
 /** Hairline axis across the full width, short ticks with small-caps labels, and the "Heute" mark. */
 export function Axis() {
@@ -65,12 +67,12 @@ export function Axis() {
                     {!labelHidden(tick) && (
                         <span
                             className={clsx(
-                                'absolute -translate-x-1/2 small-caps text-label leading-none tracking-label whitespace-nowrap',
+                                'absolute -translate-x-1/2 bg-surface px-0.5 small-caps text-label leading-none tracking-label whitespace-nowrap',
                                 tick.major
                                     ? 'font-medium text-fg'
                                     : 'font-normal text-fg-muted'
                             )}
-                            style={{ top: LABEL_TOP_PX }}
+                            style={{ top: LABEL_TOP_PX, zIndex: Z_AXIS_LABEL }}
                         >
                             {tick.label}
                         </span>
@@ -93,13 +95,14 @@ export function Axis() {
                     <span
                         data-today-align={todayAlign}
                         className={clsx(
-                            'absolute small-caps text-label leading-none font-medium tracking-label whitespace-nowrap text-fg',
+                            'absolute bg-surface small-caps text-label leading-none font-medium tracking-label whitespace-nowrap text-fg',
                             todayAlign === 'right' &&
-                                '-translate-x-full pr-1.5',
-                            todayAlign === 'center' && '-translate-x-1/2',
-                            todayAlign === 'left' && 'pl-1.5'
+                                '-translate-x-full pr-1.5 pl-0.5',
+                            todayAlign === 'center' &&
+                                '-translate-x-1/2 px-0.5',
+                            todayAlign === 'left' && 'pr-0.5 pl-1.5'
                         )}
-                        style={{ top: LABEL_TOP_PX }}
+                        style={{ top: LABEL_TOP_PX, zIndex: Z_AXIS_LABEL }}
                     >
                         Heute
                     </span>
