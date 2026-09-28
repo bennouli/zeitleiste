@@ -6,10 +6,12 @@ import {
     entryLabel,
     formatDay,
     formatEntryDate,
-    formatHDate,
     formatMonth,
     formatYear,
+    PRIVATE_UNDER_TESTS,
 } from '../format'
+
+const { formatHDate } = PRIVATE_UNDER_TESTS
 
 const DASH = '–'
 

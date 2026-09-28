@@ -1,9 +1,7 @@
 import { MS_PER_YEAR } from '@/lib/time'
 import {
-    MAX_VISIBLE_MS,
-    MIN_VISIBLE_MS,
+    PRIVATE_UNDER_TESTS,
     ZOOM_STEP_FACTOR,
-    visibleMs,
     type Bounds,
 } from '@/lib/viewport'
 import { stubReducedMotion } from '@/test/motion'
@@ -11,6 +9,8 @@ import { act, renderHook } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { ANIMATION_MS } from '../constants'
 import { useViewport } from '../useViewport'
+
+const { MIN_VISIBLE_MS, MAX_VISIBLE_MS, visibleMs } = PRIVATE_UNDER_TESTS
 
 const Y2000 = Date.UTC(2000, 0, 1)
 const bounds: Bounds = { min: Y2000 - 200 * MS_PER_YEAR, max: Y2000 }

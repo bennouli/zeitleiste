@@ -1,6 +1,9 @@
 import nextVitals from 'eslint-config-next/core-web-vitals'
 import nextTs from 'eslint-config-next/typescript'
 import { defineConfig, globalIgnores } from 'eslint/config'
+import noTestOnlyExports from './eslint/no-test-only-exports.mjs'
+
+const TESTS = ['src/**/__tests__/**', 'e2e/**']
 
 const eslintConfig = defineConfig([
     ...nextVitals,
@@ -12,9 +15,72 @@ const eslintConfig = defineConfig([
         'out/**',
         'build/**',
         'next-env.d.ts',
-        // Vendored upstream sources (AGENTS.md § Libraries)
         'repos/**',
     ]),
+    {
+        files: ['src/**/*.{ts,tsx}', 'e2e/**/*.ts'],
+        rules: {
+            '@typescript-eslint/consistent-type-definitions': ['error', 'type'],
+        },
+    },
+    {
+        files: ['src/**/*.{ts,tsx}'],
+        ignores: TESTS,
+        plugins: {
+            local: { rules: { 'no-test-only-exports': noTestOnlyExports } },
+        },
+        rules: {
+            'local/no-test-only-exports': [
+                'error',
+                {
+                    root: import.meta.dirname,
+                    entryPoints: ['src/app'],
+                    testSupport: ['src/test'],
+                },
+            ],
+            'no-restricted-syntax': [
+                'error',
+                {
+                    selector:
+                        'ImportSpecifier[imported.name="PRIVATE_UNDER_TESTS"]',
+                    message: 'PRIVATE_UNDER_TESTS is read by the tests only.',
+                },
+                {
+                    selector:
+                        'MemberExpression[property.name="PRIVATE_UNDER_TESTS"]',
+                    message: 'PRIVATE_UNDER_TESTS is read by the tests only.',
+                },
+                {
+                    selector:
+                        'ExportSpecifier[local.name="PRIVATE_UNDER_TESTS"]',
+                    message: 'PRIVATE_UNDER_TESTS is read by the tests only.',
+                },
+            ],
+        },
+    },
+    {
+        files: ['src/lib/**/*.ts'],
+        ignores: TESTS,
+        rules: {
+            'no-restricted-imports': [
+                'error',
+                {
+                    patterns: [
+                        {
+                            group: [
+                                '@/components/**',
+                                '@/app/**',
+                                '**/components/**',
+                                '**/app/**',
+                            ],
+                            message:
+                                'src/lib holds shared logic; it does not import from components or routes.',
+                        },
+                    ],
+                },
+            ],
+        },
+    },
 ])
 
 export default eslintConfig

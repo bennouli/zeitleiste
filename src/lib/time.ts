@@ -1,4 +1,4 @@
-import { precisionOf, type Entry, type HDate, type Precision } from './entry'
+import { precisionOf, type Entry, type HDate } from './entry'
 
 export const MS_PER_DAY = 86_400_000
 /** Mean Gregorian year (365.2425 days); for approximate spans and zoom math only. */
@@ -15,7 +15,7 @@ export function startOf(d: HDate): number {
 }
 
 /** End (exclusive) of that unit = start of the next unit, e.g. {1917,11} → 1 Dec 1917. */
-export function endOf(d: HDate): number {
+function endOf(d: HDate): number {
     switch (precisionOf(d)) {
         case 'year':
             return utc(d.year + 1, 0, 1)
@@ -27,7 +27,7 @@ export function endOf(d: HDate): number {
 }
 
 /** Midpoint of the unit; the anchor used to position a point in time on the axis. */
-export function midOf(d: HDate): number {
+function midOf(d: HDate): number {
     return (startOf(d) + endOf(d)) / 2
 }
 
@@ -50,22 +50,13 @@ export function todayMs(now: number = Date.now()): number {
     return Math.floor(now / MS_PER_DAY) * MS_PER_DAY
 }
 
-/** UTC year of a time. */
-export function yearOf(t: number): number {
-    return new Date(t).getUTCFullYear()
-}
-
-/** Convert back, truncating to the given precision. */
-export function toHDate(t: number, precision: Precision): HDate {
-    const d = new Date(t)
-    const year = d.getUTCFullYear()
-    if (precision === 'year') return { year }
-    const month = d.getUTCMonth() + 1
-    if (precision === 'month') return { year, month }
-    return { year, month, day: d.getUTCDate() }
-}
-
 /** Chronological comparison of two HDates by their startOf. */
-export function compareHDate(a: HDate, b: HDate): number {
+function compareHDate(a: HDate, b: HDate): number {
     return Math.sign(startOf(a) - startOf(b))
+}
+
+export const PRIVATE_UNDER_TESTS = {
+    endOf,
+    midOf,
+    compareHDate,
 }

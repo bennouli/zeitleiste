@@ -58,8 +58,8 @@ export type SpanLayout = {
 }
 
 export const DEFAULT_MIN_WIDTH_PX = 64
-export const DEFAULT_GAP_PX = 4
-export const DEFAULT_LABEL_PADDING_PX = 12
+const DEFAULT_GAP_PX = 4
+const DEFAULT_LABEL_PADDING_PX = 12
 
 /**
  * Assigns each span to a lane so that no two bars in one lane overlap.

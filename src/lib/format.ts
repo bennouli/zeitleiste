@@ -40,7 +40,7 @@ function optionsFor(d: HDate, style: DateStyle): Intl.DateTimeFormatOptions {
 
 /** Years must be >= 1 (Intl drops the era for BC years).
  *  short: '1700' | 'Nov. 1917' | '7. Nov. 1917';  long: '1700' | 'November 1917' | '7. November 1917' */
-export function formatHDate(
+function formatHDate(
     d: HDate,
     style: DateStyle = 'short',
     locale = 'de'
@@ -119,3 +119,5 @@ export function formatDay(t: number, locale = 'de'): string {
         dtf(locale, { day: 'numeric', month: 'short' }).format(t)
     )
 }
+
+export const PRIVATE_UNDER_TESTS = { formatHDate }
