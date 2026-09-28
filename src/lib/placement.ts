@@ -24,9 +24,23 @@ export type PlacementOptions = {
     maxLevels?: number
     /** Intervals already taken before any item is placed, e.g. the rows a group stack covers. */
     blocked?: readonly BlockedInterval[]
-    /** Items an earlier call placed, e.g. group stacks; they take part in the alternation. */
+    /** Items an earlier call placed, e.g. group stacks; they count as preceding items. */
     placedElsewhere?: readonly PlacedSide[]
+    /** Candidate order for an item without a usable previous slot, default alternateSides. */
+    sideStrategy?: SideStrategy
 }
+
+/** What a side strategy may base an item's candidate order on. */
+export type SlotRequest = {
+    item: PlaceableItem
+    /** Side of the chronologically preceding placed item; undefined for the first. */
+    precedingSide: Side | undefined
+    /** Rows per side. */
+    maxLevels: number
+}
+
+/** Orders the slots an item tries, first choice first. Hysteresis is applied before it. */
+export type SideStrategy = (request: SlotRequest) => Slot[]
 
 export type PlacedSide = {
     order: number
@@ -116,9 +130,11 @@ function candidateSlots(maxLevels: number, side: Side): Slot[] {
     )
 }
 
-/** The side an item is offered first: opposite the last placed one, above for the first. */
-function alternatingSide(lastSide: Side | undefined): Side {
-    return lastSide === undefined ? 'above' : oppositeOf(lastSide)
+/** Default strategy: the side opposite the preceding item (above for the first), then the other. */
+function alternateSides({ precedingSide, maxLevels }: SlotRequest): Slot[] {
+    const firstSide =
+        precedingSide === undefined ? 'above' : oppositeOf(precedingSide)
+    return candidateSlots(maxLevels, firstSide)
 }
 
 function oppositeOf(side: Side): Side {
@@ -148,10 +164,10 @@ function cloneSlot(slot: Slot): Slot {
 }
 
 /**
- * Places items in chronological order, alternating sides: each item is offered the side opposite
- * the last placed item first. `previous` slots are kept when the item still fits there
+ * Places items in chronological order. `previous` slots are kept when the item still fits there
  * (hysteresis); if not, the item first tries the other rows on its previous side before changing
- * sides.
+ * sides. Only an item without a usable previous slot gets its candidate order from
+ * `options.sideStrategy` (default alternateSides).
  */
 export function placeItems(
     items: readonly PlaceableItem[],
@@ -164,6 +180,7 @@ export function placeItems(
         Math.max(0, Math.floor(options.maxLevels ?? DEFAULT_MAX_LEVELS))
     )
     const rows = buildRows(maxLevels, gap, options.blocked ?? [])
+    const sideStrategy = options.sideStrategy ?? alternateSides
     const placedElsewhere = [...(options.placedElsewhere ?? [])].sort(
         (a, b) => a.order - b.order
     )
@@ -192,11 +209,11 @@ export function placeItems(
             lastPlaced,
             placedElsewhere
         )
-        const firstSide =
-            prev && rows[prev.side] ? prev.side : alternatingSide(precedingSide)
-        const found = keepPrev
-            ? prev
-            : candidateSlots(maxLevels, firstSide).find(fits)
+        const candidates = () =>
+            prev && rows[prev.side]
+                ? candidateSlots(maxLevels, prev.side)
+                : sideStrategy({ item, precedingSide, maxLevels })
+        const found = keepPrev ? prev : candidates().find(fits)
         const slot = found && cloneSlot(found)
 
         const row = slot && rows[slot.side][slot.level]
@@ -238,6 +255,6 @@ function usedLevels(p: Placement): { above: number; below: number } {
 export const PRIVATE_UNDER_TESTS = {
     usedLevels,
     candidateSlots,
-    alternatingSide,
+    alternateSides,
     buildRows,
 }

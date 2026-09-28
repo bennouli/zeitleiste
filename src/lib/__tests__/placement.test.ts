@@ -8,10 +8,12 @@ import {
     type Placement,
     type PlacementOptions,
     type Side,
+    type SideStrategy,
     type Slot,
+    type SlotRequest,
 } from '../placement'
 
-const { usedLevels, candidateSlots, alternatingSide, buildRows } =
+const { usedLevels, candidateSlots, alternateSides, buildRows } =
     PRIVATE_UNDER_TESTS
 
 function item(id: string, x0: number, x1: number, order = 0): PlaceableItem {
@@ -198,6 +200,29 @@ describe('placeItems', () => {
         expect(beforeAbove.slots.get('a')?.side).toBe('above')
         expect(aroundBelow.slots.get('a')?.side).toBe('above')
         expect(aroundBelow.slots.get('b')?.side).toBe('above')
+    })
+
+    it('takes candidate order from the side strategy and keeps hysteresis ahead of it', () => {
+        const requests: SlotRequest[] = []
+        const alwaysBelow: SideStrategy = (request) => {
+            requests.push(request)
+            return candidateSlots(request.maxLevels, 'below')
+        }
+        const options: PlacementOptions = { sideStrategy: alwaysBelow }
+        const kept = new Map<string, Slot>([['b', { side: 'above', level: 0 }]])
+        const items = [
+            item('a', 0, 100, 0),
+            item('b', 200, 300, 1),
+            item('c', 400, 500, 2),
+        ]
+        const p = placeItems(items, kept, options)
+        expect(p.slots.get('a')).toEqual({ side: 'below', level: 0 })
+        expect(p.slots.get('b')).toEqual({ side: 'above', level: 0 })
+        expect(p.slots.get('c')).toEqual({ side: 'below', level: 0 })
+        expect(requests).toEqual([
+            { item: items[0], precedingSide: undefined, maxLevels: 2 },
+            { item: items[2], precedingSide: 'above', maxLevels: 2 },
+        ])
     })
 
     it('matches the oracle on random sets', () => {
@@ -552,11 +577,19 @@ describe('candidateSlots', () => {
     })
 })
 
-describe('alternatingSide', () => {
-    it('starts above and then flips the last placed side', () => {
-        expect(alternatingSide(undefined)).toBe('above')
-        expect(alternatingSide('above')).toBe('below')
-        expect(alternatingSide('below')).toBe('above')
+describe('alternateSides', () => {
+    it('offers the side opposite the preceding item first, above for the first item', () => {
+        const lone = item('a', 0, 100)
+        const first: SlotRequest = {
+            item: lone,
+            precedingSide: undefined,
+            maxLevels: 2,
+        }
+        const afterAbove: SlotRequest = { ...first, precedingSide: 'above' }
+        const afterBelow: SlotRequest = { ...first, precedingSide: 'below' }
+        expect(alternateSides(first)).toEqual(candidateSlots(2, 'above'))
+        expect(alternateSides(afterAbove)).toEqual(candidateSlots(2, 'below'))
+        expect(alternateSides(afterBelow)).toEqual(candidateSlots(2, 'above'))
     })
 })
 
