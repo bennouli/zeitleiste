@@ -171,7 +171,9 @@ git diff $R -- '*.test.*' | grep -nE '^\+\s*(expect|render|fireEvent)[^;]*\{\s*[
 ## Dimension 7 — Values that leave TypeScript (MAJOR)
 
 AGENTS.md § Heuristics: a value arriving from a caller this code does not control (a CMS response, a route param, the sample data file, a
-stored blob) needs a schema and a real `parse` at the crossing. A value produced and consumed inside this codebase needs none.
+stored blob) needs an Effect Schema and a real decode at the crossing (`Schema.decodeUnknown*`, see `agent-patterns/effect-schema.md`). A
+value produced and consumed inside this codebase needs none. A type derived by hand next to a schema, or `typeof S.Type` used for what a
+caller supplies (that is `typeof S.Encoded`), is a finding.
 
 ```bash
 git diff $R -- 'src' ':!*.test.*' | grep -nE '^\+.*(JSON\.parse|\.map\(Number\)|params\.|searchParams| as [A-Z][A-Za-z]*(\[\])?\s*$)'
