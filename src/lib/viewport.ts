@@ -1,10 +1,11 @@
 // Pure zoom/pan state for the timeline. Times are ms since epoch (UTC), widths are px.
 
-const DAY_MS = 24 * 60 * 60 * 1000
+import { easeOutCubic } from './easing'
+import { MS_PER_DAY } from './time'
 
 /** Zoom limits: how much time fits across the full width. Change here only. */
-export const MIN_VISIBLE_MS: number = 3 * 30.44 * DAY_MS
-export const MAX_VISIBLE_MS: number = 300 * 365.2425 * DAY_MS
+export const MIN_VISIBLE_MS: number = 3 * 30.44 * MS_PER_DAY
+export const MAX_VISIBLE_MS: number = 300 * 365.2425 * MS_PER_DAY
 
 /** Factor used by the zoom buttons. */
 export const ZOOM_STEP_FACTOR: number = 2
@@ -53,6 +54,10 @@ function gestureSpan(
     return Math.min(span, Math.max(clampSpan(current), b.max - b.min))
 }
 
+function centeredOn(center: number, span: number): Viewport {
+    return { start: center - span / 2, end: center + span / 2 }
+}
+
 /** Returns ordered finite bounds, or null if they are unusable. */
 function normalizeBounds(bounds: Bounds): Bounds | null {
     const { min, max } = bounds
@@ -88,17 +93,15 @@ export function xToTime(vp: Viewport, width: number, x: number): number {
 export function clampViewport(vp: Viewport, bounds: Bounds): Viewport {
     const b = normalizeBounds(bounds)
     const span = clampSpan(vp.end - vp.start)
-    let center = (vp.start + vp.end) / 2
-    if (!b) {
-        center = finiteOr(center, 0)
-        return { start: center - span / 2, end: center + span / 2 }
-    }
-    if (!Number.isFinite(center)) center = (b.min + b.max) / 2
-    if (span >= b.max - b.min) {
-        center = (b.min + b.max) / 2
-        return { start: center - span / 2, end: center + span / 2 }
-    }
-    const start = clamp(center - span / 2, b.min, b.max - span)
+    const center = (vp.start + vp.end) / 2
+    if (!b) return centeredOn(finiteOr(center, 0), span)
+    const boundsCenter = (b.min + b.max) / 2
+    if (span >= b.max - b.min) return centeredOn(boundsCenter, span)
+    const start = clamp(
+        finiteOr(center, boundsCenter) - span / 2,
+        b.min,
+        b.max - span
+    )
     return { start, end: start + span }
 }
 
@@ -155,14 +158,10 @@ export function panBy(
     bounds: Bounds
 ): Viewport {
     const b = normalizeBounds(bounds)
-    let shift = -finiteOr(dx, 0) * msPerPx(vp, width)
+    const rawShift = -finiteOr(dx, 0) * msPerPx(vp, width)
+    const maxShift = b ? b.max - b.min + MAX_VISIBLE_MS : Infinity
     // Keep the arithmetic finite for absurd dx; anything beyond the bounds width is clamped anyway.
-    if (b)
-        shift = clamp(
-            shift,
-            -(b.max - b.min) - MAX_VISIBLE_MS,
-            b.max - b.min + MAX_VISIBLE_MS
-        )
+    const shift = clamp(rawShift, -maxShift, maxShift)
     return clampViewport(
         { start: vp.start + shift, end: vp.end + shift },
         bounds
@@ -228,6 +227,22 @@ export function interpolateViewport(
     const c1 = (to.start + to.end) / 2
     const center = c0 + (c1 - c0) * p
     return { start: center - span / 2, end: center + span / 2 }
+}
+
+/** One frame of an eased animation from `from` to `to`; `done` once `elapsedMs` reaches `durationMs`. */
+export function tweenViewport(
+    from: Viewport,
+    to: Viewport,
+    elapsedMs: number,
+    durationMs: number
+): { vp: Viewport; done: boolean } {
+    const progress = durationMs > 0 ? Math.min(1, elapsedMs / durationMs) : 1
+    if (progress < 1)
+        return {
+            vp: interpolateViewport(from, to, easeOutCubic(progress)),
+            done: false,
+        }
+    return { vp: to, done: true }
 }
 
 export function viewportEquals(

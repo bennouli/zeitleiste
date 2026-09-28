@@ -191,6 +191,13 @@ describe('useViewport', () => {
         expect((v.start + v.end) / 2).toBeCloseTo(c, -3)
     })
 
+    it('keeps the returned object across renders without a state change', () => {
+        const { result, rerender } = setup()
+        const initialControls = result.current
+        rerender()
+        expect(result.current).toBe(initialControls)
+    })
+
     it('cancelAnimation stops where it is', () => {
         const { result } = setup()
         act(() => result.current.zoomIn())

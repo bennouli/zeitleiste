@@ -1,16 +1,15 @@
 'use client'
 
 import { prefersReducedMotion } from '@/lib/dom'
-import { easeOutCubic } from '@/lib/easing'
 import {
     canZoomIn as canZoomInVp,
     canZoomOut as canZoomOutVp,
     clampViewport,
     initialViewport,
-    interpolateViewport,
     panBy as panByVp,
     pinch as pinchVp,
     stepMomentum,
+    tweenViewport,
     viewportEquals,
     ZOOM_STEP_FACTOR,
     zoomAround,
@@ -27,10 +26,12 @@ import {
     useState,
 } from 'react'
 import { ANIMATION_MS } from './constants'
+import { useFrameLoop } from './useFrameLoop'
 
-// useLayoutEffect warns during SSR; refs only matter on the client.
 const useIsomorphicLayoutEffect =
     typeof window === 'undefined' ? useEffect : useLayoutEffect
+
+const FIRST_MOMENTUM_FRAME_MS = 16
 
 export type UseViewportOptions = {
     bounds: Bounds
@@ -80,65 +81,57 @@ export function useViewport({
     width,
     initial,
 }: UseViewportOptions): ViewportControls {
-    const [raw, setRaw] = useState<Viewport>(
+    const [storedViewport, setStoredViewport] = useState<Viewport>(
         () => initial ?? initialViewport(bounds)
     )
     const [isAnimating, setIsAnimating] = useState(false)
-    const [gesturing, setGesturing] = useState(false)
+    const [isInteracting, setIsInteracting] = useState(false)
     const [gestureEnd, setGestureEnd] = useState(0)
 
-    // Re-clamping on bounds changes is derived, not synced.
-    const viewport = useMemo(() => clampViewport(raw, bounds), [raw, bounds])
+    const viewport = useMemo(
+        () => clampViewport(storedViewport, bounds),
+        [storedViewport, bounds]
+    )
 
-    const vpRef = useRef(viewport)
-    const boundsRef = useRef(bounds)
-    const widthRef = useRef(width)
+    const latest = useRef({ viewport, bounds, width })
     const settledRef = useRef(viewport)
-    const rafRef = useRef<number | null>(null)
     /** Target of the running animation, so repeated clicks build on it. */
     const targetRef = useRef<Viewport | null>(null)
+    const frameLoop = useFrameLoop()
 
     useIsomorphicLayoutEffect(() => {
-        boundsRef.current = bounds
-        widthRef.current = width
-        vpRef.current = viewport
+        latest.current = { viewport, bounds, width }
     })
 
     const commit = useCallback((vp: Viewport) => {
-        vpRef.current = vp
-        setRaw(vp)
+        latest.current.viewport = vp
+        setStoredViewport(vp)
     }, [])
 
     const settle = useCallback(() => {
-        if (viewportEquals(vpRef.current, settledRef.current)) return
-        settledRef.current = vpRef.current
+        if (viewportEquals(latest.current.viewport, settledRef.current)) return
+        settledRef.current = latest.current.viewport
         setGestureEnd((n) => n + 1)
     }, [])
 
-    const stopRaf = useCallback(() => {
-        if (rafRef.current !== null) {
-            cancelAnimationFrame(rafRef.current)
-            rafRef.current = null
-        }
+    const stopMotion = useCallback(() => {
+        frameLoop.stop()
         targetRef.current = null
-    }, [])
+    }, [frameLoop])
 
     const cancelAnimation = useCallback(() => {
-        const wasRunning = rafRef.current !== null
-        stopRaf()
-        if (wasRunning) {
-            setIsAnimating(false)
-            setGesturing(false)
-            settle()
-        }
-    }, [stopRaf, settle])
-
-    useEffect(() => stopRaf, [stopRaf])
+        const wasRunning = frameLoop.isRunning()
+        stopMotion()
+        if (!wasRunning) return
+        setIsAnimating(false)
+        setIsInteracting(false)
+        settle()
+    }, [frameLoop, stopMotion, settle])
 
     const animateTo = useCallback(
         (target: Viewport, animate = true) => {
-            stopRaf()
-            const from = vpRef.current
+            stopMotion()
+            const from = latest.current.viewport
             if (
                 !animate ||
                 prefersReducedMotion() ||
@@ -151,34 +144,47 @@ export function useViewport({
             }
             targetRef.current = target
             setIsAnimating(true)
-            let t0: number | null = null
-            const frame = (now: number) => {
-                if (t0 === null) t0 = now
-                const p = Math.min(1, (now - t0) / ANIMATION_MS)
-                commit(interpolateViewport(from, target, easeOutCubic(p)))
-                if (p < 1) {
-                    rafRef.current = requestAnimationFrame(frame)
-                } else {
-                    rafRef.current = null
+            let startedAt: number | null = null
+            frameLoop.run(
+                (now) => {
+                    startedAt ??= now
+                    const tween = tweenViewport(
+                        from,
+                        target,
+                        now - startedAt,
+                        ANIMATION_MS
+                    )
+                    commit(tween.vp)
+                    return tween.done ? 'done' : 'continue'
+                },
+                () => {
                     targetRef.current = null
-                    commit(target)
                     setIsAnimating(false)
                     settle()
                 }
-            }
-            rafRef.current = requestAnimationFrame(frame)
+            )
         },
-        [commit, settle, stopRaf]
+        [frameLoop, commit, settle, stopMotion]
     )
 
-    const base = useCallback(() => targetRef.current ?? vpRef.current, [])
+    const animationBase = useCallback(
+        () => targetRef.current ?? latest.current.viewport,
+        []
+    )
 
     const zoomBy = useCallback(
         (factor: number) => {
-            const w = widthRef.current
-            animateTo(zoomAround(base(), w, w / 2, factor, boundsRef.current))
+            animateTo(
+                zoomAround(
+                    animationBase(),
+                    latest.current.width,
+                    latest.current.width / 2,
+                    factor,
+                    latest.current.bounds
+                )
+            )
         },
-        [animateTo, base]
+        [animateTo, animationBase]
     )
 
     const zoomIn = useCallback(() => zoomBy(ZOOM_STEP_FACTOR), [zoomBy])
@@ -187,7 +193,7 @@ export function useViewport({
     const zoomToTime = useCallback(
         (centerT: number, spanMs: number, opts?: { animate?: boolean }) => {
             animateTo(
-                zoomTo(centerT, spanMs, boundsRef.current),
+                zoomTo(centerT, spanMs, latest.current.bounds),
                 opts?.animate ?? true
             )
         },
@@ -196,103 +202,136 @@ export function useViewport({
 
     const panStep = useCallback(
         (dx: number) =>
-            animateTo(panByVp(base(), widthRef.current, dx, boundsRef.current)),
-        [animateTo, base]
+            animateTo(
+                panByVp(
+                    animationBase(),
+                    latest.current.width,
+                    dx,
+                    latest.current.bounds
+                )
+            ),
+        [animateTo, animationBase]
     )
 
     const panBy = useCallback(
         (dx: number) => {
-            if (targetRef.current) stopRaf()
+            if (targetRef.current) stopMotion()
             commit(
-                panByVp(vpRef.current, widthRef.current, dx, boundsRef.current)
+                panByVp(
+                    latest.current.viewport,
+                    latest.current.width,
+                    dx,
+                    latest.current.bounds
+                )
             )
         },
-        [commit, stopRaf]
+        [commit, stopMotion]
     )
 
     const pinch = useCallback(
         (prev: readonly [number, number], next: readonly [number, number]) => {
-            if (targetRef.current) stopRaf()
+            if (targetRef.current) stopMotion()
             commit(
                 pinchVp(
-                    vpRef.current,
-                    widthRef.current,
+                    latest.current.viewport,
+                    latest.current.width,
                     prev,
                     next,
-                    boundsRef.current
+                    latest.current.bounds
                 )
             )
         },
-        [commit, stopRaf]
+        [commit, stopMotion]
     )
 
     const beginGesture = useCallback(() => {
-        stopRaf()
+        stopMotion()
         setIsAnimating(false)
-        setGesturing(true)
-    }, [stopRaf])
+        setIsInteracting(true)
+    }, [stopMotion])
 
     const endGesture = useCallback(() => {
-        stopRaf()
-        setGesturing(false)
+        stopMotion()
+        setIsInteracting(false)
         settle()
-    }, [stopRaf, settle])
+    }, [stopMotion, settle])
 
     const startMomentum = useCallback(
         (velocityPxPerMs: number) => {
-            stopRaf()
+            stopMotion()
             if (
                 prefersReducedMotion() ||
                 !Number.isFinite(velocityPxPerMs) ||
                 velocityPxPerMs === 0
             ) {
-                setGesturing(false)
+                setIsInteracting(false)
                 settle()
                 return
             }
-            setGesturing(true)
-            let m = { vp: vpRef.current, velocityPxPerMs }
-            let last: number | null = null
-            const frame = (now: number) => {
-                const dt = last === null ? 16 : now - last
-                last = now
-                const { next, done } = stepMomentum(
-                    m,
-                    dt,
-                    widthRef.current,
-                    boundsRef.current
-                )
-                m = next
-                commit(next.vp)
-                if (done) {
-                    rafRef.current = null
-                    setGesturing(false)
+            setIsInteracting(true)
+            let momentum = { vp: latest.current.viewport, velocityPxPerMs }
+            let lastFrameAt: number | null = null
+            frameLoop.run(
+                (now) => {
+                    const dt =
+                        lastFrameAt === null
+                            ? FIRST_MOMENTUM_FRAME_MS
+                            : now - lastFrameAt
+                    lastFrameAt = now
+                    const step = stepMomentum(
+                        momentum,
+                        dt,
+                        latest.current.width,
+                        latest.current.bounds
+                    )
+                    momentum = step.next
+                    commit(momentum.vp)
+                    return step.done ? 'done' : 'continue'
+                },
+                () => {
+                    setIsInteracting(false)
                     settle()
-                } else {
-                    rafRef.current = requestAnimationFrame(frame)
                 }
-            }
-            rafRef.current = requestAnimationFrame(frame)
+            )
         },
-        [commit, settle, stopRaf]
+        [frameLoop, commit, settle, stopMotion]
     )
 
-    return {
-        viewport,
-        isAnimating,
-        isGesturing: gesturing || isAnimating,
-        canZoomIn: canZoomInVp(viewport),
-        canZoomOut: canZoomOutVp(viewport, bounds),
-        gestureEnd,
-        zoomIn,
-        zoomOut,
-        zoomToTime,
-        panStep,
-        panBy,
-        pinch,
-        beginGesture,
-        endGesture,
-        startMomentum,
-        cancelAnimation,
-    }
+    return useMemo(
+        () => ({
+            viewport,
+            isAnimating,
+            isGesturing: isInteracting || isAnimating,
+            canZoomIn: canZoomInVp(viewport),
+            canZoomOut: canZoomOutVp(viewport, bounds),
+            gestureEnd,
+            zoomIn,
+            zoomOut,
+            zoomToTime,
+            panStep,
+            panBy,
+            pinch,
+            beginGesture,
+            endGesture,
+            startMomentum,
+            cancelAnimation,
+        }),
+        [
+            viewport,
+            isAnimating,
+            isInteracting,
+            bounds,
+            gestureEnd,
+            zoomIn,
+            zoomOut,
+            zoomToTime,
+            panStep,
+            panBy,
+            pinch,
+            beginGesture,
+            endGesture,
+            startMomentum,
+            cancelAnimation,
+        ]
+    )
 }

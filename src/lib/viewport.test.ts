@@ -15,6 +15,7 @@ import {
     pinch,
     stepMomentum,
     timeToX,
+    tweenViewport,
     viewportEquals,
     visibleMs,
     xToTime,
@@ -338,6 +339,14 @@ describe('degenerate input', () => {
         expect(centerOf(point)).toBeCloseTo(SAMPLE.max, 0)
     })
 
+    it('without usable bounds keeps the span around the center, and 0 for a NaN center', () => {
+        const unusable: Bounds = { min: Number.NaN, max: Number.NaN }
+        expect(clampViewport(vp, unusable)).toEqual(vp)
+        expect(centerOf(clampViewport(bad, unusable))).toBe(0)
+        const shifted = panBy(vp, WIDTH, -WIDTH, unusable)
+        expect(shifted.start - vp.start).toBeCloseTo(visibleMs(vp), 0)
+    })
+
     it('uses the magnitude of an inverted viewport span', () => {
         const out = clampViewport({ start: vp.end, end: vp.start }, SAMPLE)
         expect(visibleMs(out)).toBeCloseTo(visibleMs(vp), 0)
@@ -367,6 +376,44 @@ describe('interpolateViewport', () => {
             (centerOf(from) + centerOf(to)) / 2,
             0
         )
+    })
+})
+
+describe('tweenViewport', () => {
+    const from = zoomTo(Date.UTC(1800, 0, 1), MAX_VISIBLE_MS / 2, SAMPLE)
+    const to = zoomTo(Date.UTC(1950, 0, 1), MIN_VISIBLE_MS * 4, SAMPLE)
+    const DURATION_MS = 300
+
+    it('starts at `from` and is not done', () => {
+        expect(tweenViewport(from, to, 0, DURATION_MS)).toEqual({
+            vp: from,
+            done: false,
+        })
+    })
+
+    it('eases out: at half the duration it is past the linear midpoint', () => {
+        const halfway = tweenViewport(from, to, DURATION_MS / 2, DURATION_MS)
+        const linearMidpoint = interpolateViewport(from, to, 0.5)
+        expect(halfway.done).toBe(false)
+        expect(visibleMs(halfway.vp)).toBeLessThan(visibleMs(linearMidpoint))
+        expect(visibleMs(halfway.vp)).toBeGreaterThan(visibleMs(to))
+        expect(centerOf(halfway.vp)).toBeGreaterThan(centerOf(linearMidpoint))
+        expect(centerOf(halfway.vp)).toBeLessThan(centerOf(to))
+    })
+
+    it('ends exactly at `to` once the duration has elapsed', () => {
+        expect(tweenViewport(from, to, DURATION_MS, DURATION_MS)).toEqual({
+            vp: to,
+            done: true,
+        })
+        expect(tweenViewport(from, to, DURATION_MS * 2, DURATION_MS)).toEqual({
+            vp: to,
+            done: true,
+        })
+    })
+
+    it('is done immediately for a non-positive duration', () => {
+        expect(tweenViewport(from, to, 0, 0)).toEqual({ vp: to, done: true })
     })
 })
 
