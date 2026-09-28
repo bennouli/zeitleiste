@@ -61,9 +61,7 @@
  * layout, then system fallbacks. Declared in a `@theme static` block so they
  * are always emitted as `--font-sans` / `--font-serif` on `:root` and power
  * the `font-sans` / `font-serif` utilities without a self-referencing
- * `var(--font-sans)` cycle.
- * Type roles of the post: `text-meta` + `tracking-meta` (meta line),
- * `text-post-title`, `text-lead`, `text-body`, each with its line height. */
+ * `var(--font-sans)` cycle. */
 @theme static {
     --container-reading: 41.25rem;
     --text-meta: 10.5px;

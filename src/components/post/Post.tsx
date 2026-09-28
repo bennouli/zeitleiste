@@ -57,7 +57,11 @@ export function Post({ entry }: { entry: Entry }) {
                 title="Schließen"
                 className="absolute top-5.5 right-0 size-7 text-fg-muted hover:text-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
             >
-                <X aria-hidden="true" size={28} strokeWidth={1.25} />
+                <X
+                    aria-hidden="true"
+                    className="size-full"
+                    strokeWidth={1.25}
+                />
             </button>
         </article>
     )
