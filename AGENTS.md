@@ -56,9 +56,10 @@ directory next to the module they test (`src/lib/__tests__/x.test.ts`, `src/comp
 - Run prettier after any coding task (the `commit` skill covers the pre-commit run).
 - DRY: extract when a pattern appears (or is planned to appear) three times.
 - SOLID: single responsibility strictly; open/closed for anything likely to be extended.
-- Types, not interfaces. `interface` only for declaration merging or a class `implements` clause.
+- Types, not interfaces. `interface` only for declaration merging or a class `implements` clause (lint-enforced).
 - Colocate what only one module uses. Logic specific to one component, pure or not, sits beside that component as its own tested module
-  (`bandGeometry.ts` next to `Timeline.tsx`); `src/lib` is reserved for what more than one module shares.
+  (`bandGeometry.ts` next to `Timeline.tsx`); `src/lib` is reserved for what more than one module shares and never imports from components
+  or routes (lint-enforced).
 - Declarative where it reads better: expressions over mutable accumulators, `map`/`filter`/`flatMap` over index loops, a named predicate
   over an inline boolean chain. A `for...of` with an early exit beats a contorted `reduce`.
 - Name the steps: a function past ~40 lines or with more than three distinct steps is a candidate for extraction. Length prompts a look,
@@ -73,7 +74,9 @@ directory next to the module they test (`src/lib/__tests__/x.test.ts`, `src/comp
   (`const input: OverviewInput = await udb.tx(…)`) — generic callers infer whatever they're handed.
 - Loose guideline: exported before private, then in order of first use (counting uses nested in earlier helpers).
 - A private helper that earns a direct unit test goes in a `PRIVATE_UNDER_TESTS` object at the bottom of the file, never a bare `export`
-  (lint-enforced). It holds computation with edge cases of its own (`datesBetween`, `variance`), never a "part of X" step — test X instead.
+  (lint-enforced: `local/no-test-only-exports` reports an export nothing outside the tests imports, and production code may not import
+  `PRIVATE_UNDER_TESTS`). It holds computation with edge cases of its own (`datesBetween`, `variance`), never a "part of X" step — test X
+  instead.
 
 ## Tests
 
