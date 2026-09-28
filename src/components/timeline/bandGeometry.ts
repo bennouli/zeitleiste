@@ -3,7 +3,6 @@ import {
     AXIS_HEIGHT_PX,
     CARD_FIRST_ROW_OFFSET_PX,
     CARD_ROW_HEIGHT_PX,
-    SPAN_LANE_HEIGHT_PX,
 } from './constants'
 import {
     GROUP_STACK_CONTROLS_HEIGHT_PX,
@@ -25,7 +24,6 @@ const PHONE_WIDTH_PX = 640
 const MIN_BAND_LEVELS = 1
 
 export type BandGeometry = {
-    spansHeight: number
     /** Card rows per side of the axis. */
     maxLevels: number
     /** Cards a group stack shows at once. */
@@ -34,18 +32,13 @@ export type BandGeometry = {
     groupLevels: number
 }
 
-/** Splits the timeline's height into the span band and the card bands above and below the axis. */
+/** Splits the timeline's height into the card bands above and below the axis. */
 export function bandGeometry(
     height: number,
     width: number,
-    collapsed: boolean,
-    spanLaneCount: number
+    collapsed: boolean
 ): BandGeometry {
-    const spansHeight = Math.max(1, spanLaneCount) * SPAN_LANE_HEIGHT_PX
-    const cardBandHeight = Math.max(
-        0,
-        (height - AXIS_HEIGHT_PX - spansHeight) / 2
-    )
+    const cardBandHeight = Math.max(0, (height - AXIS_HEIGHT_PX) / 2)
     const rowsReachPx =
         cardBandHeight + AXIS_LINE_TO_BAND_PX - CARD_FIRST_ROW_OFFSET_PX
     const maxLevels = Math.max(
@@ -65,7 +58,7 @@ export function bandGeometry(
         SLOT_HEIGHT_PX
     )
     const groupLevels = Math.max(1, Math.ceil(stackHeight / CARD_ROW_HEIGHT_PX))
-    return { spansHeight, maxLevels, visibleCount, groupLevels }
+    return { maxLevels, visibleCount, groupLevels }
 }
 
 function preferredStackSize(width: number, collapsed: boolean): number {

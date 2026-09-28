@@ -131,7 +131,7 @@ describe('Timeline', () => {
             container.querySelectorAll('[data-tick="major"]').length
         ).toBeGreaterThan(0)
         expect(screen.getByText('Heute')).toBeInTheDocument()
-        for (const layer of ['above', 'axis', 'below', 'spans']) {
+        for (const layer of ['above', 'axis', 'below']) {
             expect(
                 container.querySelector(`[data-layer="${layer}"]`)
             ).not.toBeNull()
@@ -139,10 +139,12 @@ describe('Timeline', () => {
         expect(
             screen.getByRole('button', { name: new RegExp(POST_POINT.title) })
         ).toHaveClass('cursor-pointer')
-        // The span band shows the first entry (a span without a post) as a bar.
+        // The first entry (a span without a post) lies on the axis as a bar.
         expect(
-            screen.getByRole('group', { name: new RegExp(entries[0]!.title) })
-        ).toHaveClass('cursor-pointer')
+            container.querySelector(
+                `[data-layer="axis"] > [data-layer="spans"] [data-span-id="${entries[0]!.id}"]`
+            )
+        ).not.toBeNull()
         expect(region).toHaveClass(
             'cursor-grab',
             'overflow-clip',

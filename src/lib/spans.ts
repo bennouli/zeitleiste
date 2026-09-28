@@ -10,8 +10,6 @@ export type SpanInput = {
     x1: number
     /** Higher importance prefers the lane nearest the axis (lane 0). */
     importance: number
-    /** Estimated width of the title label in px, for `labelFits`. */
-    labelWidthPx?: number
 }
 
 export type SpanLayoutOptions = {
@@ -19,8 +17,6 @@ export type SpanLayoutOptions = {
     minWidthPx?: number
     /** Horizontal gap between bars in one lane, default 4. */
     gapPx?: number
-    /** Inner padding subtracted from the bar width before deciding whether the label fits, default 12. */
-    labelPaddingPx?: number
     /**
      * Right edge no stretched bar may cross (e.g. the "today" x). When extending
      * a short bar to the right would pass maxX, it is extended to the left
@@ -49,7 +45,6 @@ export type SpanBar = {
     extended: boolean
     /** 0 = nearest the axis. */
     lane: number
-    labelFits: boolean
 }
 
 export type SpanLayout = {
@@ -57,9 +52,8 @@ export type SpanLayout = {
     laneCount: number
 }
 
-export const DEFAULT_MIN_WIDTH_PX = 64
+const DEFAULT_MIN_WIDTH_PX = 64
 const DEFAULT_GAP_PX = 4
-const DEFAULT_LABEL_PADDING_PX = 12
 
 /**
  * Assigns each span to a lane so that no two bars in one lane overlap.
@@ -82,10 +76,6 @@ export function layoutSpans(
 ): SpanLayout {
     const minWidth = Math.max(0, options.minWidthPx ?? DEFAULT_MIN_WIDTH_PX)
     const gap = Math.max(0, options.gapPx ?? DEFAULT_GAP_PX)
-    const labelPadding = Math.max(
-        0,
-        options.labelPaddingPx ?? DEFAULT_LABEL_PADDING_PX
-    )
     const maxX = Number.isFinite(options.maxX)
         ? (options.maxX as number)
         : Infinity
@@ -101,9 +91,6 @@ export function layoutSpans(
         const trueX1 = Math.max(trueX0, span.x1)
         const { x0, x1, extended } = drawnExtent(trueX0, trueX1, minWidth, maxX)
         const lane = firstFreeLane(lanes, x0, x1, gap)
-        const labelFits =
-            span.labelWidthPx !== undefined &&
-            span.labelWidthPx + labelPadding <= x1 - x0
         const laneBars = (lanes[lane] ??= [])
         laneBars.push({
             id: span.id,
@@ -113,7 +100,6 @@ export function layoutSpans(
             trueX1,
             extended,
             lane,
-            labelFits,
         })
     }
 

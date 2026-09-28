@@ -15,12 +15,12 @@ import {
     COLLAPSE_ANIMATION_MS,
     COLLAPSED_HEIGHT,
     FOCUS_VISIBLE_MS,
-    SPAN_LANE_HEIGHT_PX,
 } from './constants'
 import { useEntryFocus } from './entryFocus'
 import { groupZoomTarget } from './groupZoom'
 import { LABEL_MAX_WIDTH_PX } from './labelMetrics'
-import { DEFAULT_CHAR_WIDTH_PX, SpanBand, spanBandLayout } from './SpanBand'
+import { spanLayout } from './spanGeometry'
+import { SpanLayer } from './SpanLayer'
 import { TimelineContext, type TimelineContextValue } from './TimelineContext'
 import { useEntryLayout } from './useEntryLayout'
 import { useGestures } from './useGestures'
@@ -90,26 +90,16 @@ export function Timeline({
     )
 
     const spans = useMemo(() => entries.filter(isSpan), [entries])
-    const spanOptions = useMemo(
-        () => ({ minWidthPx: remPx(4), charWidthPx: DEFAULT_CHAR_WIDTH_PX }),
-        []
-    )
 
     const layoutKey = `${controls.gestureEnd}|${width}|${height}|${collapsed}`
     const layoutToX = useSnapshotPerKey(toX, layoutKey)
     const spanLanes = useMemo(() => {
-        const { bars, laneCount } = spanBandLayout(
-            spans,
-            layoutToX,
-            today,
-            spanOptions
-        )
-        const lanes = new Map([...bars].map(([id, bar]) => [id, bar.lane]))
-        return { laneCount, lanes }
-    }, [spans, layoutToX, today, spanOptions])
+        const bars = spanLayout(spans, layoutToX, today)
+        return new Map([...bars].map(([id, bar]) => [id, bar.lane]))
+    }, [spans, layoutToX, today])
     const bands = useMemo(
-        () => bandGeometry(height, width, collapsed, spanLanes.laneCount),
-        [height, width, collapsed, spanLanes.laneCount]
+        () => bandGeometry(height, width, collapsed),
+        [height, width, collapsed]
     )
 
     const layout = useEntryLayout(
@@ -182,25 +172,14 @@ export function Timeline({
                                 onOpen={open}
                                 onZoomIntoGroup={zoomIntoGroup}
                             />
-                        </div>
-                        <div data-layer="below" className="min-h-0 flex-1" />
-                        <div
-                            data-layer="spans"
-                            className="relative z-10 shrink-0"
-                            style={{ height: bands.spansHeight }}
-                        >
-                            <SpanBand
+                            <SpanLayer
                                 spans={spans}
                                 timeToX={toX}
                                 today={today}
-                                laneHeightPx={SPAN_LANE_HEIGHT_PX}
-                                minWidthPx={spanOptions.minWidthPx}
-                                lanes={spanLanes.lanes}
-                                highlightedId={focusEntryId}
-                                onOpen={open}
-                                wasDrag={gestures.wasDrag}
+                                lanes={spanLanes}
                             />
                         </div>
+                        <div data-layer="below" className="min-h-0 flex-1" />
                     </>
                 )}
                 <p
@@ -299,13 +278,6 @@ function useSnapshotPerKey<T>(value: T, key: string): T {
     if (snapshot.key === key) return snapshot.value
     setSnapshot({ key, value })
     return value
-}
-
-/** `rem` in px, so the span minimum width follows the root font size. */
-function remPx(rem: number): number {
-    if (typeof document === 'undefined') return rem * 16
-    const size = parseFloat(getComputedStyle(document.documentElement).fontSize)
-    return (Number.isFinite(size) && size > 0 ? size : 16) * rem
 }
 
 export const PRIVATE_UNDER_TESTS = { dataBounds, useSnapshotPerKey }

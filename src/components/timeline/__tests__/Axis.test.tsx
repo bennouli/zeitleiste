@@ -1,7 +1,7 @@
 import { MS_PER_YEAR } from '@/lib/time'
 import { render, screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
-import { Axis } from '../Axis'
+import { Axis, AXIS_LINE_THICKNESS_PX } from '../Axis'
 import { TimelineContext, type TimelineContextValue } from '../TimelineContext'
 
 const WIDTH = 1000
@@ -45,7 +45,8 @@ describe('Axis', () => {
         const { container } = renderAxis(todayX, 10)
         const line = container.querySelector<HTMLElement>('[data-axis-line]')!
         expect(line.style.width).toBe(w)
-        expect(line).toHaveClass('left-0', 'h-px', 'bg-fg')
+        expect(line).toHaveClass('left-0', 'bg-fg')
+        expect(line.style.height).toBe(`${AXIS_LINE_THICKNESS_PX}px`)
     })
 
     it('sets major and minor labels apart by weight and colour, at one size', () => {

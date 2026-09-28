@@ -8,6 +8,7 @@ import { overlapsTodayLabel, todayAlignment } from './todayLabel'
 
 /** y of the axis line inside the axis band, in px. */
 export const AXIS_LINE_Y_PX = 24
+export const AXIS_LINE_THICKNESS_PX = 1
 const LABEL_TOP_PX = AXIS_LINE_Y_PX + 14
 const TODAY_MARK_HEIGHT_PX = 16
 const TICK_OPTIONS = { minYearWidthForMonthsPx: 420, charWidthPx: 7.5 }
@@ -41,8 +42,12 @@ export function Axis() {
         >
             <div
                 data-axis-line
-                className="absolute left-0 h-px bg-fg"
-                style={{ top: AXIS_LINE_Y_PX, width: lineWidth }}
+                className="absolute left-0 bg-fg"
+                style={{
+                    top: AXIS_LINE_Y_PX,
+                    width: lineWidth,
+                    height: AXIS_LINE_THICKNESS_PX,
+                }}
             />
             {pastTicks.map((tick) => (
                 <div
