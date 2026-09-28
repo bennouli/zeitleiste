@@ -5,7 +5,7 @@ import type { ReactNode, RefObject, SyntheticEvent } from 'react'
 import { useLayoutEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
 
-export interface TooltipProps {
+export type TooltipProps = {
     /** Referenced by the anchor's `aria-describedby`. */
     id: string
     open: boolean
@@ -144,7 +144,7 @@ function stop(e: SyntheticEvent) {
     e.stopPropagation()
 }
 
-interface Box {
+type Box = {
     left: number
     top: number
     right: number

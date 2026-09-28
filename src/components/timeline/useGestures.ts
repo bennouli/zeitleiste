@@ -1,5 +1,6 @@
 'use client'
 
+import { isTypingTarget } from '@/lib/dom'
 import { estimateVelocity } from '@/lib/viewport'
 import type { KeyboardEvent, MouseEvent, PointerEvent } from 'react'
 import {
@@ -25,12 +26,12 @@ type Actions = Pick<
     | 'panStep'
 >
 
-interface PointerInfo {
+type PointerInfo = {
     x: number
     type: string
 }
 
-export interface GestureHandlers {
+export type GestureHandlers = {
     onPointerDown: (e: PointerEvent<HTMLElement>) => void
     onPointerMove: (e: PointerEvent<HTMLElement>) => void
     onPointerUp: (e: PointerEvent<HTMLElement>) => void
@@ -40,7 +41,7 @@ export interface GestureHandlers {
     onKeyDown: (e: KeyboardEvent<HTMLElement>) => void
 }
 
-export interface Gestures {
+export type Gestures = {
     handlers: GestureHandlers
     /** True while a press has turned into a drag or pinch (for the grabbing cursor). */
     isDragging: boolean
@@ -277,13 +278,7 @@ export function useGestures(
             // Ctrl/Cmd +/- is the browser's page zoom; leave it alone.
             if (e.defaultPrevented || e.ctrlKey || e.metaKey || e.altKey) return
             // Keys typed into a form control (the prototype <select>s) belong to it.
-            const t = e.target
-            if (
-                t instanceof HTMLElement &&
-                (t.isContentEditable ||
-                    ['INPUT', 'TEXTAREA', 'SELECT'].includes(t.tagName))
-            )
-                return
+            if (isTypingTarget(e.target)) return
             dragged.current = false
             const step = Math.max(1, width) * KEY_PAN_FRACTION
             switch (e.key) {

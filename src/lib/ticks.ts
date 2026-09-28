@@ -20,7 +20,7 @@ export type TickUnit =
     | 'week'
     | 'day'
 
-export interface Tick {
+export type Tick = {
     /** ms UTC */
     t: number
     /** Label to draw, e.g. '1900', '1917', 'Nov. 1917', 'Nov.', '7. Nov.' */
@@ -29,7 +29,7 @@ export interface Tick {
     major: boolean
 }
 
-export interface TicksOptions {
+export type TicksOptions = {
     /**
      * Minimum horizontal distance between adjacent labels (tick positions) in px, default 72.
      * Rule: adjacent tick positions must be at least
@@ -43,7 +43,7 @@ export interface TicksOptions {
     locale?: string
 }
 
-export interface TickResult {
+export type TickResult = {
     unit: TickUnit
     ticks: Tick[]
 }
@@ -57,7 +57,7 @@ const WEEK_DAYS = new Set([1, 8, 15, 22])
 
 type LabelMode = 'long' | 'short'
 
-interface Candidate {
+type Candidate = {
     unit: TickUnit
     interval: TimeInterval
     /** Lower bound of the distance between two ticks, used to skip hopeless units cheaply. */

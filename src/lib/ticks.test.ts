@@ -1,3 +1,4 @@
+import { MS_PER_DAY, MS_PER_YEAR } from '@/lib/time'
 import { describe, expect, it } from 'vitest'
 import { LABEL_PADDING_PX, ticks, timeToX, type TickUnit } from './ticks'
 
@@ -17,20 +18,18 @@ const UNITS: TickUnit[] = [
 ]
 const fineness = (u: TickUnit) => UNITS.indexOf(u)
 
-const DAY = 86_400_000
-const YEAR = 365.2425 * DAY
 const END = Date.UTC(2026, 8, 27)
 const START_1700 = Date.UTC(1700, 0, 1)
 
 const SPANS: [string, number][] = [
-    ['300 years', 300 * YEAR],
-    ['100 years', 100 * YEAR],
-    ['40 years', 40 * YEAR],
-    ['10 years', 10 * YEAR],
-    ['3 years', 3 * YEAR],
-    ['1 year', YEAR],
-    ['6 months', 182 * DAY],
-    ['3 months', 91 * DAY],
+    ['300 years', 300 * MS_PER_YEAR],
+    ['100 years', 100 * MS_PER_YEAR],
+    ['40 years', 40 * MS_PER_YEAR],
+    ['10 years', 10 * MS_PER_YEAR],
+    ['3 years', 3 * MS_PER_YEAR],
+    ['1 year', MS_PER_YEAR],
+    ['6 months', 182 * MS_PER_DAY],
+    ['3 months', 91 * MS_PER_DAY],
 ]
 
 const CHAR = 7.5
@@ -93,17 +92,17 @@ describe.each([360, 1920])('ticks at %ipx', (width) => {
 
     it('shows twenty-year steps or coarser for 300 years and months or finer for 3 months', () => {
         expect(
-            fineness(ticks(END - 300 * YEAR, END, width).unit)
+            fineness(ticks(END - 300 * MS_PER_YEAR, END, width).unit)
         ).toBeLessThanOrEqual(fineness('twenty-years'))
         expect(
-            fineness(ticks(END - 91 * DAY, END, width).unit)
+            fineness(ticks(END - 91 * MS_PER_DAY, END, width).unit)
         ).toBeGreaterThanOrEqual(fineness('month'))
     })
 })
 
 describe('ticks: units by zoom', () => {
     it('uses centuries for 300 years at 360px', () => {
-        expect(ticks(END - 300 * YEAR, END, 360).unit).toBe('century')
+        expect(ticks(END - 300 * MS_PER_YEAR, END, 360).unit).toBe('century')
     })
     it('uses days when a few weeks span a wide screen', () => {
         const r = ticks(Date.UTC(1917, 10, 1), Date.UTC(1917, 10, 15), 1920)
@@ -210,7 +209,7 @@ describe('ticks: major flags', () => {
             [300, 1920, 'twenty-years', 100],
         ]
         for (const [span, width, unit, mod] of cases) {
-            const r = ticks(END - span * YEAR, END, width)
+            const r = ticks(END - span * MS_PER_YEAR, END, width)
             expect(r.unit).toBe(unit)
             for (const t of r.ticks)
                 expect(t.major).toBe(new Date(t.t).getUTCFullYear() % mod === 0)
@@ -260,20 +259,20 @@ describe('ticks: major flags', () => {
 describe('ticks: edge cases', () => {
     it('returns no ticks for an empty or inverted range or zero width', () => {
         expect(ticks(END, END, 1000).ticks).toEqual([])
-        expect(ticks(END, END - YEAR, 1000).ticks).toEqual([])
-        expect(ticks(END - YEAR, END, 0).ticks).toEqual([])
+        expect(ticks(END, END - MS_PER_YEAR, 1000).ticks).toEqual([])
+        expect(ticks(END - MS_PER_YEAR, END, 0).ticks).toEqual([])
         expect(ticks(NaN, END, 1000).ticks).toEqual([])
     })
 
     it('falls back to centuries when nothing fits', () => {
-        const r = ticks(END - 300 * YEAR, END, 100)
+        const r = ticks(END - 300 * MS_PER_YEAR, END, 100)
         expect(r.unit).toBe('century')
         expect(r.ticks.length).toBeGreaterThan(0)
     })
 
     it('is deterministic', () => {
-        expect(ticks(END - 3 * YEAR, END, 800)).toEqual(
-            ticks(END - 3 * YEAR, END, 800)
+        expect(ticks(END - 3 * MS_PER_YEAR, END, 800)).toEqual(
+            ticks(END - 3 * MS_PER_YEAR, END, 800)
         )
     })
 
@@ -297,7 +296,11 @@ describe('ticks: edge cases', () => {
     it('never overlaps across a zoom sweep and never gets coarser as the span shrinks', () => {
         for (const width of [360, 800, 1920]) {
             let prev = -1
-            for (let span = 300 * YEAR; span > 20 * DAY; span *= 0.97) {
+            for (
+                let span = 300 * MS_PER_YEAR;
+                span > 20 * MS_PER_DAY;
+                span *= 0.97
+            ) {
                 const r = ticks(END - span, END, width)
                 expect(fineness(r.unit)).toBeGreaterThanOrEqual(prev)
                 prev = fineness(r.unit)
@@ -317,8 +320,12 @@ describe('ticks: edge cases', () => {
     })
 
     it('respects custom options', () => {
-        const wide = ticks(END - 10 * YEAR, END, 1920, { minLabelGapPx: 300 })
-        const tight = ticks(END - 10 * YEAR, END, 1920, { minLabelGapPx: 20 })
+        const wide = ticks(END - 10 * MS_PER_YEAR, END, 1920, {
+            minLabelGapPx: 300,
+        })
+        const tight = ticks(END - 10 * MS_PER_YEAR, END, 1920, {
+            minLabelGapPx: 20,
+        })
         expect(fineness(wide.unit)).toBeLessThan(fineness(tight.unit))
         const en = ticks(Date.UTC(1917, 0, 1), Date.UTC(1917, 11, 31), 1920, {
             locale: 'en',

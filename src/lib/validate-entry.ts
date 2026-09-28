@@ -55,18 +55,6 @@ export function validateHDate(d: unknown, label: string): string[] {
     return problems
 }
 
-/**
- * Orders two dates. A missing month or day counts as the earliest possible
- * value, so {1918} sorts before {1918, 3, 3}.
- */
-export function compareHDate(a: HDate, b: HDate): number {
-    return (
-        a.year - b.year ||
-        (a.month ?? 0) - (b.month ?? 0) ||
-        (a.day ?? 0) - (b.day ?? 0)
-    )
-}
-
 /** True if `end` lies before `start`, compared only at the precision both share. */
 function endsBeforeStart(start: HDate, end: HDate): boolean {
     if (end.year !== start.year) return end.year < start.year

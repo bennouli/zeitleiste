@@ -1,4 +1,4 @@
-// Pure zoom/pan state for the timeline (issues #5, #6, #13). Times are ms since epoch (UTC), widths are px.
+// Pure zoom/pan state for the timeline. Times are ms since epoch (UTC), widths are px.
 
 const DAY_MS = 24 * 60 * 60 * 1000
 
@@ -10,13 +10,13 @@ export const MAX_VISIBLE_MS: number = 300 * 365.2425 * DAY_MS
 export const ZOOM_STEP_FACTOR: number = 2
 
 /** A visible time range. Invariant: end > start. */
-export interface Viewport {
+export type Viewport = {
     start: number
     end: number
 }
 
 /** The data range that can be shown: first entry start … today. */
-export interface Bounds {
+export type Bounds = {
     min: number
     max: number
 }
@@ -242,12 +242,12 @@ export function viewportEquals(
 }
 
 /** Momentum after a drag. Pure step; the component calls it per animation frame. */
-export interface Momentum {
+export type Momentum = {
     vp: Viewport
     velocityPxPerMs: number
 }
 
-export interface MomentumOptions {
+export type MomentumOptions = {
     /** Exponential decay rate per ms. Default 0.004. */
     frictionPerMs?: number
     /** Stop once |velocity| falls below this. Default 0.02 px/ms. */

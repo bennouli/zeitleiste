@@ -1,7 +1,9 @@
 // Lane layout for time spans (wars, reigns, eras), in px along the x axis.
 // Pure geometry; the timeline component converts dates to px and draws the bars.
 
-export interface SpanInput {
+import { compareIds } from '@/lib/order'
+
+export type SpanInput = {
     id: string
     /** True horizontal extent in px at the current zoom (x1 ≥ x0). */
     x0: number
@@ -12,7 +14,7 @@ export interface SpanInput {
     labelWidthPx?: number
 }
 
-export interface SpanLayoutOptions {
+export type SpanLayoutOptions = {
     /** Minimum drawn width, default 64 (4rem at 16px). */
     minWidthPx?: number
     /** Horizontal gap between bars in one lane, default 4. */
@@ -29,7 +31,7 @@ export interface SpanLayoutOptions {
     maxX?: number
 }
 
-export interface SpanBar {
+export type SpanBar = {
     id: string
     /**
      * Drawn extent, containing [trueX0, trueX1]. A bar shorter than minWidthPx
@@ -50,7 +52,7 @@ export interface SpanBar {
     labelFits: boolean
 }
 
-export interface SpanLayout {
+export type SpanLayout = {
     bars: SpanBar[]
     laneCount: number
 }
@@ -58,10 +60,6 @@ export interface SpanLayout {
 export const DEFAULT_MIN_WIDTH_PX = 64
 export const DEFAULT_GAP_PX = 4
 export const DEFAULT_LABEL_PADDING_PX = 12
-
-function compareIds(a: string, b: string): number {
-    return a < b ? -1 : a > b ? 1 : 0
-}
 
 /**
  * Assigns each span to a lane so that no two bars in one lane overlap.

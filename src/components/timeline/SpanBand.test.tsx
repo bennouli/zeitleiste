@@ -1,10 +1,10 @@
 import { entries } from '@/data/entries'
 import { isSpan, type Entry } from '@/lib/entry'
 import { startOf } from '@/lib/time'
+import { expectNoAxeViolations } from '@/test/axe'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
-import { axe } from 'vitest-axe'
 import { SpanBand, spanBandLayout, type SpanBandProps } from './SpanBand'
 
 const TODAY = Date.UTC(2026, 8, 27)
@@ -221,11 +221,7 @@ describe('SpanBand', () => {
     it('has no axe violations', async () => {
         {
             const { container, unmount } = renderBand()
-            expect(
-                await axe(container, {
-                    rules: { 'color-contrast': { enabled: false } },
-                })
-            ).toHaveNoViolations()
+            await expectNoAxeViolations(container)
             unmount()
         }
     })

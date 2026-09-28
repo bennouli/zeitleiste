@@ -1,4 +1,5 @@
 import type { Entry } from '@/lib/entry'
+import { expectNoAxeViolations } from '@/test/axe'
 import {
     createEvent,
     fireEvent,
@@ -8,7 +9,6 @@ import {
 } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
-import { axe } from 'vitest-axe'
 import { GroupMarker } from './GroupMarker'
 import {
     GROUP_STACK_CONTROLS_HEIGHT_PX,
@@ -561,10 +561,7 @@ describe('GroupStack', () => {
 
     it('has no detectable accessibility violations', async () => {
         const { container } = setup()
-        const results = await axe(container, {
-            rules: { 'color-contrast': { enabled: false } },
-        })
-        expect(results).toHaveNoViolations()
+        await expectNoAxeViolations(container)
     })
 })
 
@@ -615,9 +612,6 @@ describe('GroupMarker', () => {
                 />
             </div>
         )
-        const results = await axe(container, {
-            rules: { 'color-contrast': { enabled: false } },
-        })
-        expect(results).toHaveNoViolations()
+        await expectNoAxeViolations(container)
     })
 })

@@ -1,12 +1,14 @@
+import { compareIds } from '@/lib/order'
+
 export type Side = 'above' | 'below'
 
-export interface Slot {
+export type Slot = {
     side: Side
     /** 0 = nearest the axis */
     level: number
 }
 
-export interface PlaceableItem {
+export type PlaceableItem = {
     id: string
     /** Horizontal extent of the card in px (already includes the card's width, i.e. x1 ≥ x0 + cardWidth). */
     x0: number
@@ -17,7 +19,7 @@ export interface PlaceableItem {
     order: number
 }
 
-export interface PlacementOptions {
+export type PlacementOptions = {
     /** Minimum horizontal gap between two cards in the same row, default 8. */
     gapPx?: number
     /** Rows per side, default 2 (so 4 rows total). */
@@ -26,14 +28,14 @@ export interface PlacementOptions {
     blocked?: readonly BlockedInterval[]
 }
 
-export interface BlockedInterval extends Slot {
+export type BlockedInterval = Slot & {
     x0: number
     x1: number
 }
 
-export interface Placement {
+export type Placement = {
     slots: Map<string, Slot>
-    /** Items that fit nowhere; the caller groups them (issue #9). */
+    /** Items that fit nowhere; the caller groups them. */
     overflow: string[]
 }
 
@@ -97,7 +99,7 @@ class Row {
 function compareItems(a: PlaceableItem, b: PlaceableItem): number {
     if (a.importance !== b.importance) return b.importance - a.importance
     if (a.order !== b.order) return a.order - b.order
-    return a.id < b.id ? -1 : a.id > b.id ? 1 : 0
+    return compareIds(a.id, b.id)
 }
 
 /** Try order: above 0, below 0, above 1, below 1, … */
@@ -185,10 +187,12 @@ export function placeItems(
 }
 
 /** Number of rows actually used per side, for computing the band height. */
-export function usedLevels(p: Placement): { above: number; below: number } {
+function usedLevels(p: Placement): { above: number; below: number } {
     const used = { above: 0, below: 0 }
     for (const slot of p.slots.values()) {
         used[slot.side] = Math.max(used[slot.side], slot.level + 1)
     }
     return used
 }
+
+export const PRIVATE_UNDER_TESTS = { usedLevels }

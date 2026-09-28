@@ -6,6 +6,7 @@ import {
     visibleMs,
     type Bounds,
 } from '@/lib/viewport'
+import { stubReducedMotion } from '@/test/motion'
 import { act, renderHook } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { ANIMATION_MS } from './constants'
@@ -14,18 +15,6 @@ import { useViewport } from './useViewport'
 const Y2000 = Date.UTC(2000, 0, 1)
 const bounds: Bounds = { min: Y2000 - 200 * MS_PER_YEAR, max: Y2000 }
 const WIDTH = 1000
-
-function setReducedMotion(reduce: boolean) {
-    vi.stubGlobal(
-        'matchMedia',
-        vi.fn((q: string) => ({
-            matches: reduce && q.includes('reduce'),
-            media: q,
-            addEventListener() {},
-            removeEventListener() {},
-        }))
-    )
-}
 
 function setup(initialSpanYears = 100) {
     const initial = {
@@ -51,7 +40,7 @@ beforeEach(() => {
             'clearTimeout',
         ],
     })
-    setReducedMotion(false)
+    stubReducedMotion(false)
 })
 afterEach(() => {
     vi.useRealTimers()
@@ -107,7 +96,7 @@ describe('useViewport', () => {
     })
 
     it('is instant with reduced motion', () => {
-        setReducedMotion(true)
+        stubReducedMotion(true)
         const { result } = setup()
         const span = visibleMs(result.current.viewport)
         act(() => result.current.zoomIn())
@@ -119,7 +108,7 @@ describe('useViewport', () => {
     })
 
     it('disables zoom at the limits', () => {
-        setReducedMotion(true)
+        stubReducedMotion(true)
         const { result } = setup()
         for (let i = 0; i < 40 && result.current.canZoomIn; i++)
             act(() => result.current.zoomIn())
@@ -177,7 +166,7 @@ describe('useViewport', () => {
     })
 
     it('no momentum with reduced motion', () => {
-        setReducedMotion(true)
+        stubReducedMotion(true)
         const { result } = setup(50)
         const before = result.current.viewport
         act(() => result.current.startMomentum(-1))

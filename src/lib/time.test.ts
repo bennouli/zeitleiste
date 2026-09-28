@@ -1,6 +1,7 @@
 import { entries } from '@/data/entries'
+import { sampleEntry } from '@/test/entries'
 import { describe, expect, it } from 'vitest'
-import { precisionOf, type Entry, type HDate } from './entry'
+import { precisionOf, type HDate } from './entry'
 import {
     MS_PER_DAY,
     MS_PER_YEAR,
@@ -14,12 +15,6 @@ import {
     todayMs,
     yearOf,
 } from './time'
-
-function entry(id: string): Entry {
-    const e = entries.find((x) => x.id === id)
-    if (!e) throw new Error(`sample entry '${id}' missing`)
-    return e
-}
 
 const TODAY = Date.UTC(2026, 8, 27)
 
@@ -118,14 +113,14 @@ describe('startOf / endOf / midOf', () => {
 
 describe('entryAnchor / entryRange', () => {
     it('point: anchor is the midpoint of the start day', () => {
-        const e = entry('oktoberrevolution')
+        const e = sampleEntry('oktoberrevolution')
         const a = Date.UTC(1917, 10, 7, 12)
         expect(entryAnchor(e)).toBe(a)
         expect(entryRange(e, TODAY)).toEqual([a, a])
     })
 
     it('point with month precision', () => {
-        const e = entry('annexion-der-krim')
+        const e = sampleEntry('annexion-der-krim')
         expect(entryRange(e, TODAY)).toEqual([
             Date.UTC(2014, 2, 16, 12),
             Date.UTC(2014, 2, 16, 12),
@@ -133,7 +128,7 @@ describe('entryAnchor / entryRange', () => {
     })
 
     it('span with day precision includes the whole end day', () => {
-        const e = entry('kubakrise')
+        const e = sampleEntry('kubakrise')
         expect(entryRange(e, TODAY)).toEqual([
             Date.UTC(1962, 9, 16),
             Date.UTC(1962, 9, 29),
@@ -142,7 +137,7 @@ describe('entryAnchor / entryRange', () => {
     })
 
     it('span with mixed precision', () => {
-        const e = entry('grosser-nordischer-krieg')
+        const e = sampleEntry('grosser-nordischer-krieg')
         expect(entryRange(e, TODAY)).toEqual([
             Date.UTC(1700, 0, 1),
             Date.UTC(1721, 8, 11),
@@ -150,7 +145,7 @@ describe('entryAnchor / entryRange', () => {
     })
 
     it('ongoing span ends at today', () => {
-        const e = entry('russischer-angriffskrieg-gegen-die-ukraine')
+        const e = sampleEntry('russischer-angriffskrieg-gegen-die-ukraine')
         expect(entryRange(e, TODAY)).toEqual([Date.UTC(2022, 1, 24), TODAY])
     })
 })

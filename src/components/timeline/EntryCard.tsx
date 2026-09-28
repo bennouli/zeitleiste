@@ -1,10 +1,12 @@
 'use client'
 
-import { CATEGORY_LABEL, type Entry, type Region } from '@/lib/entry'
+import { isTypingTarget } from '@/lib/dom'
+import { CATEGORY_LABEL, type Entry } from '@/lib/entry'
 import { formatEntryDate } from '@/lib/format'
 import clsx from 'clsx'
 import type { CSSProperties, FocusEvent, PointerEvent } from 'react'
 import { useEffect, useId, useRef, useState } from 'react'
+import { REGION_BG, REGION_BORDER_L } from './regionStyles'
 import { Tooltip } from './Tooltip'
 
 export const CARD_WIDTH_PX = 176
@@ -13,7 +15,7 @@ export const CONNECTOR_MIN_PX = 12
 
 const PRESS_FOCUS_WINDOW_MS = 1000
 
-export interface EntryCardProps {
+export type EntryCardProps = {
     entry: Entry
     /** x of the entry's anchor within the layer, px. The card's left edge is at `x` (or its right edge with `alignEnd`). */
     x: number
@@ -30,18 +32,6 @@ export interface EntryCardProps {
     wasDrag?: () => boolean
     /** Render without absolute positioning and without the connector (inside a group stack). */
     inline?: boolean
-}
-
-const CARD_BORDER: Record<Region, string> = {
-    russia: 'border-l-russia',
-    west: 'border-l-west',
-    both: 'border-l-both',
-}
-
-const CONNECTOR_BG: Record<Region, string> = {
-    russia: 'bg-russia',
-    west: 'bg-west',
-    both: 'bg-both',
 }
 
 export function EntryCard({
@@ -73,13 +63,7 @@ export function EntryCard({
         if (!open) return
         const onKey = (e: globalThis.KeyboardEvent) => {
             if (e.key !== 'Escape' || e.defaultPrevented) return
-            const t = e.target
-            if (
-                t instanceof HTMLElement &&
-                (t.isContentEditable ||
-                    ['INPUT', 'TEXTAREA', 'SELECT'].includes(t.tagName))
-            )
-                return
+            if (isTypingTarget(e.target)) return
             setDismissed(true)
             // This Escape is used up; the shell's window listener must not also close the post.
             e.preventDefault()
@@ -171,7 +155,7 @@ export function EntryCard({
             (inline
                 ? 'focus-visible:-outline-offset-4'
                 : 'focus-visible:outline-offset-2'),
-        CARD_BORDER[entry.region],
+        REGION_BORDER_L[entry.region],
         highlighted && 'ring-2 ring-focus',
         highlighted &&
             (side === 'above' ? '-translate-y-0.5' : 'translate-y-0.5')
@@ -281,7 +265,7 @@ export function EntryCard({
                 className={clsx(
                     'absolute w-0.5',
                     alignEnd ? 'right-0' : 'left-0',
-                    CONNECTOR_BG[entry.region]
+                    REGION_BG[entry.region]
                 )}
                 style={connectorStyle}
             />

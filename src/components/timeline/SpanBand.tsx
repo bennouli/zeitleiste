@@ -1,6 +1,7 @@
 'use client'
 
 import { isSpan, type Entry } from '@/lib/entry'
+import { compareIds } from '@/lib/order'
 import {
     DEFAULT_MIN_WIDTH_PX,
     layoutSpans,
@@ -12,7 +13,7 @@ import clsx from 'clsx'
 import type { JSX } from 'react'
 import { SpanBarView } from './SpanBar'
 
-export interface SpanBandProps {
+export type SpanBandProps = {
     /** Span entries only (isSpan); points are ignored. */
     spans: Entry[]
     /** Maps ms → px within the band. */
@@ -106,7 +107,7 @@ export function SpanBand({
         .sort(
             (a, b) =>
                 bars.get(a.id)!.trueX0 - bars.get(b.id)!.trueX0 ||
-                (a.id < b.id ? -1 : a.id > b.id ? 1 : 0)
+                compareIds(a.id, b.id)
         )
 
     return (

@@ -3,42 +3,18 @@
 import { PostContext } from '@/components/PostContext'
 import { findFocusTarget } from '@/components/timeline/focusTarget'
 import { Timeline } from '@/components/timeline/Timeline'
+import { isTypingTarget, prefersReducedMotion } from '@/lib/dom'
+import { easeInOut } from '@/lib/easing'
 import type { Entry } from '@/lib/entry'
 import { findEntry, postHref, slugFromPathname } from '@/lib/posts'
 import { usePathname, useRouter } from 'next/navigation'
 import { useCallback, useEffect, useMemo, useRef, type ReactNode } from 'react'
-
-// Kept for existing importers; new code imports from PostContext directly.
-export {
-    PostContext,
-    usePostControls,
-    type PostControls,
-} from '@/components/PostContext'
 
 /** Where the start of the post should sit, as a fraction of the viewport height from the top. */
 const POST_TOP_RATIO = 0.4
 const SCROLL_MS = 500
 /** Keep following layout changes (the timeline's height transition) at most this long. */
 const SCROLL_MAX_MS = 1500
-
-function prefersReducedMotion(): boolean {
-    return (
-        typeof window.matchMedia === 'function' &&
-        window.matchMedia('(prefers-reduced-motion: reduce)').matches
-    )
-}
-
-function easeInOut(t: number): number {
-    return t < 0.5 ? 2 * t * t : 1 - (-2 * t + 2) ** 2 / 2
-}
-
-function isTypingTarget(t: EventTarget | null): boolean {
-    if (!(t instanceof HTMLElement)) return false
-    return (
-        t.isContentEditable ||
-        ['INPUT', 'TEXTAREA', 'SELECT'].includes(t.tagName)
-    )
-}
 
 /**
  * Scrolls the window so the top of `el` sits at POST_TOP_RATIO of the viewport.

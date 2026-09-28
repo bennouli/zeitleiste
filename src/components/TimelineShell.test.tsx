@@ -1,9 +1,11 @@
 import type { TimelineProps } from '@/components/timeline/Timeline'
 import { entries } from '@/data/entries'
+import { expectNoAxeViolations } from '@/test/axe'
+import { sampleEntry } from '@/test/entries'
+import { stubReducedMotion } from '@/test/motion'
 import { act, fireEvent, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { axe } from 'vitest-axe'
 import { Post } from './post/Post'
 import { TimelineShell } from './TimelineShell'
 
@@ -41,7 +43,7 @@ vi.mock('@/components/timeline/Timeline', () => ({
     ),
 }))
 
-const okt = entries.find((e) => e.id === 'oktoberrevolution')!
+const okt = sampleEntry('oktoberrevolution')
 const otherPost = entries.find((e) => e.post && e.id !== 'oktoberrevolution')!
 const noPost = entries.find((e) => !e.post)!
 
@@ -65,20 +67,14 @@ function stubPostTop(top: number) {
     )
 }
 
-function stubReducedMotion(matches: boolean) {
-    window.matchMedia = vi.fn(() => ({ matches }) as MediaQueryList)
-}
-
 beforeEach(() => {
     nav.push.mockReset()
     window.scrollTo = vi.fn() as unknown as typeof window.scrollTo
 })
 
-const originalMatchMedia = window.matchMedia
-
 afterEach(() => {
     vi.restoreAllMocks()
-    window.matchMedia = originalMatchMedia
+    vi.unstubAllGlobals()
 })
 
 describe('TimelineShell', () => {
@@ -334,9 +330,6 @@ describe('TimelineShell', () => {
 
     it('has no detectable accessibility violations', async () => {
         const { container } = renderAt('/post/oktoberrevolution')
-        const results = await axe(container, {
-            rules: { 'color-contrast': { enabled: false } },
-        })
-        expect(results).toHaveNoViolations()
+        await expectNoAxeViolations(container)
     })
 })

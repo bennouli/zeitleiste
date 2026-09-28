@@ -1,64 +1,22 @@
 import { expect, test, type Page } from '@playwright/test'
 import { entries } from '../src/data/entries'
+import {
+    focused,
+    ready,
+    tabUntil,
+    timelineRegion,
+    type Focused,
+} from './timeline'
 
 test.use({ viewport: { width: 1280, height: 800 }, reducedMotion: 'reduce' })
 
 const ORDER = new Map(entries.map((e, i) => [e.id, i]))
-const MAX_TABS = 120
-
-interface Focused {
-    name: string
-    role: string | null
-    /** Entries the focused element stands for: its card, stack, marker or span bar. */
-    ids: string[]
-    t: number | null
-    inPoints: boolean
-    inSpans: boolean
-    outline: string
-}
-
-function focused(page: Page): Promise<Focused> {
-    return page.evaluate(() => {
-        const el = document.activeElement as HTMLElement
-        const holder = el.closest<HTMLElement>(
-            '[data-entry-id], [data-span-id], [data-entry-ids]'
-        )
-        const ids = holder
-            ? (
-                  holder.dataset.entryId ??
-                  holder.dataset.spanId ??
-                  holder.dataset.entryIds ??
-                  ''
-              )
-                  .split(' ')
-                  .filter(Boolean)
-            : []
-        const t = el.closest<HTMLElement>('[data-t]')?.dataset.t
-        const style = getComputedStyle(el)
-        return {
-            name: el.getAttribute('aria-label') ?? el.textContent?.trim() ?? '',
-            role: el.getAttribute('role') ?? el.tagName.toLowerCase(),
-            ids,
-            t: t === undefined ? null : Number(t),
-            inPoints: el.closest('[data-layer="points"]') !== null,
-            inSpans: el.closest('[data-layer="spans"]') !== null,
-            outline: `${style.outlineStyle} ${style.outlineWidth}`,
-        }
-    })
-}
 
 const view = async (page: Page) => {
-    const region = page.getByRole('region', { name: 'Zeitleiste' })
+    const region = timelineRegion(page)
     const start = Number(await region.getAttribute('data-view-start'))
     const end = Number(await region.getAttribute('data-view-end'))
     return { start, end, span: end - start }
-}
-
-async function ready(page: Page) {
-    await page.goto('/')
-    await expect(
-        page.getByRole('region', { name: 'Zeitleiste' })
-    ).toHaveAttribute('data-view-start', /\d/)
 }
 
 test('Tab reaches the region first, then the entries in chronological order', async ({
@@ -66,7 +24,7 @@ test('Tab reaches the region first, then the entries in chronological order', as
 }) => {
     await ready(page)
     await page.keyboard.press('Tab')
-    await expect(page.getByRole('region', { name: 'Zeitleiste' })).toBeFocused()
+    await expect(timelineRegion(page)).toBeFocused()
 
     const firstThree: Focused[] = []
     for (let i = 0; i < 3; i++) {
@@ -95,15 +53,13 @@ for (const [label, size] of [
     }) => {
         await page.setViewportSize(size)
         await ready(page)
-        const region = page.getByRole('region', { name: 'Zeitleiste' })
+        const region = timelineRegion(page)
         const seen = new Set<string>()
         const pointTimes: number[] = []
         const spanTimes: number[] = []
         await page.keyboard.press('Tab')
-        for (let i = 0; i < MAX_TABS; i++) {
-            await page.keyboard.press('Tab')
-            const f = await focused(page)
-            if (f.name === 'Hineinzoomen') break
+        await tabUntil(page, async (f) => {
+            if (f.name === 'Hineinzoomen') return true
             expect(f.outline, `focus visible on "${f.name}"`).not.toMatch(
                 /^none|0px$/
             )
@@ -132,7 +88,8 @@ for (const [label, size] of [
             )
                 pointTimes.push(f.t)
             if (f.inSpans && f.t !== null) spanTimes.push(f.t)
-        }
+            return false
+        })
         expect([...seen].sort()).toEqual(entries.map((e) => e.id).sort())
         expect(pointTimes).toEqual([...pointTimes].sort((a, b) => a - b))
         expect(spanTimes).toEqual([...spanTimes].sort((a, b) => a - b))
@@ -149,13 +106,10 @@ test('Enter on a group marker zooms into the group and keeps focus in the timeli
     await page.setViewportSize({ width: 390, height: 844 })
     await ready(page)
     await page.keyboard.press('Tab')
-    let f: Focused | null = null
-    for (let i = 0; i < MAX_TABS; i++) {
-        await page.keyboard.press('Tab')
-        f = await focused(page)
-        if (f.name.startsWith('Hineinzoomen: ')) break
-    }
-    expect(f?.name).toMatch(/^Hineinzoomen: /)
+    const marker = await tabUntil(page, (f) =>
+        f.name.startsWith('Hineinzoomen: ')
+    )
+    expect(marker?.name).toMatch(/^Hineinzoomen: /)
     const before = await view(page)
     await page.keyboard.press('Enter')
     await expect
@@ -163,7 +117,7 @@ test('Enter on a group marker zooms into the group and keeps focus in the timeli
         .toBeLessThan(before.span)
     await expect
         .poll(async () =>
-            (await focused(page)).ids.some((id) => f!.ids.includes(id))
+            (await focused(page)).ids.some((id) => marker!.ids.includes(id))
         )
         .toBe(true)
 })
@@ -173,14 +127,12 @@ test('Enter opens a post, focus lands in it, Escape returns to the start page an
 }) => {
     await ready(page)
     await page.keyboard.press('Tab')
-    let f: Focused | null = null
-    for (let i = 0; i < MAX_TABS; i++) {
-        await page.keyboard.press('Tab')
-        f = await focused(page)
-        if (f.name.endsWith(', Beitrag') && f.ids.length === 1) break
-    }
-    expect(f?.name).toMatch(/, Beitrag$/)
-    const id = f!.ids[0]!
+    const postCard = await tabUntil(
+        page,
+        (f) => f.name.endsWith(', Beitrag') && f.ids.length === 1
+    )
+    expect(postCard?.name).toMatch(/, Beitrag$/)
+    const id = postCard!.ids[0]!
     await page.keyboard.press('Enter')
     await expect(page).toHaveURL(new RegExp(`/post/${id}$`))
     const heading = page.getByRole('article').getByRole('heading', { level: 2 })

@@ -1,4 +1,5 @@
 import { entries } from '@/data/entries'
+import { sampleEntry } from '@/test/entries'
 import { describe, expect, it } from 'vitest'
 import type { Entry, HDate } from './entry'
 import {
@@ -10,12 +11,6 @@ import {
 } from './format'
 
 const DASH = '–'
-
-function entry(id: string): Entry {
-    const e = entries.find((x) => x.id === id)
-    if (!e) throw new Error(`sample entry '${id}' missing`)
-    return e
-}
 
 function span(start: HDate, end?: HDate | 'ongoing'): Entry {
     return {
@@ -72,11 +67,15 @@ describe('formatHDate (de)', () => {
 
 describe('formatEntryDate (de)', () => {
     it('point', () => {
-        expect(formatEntryDate(entry('oktoberrevolution'))).toBe('7. Nov. 1917')
-        expect(formatEntryDate(entry('oktoberrevolution'), 'long')).toBe(
+        expect(formatEntryDate(sampleEntry('oktoberrevolution'))).toBe(
+            '7. Nov. 1917'
+        )
+        expect(formatEntryDate(sampleEntry('oktoberrevolution'), 'long')).toBe(
             '7. November 1917'
         )
-        expect(formatEntryDate(entry('annexion-der-krim'))).toBe('März 2014')
+        expect(formatEntryDate(sampleEntry('annexion-der-krim'))).toBe(
+            'März 2014'
+        )
     })
 
     it('year–year span: unspaced en dash', () => {
@@ -89,10 +88,10 @@ describe('formatEntryDate (de)', () => {
     })
 
     it('same year and month, day precision', () => {
-        expect(formatEntryDate(entry('kubakrise'))).toBe(
+        expect(formatEntryDate(sampleEntry('kubakrise'))).toBe(
             `16.${DASH}28. Okt. 1962`
         )
-        expect(formatEntryDate(entry('kubakrise'), 'long')).toBe(
+        expect(formatEntryDate(sampleEntry('kubakrise'), 'long')).toBe(
             `16.${DASH}28. Oktober 1962`
         )
     })
@@ -109,19 +108,19 @@ describe('formatEntryDate (de)', () => {
     })
 
     it('otherwise full dates with a spaced en dash', () => {
-        expect(formatEntryDate(entry('erster-weltkrieg'))).toBe(
+        expect(formatEntryDate(sampleEntry('erster-weltkrieg'))).toBe(
             `1914${DASH}1918`
         )
-        expect(formatEntryDate(entry('erster-weltkrieg'), 'long')).toBe(
+        expect(formatEntryDate(sampleEntry('erster-weltkrieg'), 'long')).toBe(
             `28. Juli 1914 ${DASH} 11. November 1918`
         )
-        expect(formatEntryDate(entry('grosser-nordischer-krieg'))).toBe(
+        expect(formatEntryDate(sampleEntry('grosser-nordischer-krieg'))).toBe(
             `1700${DASH}1721`
         )
-        expect(formatEntryDate(entry('grosser-nordischer-krieg'), 'long')).toBe(
-            `1700 ${DASH} 10. September 1721`
-        )
-        expect(formatEntryDate(entry('russlandfeldzug-1812'))).toBe(
+        expect(
+            formatEntryDate(sampleEntry('grosser-nordischer-krieg'), 'long')
+        ).toBe(`1700 ${DASH} 10. September 1721`)
+        expect(formatEntryDate(sampleEntry('russlandfeldzug-1812'))).toBe(
             `24. Juni 1812 ${DASH} Dez. 1812`
         )
         expect(
@@ -201,11 +200,13 @@ describe('formatEntryDate (de)', () => {
 
     it('ongoing', () => {
         expect(
-            formatEntryDate(entry('russischer-angriffskrieg-gegen-die-ukraine'))
+            formatEntryDate(
+                sampleEntry('russischer-angriffskrieg-gegen-die-ukraine')
+            )
         ).toBe('seit 24. Feb. 2022')
         expect(
             formatEntryDate(
-                entry('russischer-angriffskrieg-gegen-die-ukraine'),
+                sampleEntry('russischer-angriffskrieg-gegen-die-ukraine'),
                 'long'
             )
         ).toBe('seit 24. Februar 2022')
@@ -272,9 +273,9 @@ describe('other locales (smoke)', () => {
         expect(
             formatEntryDate(span({ year: 1700 }, { year: 1721 }), 'short', 'en')
         ).toBe(`1700${DASH}1721`)
-        expect(formatEntryDate(entry('kubakrise'), 'short', 'en')).toMatch(
-            /Oct.*16.*28.*1962/
-        )
+        expect(
+            formatEntryDate(sampleEntry('kubakrise'), 'short', 'en')
+        ).toMatch(/Oct.*16.*28.*1962/)
         expect(formatMonth(Date.UTC(1917, 10, 1), false, 'en')).toBe('Nov')
         expect(formatYear(Date.UTC(1917, 0, 1), 'en')).toBe('1917')
         expect(formatDay(Date.UTC(1917, 10, 7), 'en')).toMatch(/Nov.*7/)

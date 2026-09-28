@@ -1,5 +1,5 @@
 /** A historical date with year, month or day precision. Gregorian calendar throughout. */
-export interface HDate {
+export type HDate = {
     year: number
     /** 1–12 */
     month?: number
@@ -12,12 +12,12 @@ export type Region = 'russia' | 'west' | 'both'
 export type Category = 'war' | 'revolution' | 'power' | 'event'
 export type Importance = 1 | 2 | 3
 
-export interface Post {
+export type Post = {
     /** Plain paragraphs separated by blank lines (prototype only; rich text comes with the CMS). */
     body: string
 }
 
-export interface Entry {
+export type Entry = {
     /** URL slug, unique. */
     id: string
     title: string

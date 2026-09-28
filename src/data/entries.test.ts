@@ -2,7 +2,8 @@ import { readFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
-import { compareHDate, validateEntry } from '../lib/validate-entry'
+import { compareHDate } from '../lib/time'
+import { validateEntry } from '../lib/validate-entry'
 import { entries } from './entries'
 
 const GREGORIAN_NOTE =

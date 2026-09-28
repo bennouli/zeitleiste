@@ -1,12 +1,12 @@
 import { PostContext } from '@/components/PostContext'
-import { entries } from '@/data/entries'
+import { expectNoAxeViolations } from '@/test/axe'
+import { sampleEntry } from '@/test/entries'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
-import { axe } from 'vitest-axe'
 import { Post } from './Post'
 
-const okt = entries.find((e) => e.id === 'oktoberrevolution')!
+const okt = sampleEntry('oktoberrevolution')
 
 describe('Post', () => {
     it('shows title, long date, category, region, summary and all paragraphs', () => {
@@ -52,9 +52,6 @@ describe('Post', () => {
 
     it('has no detectable accessibility violations', async () => {
         const { container } = render(<Post entry={okt} />)
-        const results = await axe(container, {
-            rules: { 'color-contrast': { enabled: false } },
-        })
-        expect(results).toHaveNoViolations()
+        await expectNoAxeViolations(container)
     })
 })

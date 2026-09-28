@@ -1,18 +1,18 @@
 import { entries } from '@/data/entries'
 import { isSpan } from '@/lib/entry'
+import { MS_PER_DAY, MS_PER_YEAR } from '@/lib/time'
 import { describe, expect, it } from 'vitest'
 import {
+    PRIVATE_UNDER_TESTS,
     buildClusterTree,
     cutTree,
-    findCluster,
     isGroup,
     minGapFromPx,
     type Cluster,
     type ClusterPoint,
 } from './cluster'
 
-const DAY = 86_400_000
-const YEAR = 365.25 * DAY
+const { findCluster } = PRIVATE_UNDER_TESTS
 
 const samplePoints: ClusterPoint[] = entries
     .filter((e) => !isSpan(e))
@@ -37,7 +37,7 @@ function randomPoints(seed: number, n: number): ClusterPoint[] {
     // Round to whole days so identical times and equal gaps occur.
     return Array.from({ length: n }, (_, i) => ({
         id: `p${i}`,
-        t: Math.round(r() * 200) * DAY,
+        t: Math.round(r() * 200) * MS_PER_DAY,
     }))
 }
 
@@ -93,14 +93,14 @@ describe('buildClusterTree / cutTree stability', () => {
     const gaps = [
         0,
         1,
-        DAY,
-        7 * DAY,
-        30 * DAY,
-        0.5 * YEAR,
-        YEAR,
-        2 * YEAR,
-        10 * YEAR,
-        50 * YEAR,
+        MS_PER_DAY,
+        7 * MS_PER_DAY,
+        30 * MS_PER_DAY,
+        0.5 * MS_PER_YEAR,
+        MS_PER_YEAR,
+        2 * MS_PER_YEAR,
+        10 * MS_PER_YEAR,
+        50 * MS_PER_YEAR,
         Infinity,
     ]
 
@@ -115,13 +115,13 @@ describe('buildClusterTree / cutTree stability', () => {
             expectStable(points, [
                 0,
                 1,
-                DAY,
-                2 * DAY,
-                3 * DAY,
-                5 * DAY,
-                10 * DAY,
-                20 * DAY,
-                50 * DAY,
+                MS_PER_DAY,
+                2 * MS_PER_DAY,
+                3 * MS_PER_DAY,
+                5 * MS_PER_DAY,
+                10 * MS_PER_DAY,
+                20 * MS_PER_DAY,
+                50 * MS_PER_DAY,
                 Infinity,
             ])
         }
@@ -134,7 +134,7 @@ describe('buildClusterTree / cutTree stability', () => {
                 (a, b) => a.t - b.t || (a.id < b.id ? -1 : 1)
             )
             const root = buildClusterTree(points)
-            for (const minGap of [DAY, 3 * DAY, 8 * DAY]) {
+            for (const minGap of [MS_PER_DAY, 3 * MS_PER_DAY, 8 * MS_PER_DAY]) {
                 const expected: string[][] = []
                 let prev: ClusterPoint | undefined
                 for (const p of sorted) {
@@ -199,7 +199,7 @@ describe('sample data 1914–1922', () => {
 
     it('groups at a coarse minGap (2 years)', () => {
         expect(inRange.length).toBeGreaterThanOrEqual(3)
-        const cut = cutTree(root, 2 * YEAR)
+        const cut = cutTree(root, 2 * MS_PER_YEAR)
         const clusters = new Set(inRange.map((id) => findCluster(cut, id)))
         const groups = [...clusters].filter(
             (c): c is Cluster => c !== undefined && isGroup(c)
@@ -210,7 +210,7 @@ describe('sample data 1914–1922', () => {
     })
 
     it('splits at a fine minGap (1 month)', () => {
-        const cut = cutTree(root, 30 * DAY)
+        const cut = cutTree(root, 30 * MS_PER_DAY)
         for (const id of inRange) {
             const c = findCluster(cut, id)
             expect(c?.kind).toBe('leaf')
@@ -363,7 +363,7 @@ describe('findCluster and minGapFromPx', () => {
     })
 
     it('converts pixels to ms', () => {
-        expect(minGapFromPx(24, DAY)).toBe(24 * DAY)
-        expect(minGapFromPx(0, DAY)).toBe(0)
+        expect(minGapFromPx(24, MS_PER_DAY)).toBe(24 * MS_PER_DAY)
+        expect(minGapFromPx(0, MS_PER_DAY)).toBe(0)
     })
 })

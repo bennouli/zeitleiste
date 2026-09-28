@@ -1,5 +1,6 @@
 import { entries } from '@/data/entries'
 import { postSlugs } from '@/lib/posts'
+import { sampleEntry } from '@/test/entries'
 import { render, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import PostPage, {
@@ -42,7 +43,7 @@ describe('post page', () => {
     })
 
     it('sets title and description', async () => {
-        const okt = entries.find((e) => e.id === 'oktoberrevolution')!
+        const okt = sampleEntry('oktoberrevolution')
         expect(await generateMetadata(params('oktoberrevolution'))).toEqual({
             title: 'Oktoberrevolution – Zeitleiste',
             description: okt.summary,

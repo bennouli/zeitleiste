@@ -6,7 +6,6 @@ import {
     msPerPx,
     panBy as panViewport,
     timeToX,
-    xToTime,
     type Bounds,
 } from '@/lib/viewport'
 import clsx from 'clsx'
@@ -43,7 +42,7 @@ import { useGestures } from './useGestures'
 import { useViewport } from './useViewport'
 import { ZoomControls } from './ZoomControls'
 
-export interface TimelineProps {
+export type TimelineProps = {
     entries: Entry[]
     /** Collapsed to about half height while a post is open. */
     collapsed: boolean
@@ -87,7 +86,7 @@ export function revealDelta(
     return 0
 }
 
-interface FocusedItem {
+type FocusedItem = {
     el: HTMLElement
     /** Entries the focused element stands for (a card, a stack, a marker). */
     ids: string[]
@@ -236,7 +235,6 @@ export function Timeline({
             today,
             msPerPx: msPerPx(viewport, width),
             timeToX: toX,
-            xToTime: (x) => xToTime(viewport, width, x),
             isGesturing: vp.isGesturing,
             collapsed,
             gestureEnd: vp.gestureEnd,

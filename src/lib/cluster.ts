@@ -1,4 +1,4 @@
-// Stable 1D clustering of timeline points (issue #9).
+// Stable 1D clustering of timeline points.
 //
 // The tree is built once per data set by single-linkage agglomerative clustering:
 // the two adjacent clusters with the smallest gap between their nearest members are
@@ -12,12 +12,14 @@
 // only merges clusters, lowering it only splits them into their children, and an
 // entry never moves between groups.
 
-export interface ClusterPoint {
+import { compareIds } from '@/lib/order'
+
+export type ClusterPoint = {
     id: string
     t: number
 }
 
-export interface ClusterLeaf {
+export type ClusterLeaf = {
     kind: 'leaf'
     id: string
     t: number
@@ -25,7 +27,7 @@ export interface ClusterLeaf {
     count: 1
 }
 
-export interface ClusterNode {
+export type ClusterNode = {
     kind: 'node'
     /** Stable id derived from the members (`${firstId}..${lastId}`): same members ⇒ same id. */
     id: string
@@ -73,7 +75,7 @@ export function buildClusterTree(
 
     // Sort by time, then id, so the tree does not depend on input order.
     const sorted = [...points].sort(
-        (a, b) => a.t - b.t || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0)
+        (a, b) => a.t - b.t || compareIds(a.id, b.id)
     )
     const n = sorted.length
     const ids = sorted.map((p) => p.id)
@@ -150,11 +152,10 @@ export function minGapFromPx(minGapPx: number, msPerPx: number): number {
 }
 
 /** The cluster in a cut that contains an id, or undefined. */
-export function findCluster(
-    cut: readonly Cluster[],
-    id: string
-): Cluster | undefined {
+function findCluster(cut: readonly Cluster[], id: string): Cluster | undefined {
     return cut.find((c) =>
         c.kind === 'leaf' ? c.id === id : c.members.includes(id)
     )
 }
+
+export const PRIVATE_UNDER_TESTS = { findCluster }

@@ -2,7 +2,7 @@
 
 import { NO_DRAG_ATTR } from './useGestures'
 
-interface ZoomControlsProps {
+type ZoomControlsProps = {
     canZoomIn: boolean
     canZoomOut: boolean
     onZoomIn: () => void

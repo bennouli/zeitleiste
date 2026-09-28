@@ -1,11 +1,12 @@
 'use client'
 
+import { isTypingTarget } from '@/lib/dom'
 import type { Entry } from '@/lib/entry'
 import clsx from 'clsx'
 import type { KeyboardEvent, MouseEvent, PointerEvent, ReactNode } from 'react'
 import { useEffect, useRef, useState } from 'react'
 
-export interface GroupStackProps {
+export type GroupStackProps = {
     /** Chronological (the caller sorts; not checked here). */
     entries: Entry[]
     /** Number of cards visible at once: 3 desktop, 1 phone, ≤ 2 when collapsed. */
@@ -53,7 +54,7 @@ function clamp(i: number, max: number): number {
     return Math.min(Math.max(0, Math.round(i)), max)
 }
 
-interface Swipe {
+type Swipe = {
     pointerId: number
     x: number
     y: number
@@ -133,12 +134,7 @@ export function GroupStack({
 
     const onKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
         if (e.defaultPrevented || e.altKey || e.ctrlKey || e.metaKey) return
-        const t = e.target as HTMLElement
-        if (
-            t.isContentEditable ||
-            ['INPUT', 'TEXTAREA', 'SELECT'].includes(t.tagName)
-        )
-            return
+        if (isTypingTarget(e.target)) return
         let next: number
         switch (e.key) {
             case 'ArrowUp':

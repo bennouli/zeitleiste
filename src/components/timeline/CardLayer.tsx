@@ -1,6 +1,7 @@
 'use client'
 
-import type { Entry, Region } from '@/lib/entry'
+import type { Entry } from '@/lib/entry'
+import { compareIds } from '@/lib/order'
 import clsx from 'clsx'
 import type { CSSProperties } from 'react'
 import { AXIS_LINE_Y_PX } from './Axis'
@@ -8,21 +9,16 @@ import { AXIS_HEIGHT_PX } from './constants'
 import { CARD_WIDTH_PX, CONNECTOR_MIN_PX, EntryCard } from './EntryCard'
 import { GroupMarker } from './GroupMarker'
 import { GroupStack } from './GroupStack'
+import { REGION_BG } from './regionStyles'
 import { useTimeline } from './TimelineContext'
 import type { LayoutItem } from './useEntryLayout'
-
-const REGION_BG: Record<Region, string> = {
-    russia: 'bg-russia',
-    west: 'bg-west',
-    both: 'bg-both',
-}
 
 /** Paint order: lower rows over higher rows (whose connectors pass behind them), markers over the axis. */
 const Z_BASE = 100
 const Z_MARKER = 150
 const Z_HIGHLIGHTED = 200
 
-export interface CardLayerProps {
+export type CardLayerProps = {
     items: LayoutItem[]
     rowHeightPx: number
     /** Cards visible at once in a group stack. */
@@ -68,7 +64,7 @@ export function CardLayer({
 }: CardLayerProps) {
     const { timeToX, wasDrag } = useTimeline()
     const ordered = [...items].sort(
-        (a, b) => a.t - b.t || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0)
+        (a, b) => a.t - b.t || compareIds(a.id, b.id)
     )
 
     return (

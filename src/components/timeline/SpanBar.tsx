@@ -1,6 +1,6 @@
 'use client'
 
-import type { Entry, Region } from '@/lib/entry'
+import type { Entry } from '@/lib/entry'
 import { formatEntryDate } from '@/lib/format'
 import type { SpanBar } from '@/lib/spans'
 import { startOf } from '@/lib/time'
@@ -14,11 +14,12 @@ import type {
 } from 'react'
 import { useEffect, useId, useRef, useState } from 'react'
 import { EntryTooltipContent } from './EntryCard'
+import { REGION_BG } from './regionStyles'
 import { Tooltip } from './Tooltip'
 
 /** How a bar stretched to the minimum width is drawn. */
 
-export interface SpanBarProps {
+export type SpanBarProps = {
     entry: Entry
     bar: SpanBar
     laneHeightPx: number
@@ -29,12 +30,6 @@ export interface SpanBarProps {
 
 /** Vertical gap between lanes, in px. */
 const LANE_GAP_PX = 2
-
-const SOLID: Record<Region, string> = {
-    russia: 'bg-russia',
-    west: 'bg-west',
-    both: 'bg-both',
-}
 
 /** Accessible name of a span bar. */
 export function spanBarLabel(entry: Entry): string {
@@ -88,7 +83,7 @@ export function SpanBarView({
         'absolute flex cursor-pointer items-center overflow-hidden rounded-sm text-left text-xs',
         // Inset: the lowest lane touches the timeline's clipping edge.
         'focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-focus',
-        SOLID[entry.region],
+        REGION_BG[entry.region],
         'text-surface',
         highlighted && 'ring-2 ring-focus focus-visible:-outline-offset-4'
     )

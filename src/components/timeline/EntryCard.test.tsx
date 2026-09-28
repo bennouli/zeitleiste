@@ -1,21 +1,16 @@
-import { entries } from '@/data/entries'
 import type { Entry } from '@/lib/entry'
+import { expectNoAxeViolations } from '@/test/axe'
+import { sampleEntry } from '@/test/entries'
 import { act, fireEvent, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
 import { CONNECTOR_MIN_PX, EntryCard, type EntryCardProps } from './EntryCard'
 
-function entry(id: string): Entry {
-    const e = entries.find((x) => x.id === id)
-    if (!e) throw new Error(`missing sample entry ${id}`)
-    return e
-}
-
-const point = entry('dekabristenaufstand')
-const span = entry('grosser-nordischer-krieg')
-const ongoing = entry('russischer-angriffskrieg-gegen-die-ukraine')
-const withPost = entry('oktoberrevolution')
+const point = sampleEntry('dekabristenaufstand')
+const span = sampleEntry('grosser-nordischer-krieg')
+const ongoing = sampleEntry('russischer-angriffskrieg-gegen-die-ukraine')
+const withPost = sampleEntry('oktoberrevolution')
 
 function renderCard(props: Partial<EntryCardProps> & { entry: Entry }) {
     const onOpen = vi.fn()
@@ -445,7 +440,7 @@ describe('EntryCard', () => {
         ['west', 'franzoesische-revolution'],
         ['both', 'wiener-kongress'],
     ])('colors card and connector by region (%s)', (region, id) => {
-        const e = entry(id)
+        const e = sampleEntry(id)
         renderCard({ entry: e })
         expect(card(e)).toHaveClass(`border-l-${region}`)
         const w = document.querySelector<HTMLElement>(
@@ -559,10 +554,7 @@ describe('EntryCard', () => {
     ])('has no axe violations (%s, tooltip open)', async (_, e) => {
         const user = userEvent.setup()
         const { container } = renderCard({ entry: e })
-        const closed = await axe(container, {
-            rules: { 'color-contrast': { enabled: false } },
-        })
-        expect(closed).toHaveNoViolations()
+        await expectNoAxeViolations(container)
         await user.hover(card(e))
         // The open bubble is portalled to the body; the bare fixture has no landmarks.
         const open = await axe(document.body, {

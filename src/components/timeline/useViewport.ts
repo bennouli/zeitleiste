@@ -1,5 +1,7 @@
 'use client'
 
+import { prefersReducedMotion } from '@/lib/dom'
+import { easeOutCubic } from '@/lib/easing'
 import {
     canZoomIn as canZoomInVp,
     canZoomOut as canZoomOutVp,
@@ -26,31 +28,18 @@ import {
 } from 'react'
 import { ANIMATION_MS } from './constants'
 
-export function prefersReducedMotion(): boolean {
-    if (
-        typeof window === 'undefined' ||
-        typeof window.matchMedia !== 'function'
-    )
-        return false
-    return window.matchMedia('(prefers-reduced-motion: reduce)').matches
-}
-
-function easeOutCubic(p: number): number {
-    return 1 - Math.pow(1 - p, 3)
-}
-
 // useLayoutEffect warns during SSR; refs only matter on the client.
 const useIsomorphicLayoutEffect =
     typeof window === 'undefined' ? useEffect : useLayoutEffect
 
-export interface UseViewportOptions {
+export type UseViewportOptions = {
     bounds: Bounds
     width: number
     /** Defaults to initialViewport(bounds). */
     initial?: Viewport
 }
 
-export interface ViewportControls {
+export type ViewportControls = {
     viewport: Viewport
     isAnimating: boolean
     /** True while a drag/pinch, momentum or animation runs. */

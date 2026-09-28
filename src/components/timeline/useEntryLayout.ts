@@ -22,7 +22,7 @@ import { CARD_WIDTH_PX } from './EntryCard'
 import { GROUP_MARKER_SIZE_PX } from './GroupMarker'
 
 /** One thing to draw on a side of the axis: a single card or a group stack. */
-export interface LayoutItem {
+export type LayoutItem = {
     id: string
     /** 'marker': shown only as its marker on the axis, because no card or stack slot was free. */
     kind: 'card' | 'group' | 'marker'
@@ -35,13 +35,13 @@ export interface LayoutItem {
     alignEnd: boolean
 }
 
-export interface EntryLayout {
+export type EntryLayout = {
     items: LayoutItem[]
     /** Group markers to draw on the axis. */
     groups: LayoutItem[]
 }
 
-export interface EntryLayoutInput {
+export type EntryLayoutInput = {
     points: Entry[]
     /** Map from time to x at the moment of layout (a gesture end). */
     timeToX: (t: number) => number
@@ -245,11 +245,10 @@ export function layoutEntries(
         const inCut = new Set(cut.map((c) => c.id))
         for (const id of markerOnly) if (!inCut.has(id)) markerOnly.delete(id)
     }
-    /* istanbul ignore next -- the loop always returns */
     return { items: [], groups: [] }
 }
 
-interface LayoutCache {
+type LayoutCache = {
     key: unknown
     tree: Cluster | null
     layout: EntryLayout

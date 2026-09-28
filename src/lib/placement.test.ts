@@ -1,11 +1,14 @@
+import { compareIds } from '@/lib/order'
 import { describe, expect, it } from 'vitest'
 import {
+    PRIVATE_UNDER_TESTS,
     placeItems,
-    usedLevels,
     type PlaceableItem,
     type Placement,
     type Slot,
 } from './placement'
+
+const { usedLevels } = PRIVATE_UNDER_TESTS
 
 function item(
     id: string,
@@ -62,7 +65,7 @@ function sorted(items: readonly PlaceableItem[]): PlaceableItem[] {
         (a, b) =>
             b.importance - a.importance ||
             a.order - b.order ||
-            (a.id < b.id ? -1 : a.id > b.id ? 1 : 0)
+            compareIds(a.id, b.id)
     )
 }
 

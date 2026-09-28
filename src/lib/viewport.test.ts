@@ -1,3 +1,4 @@
+import { MS_PER_YEAR } from '@/lib/time'
 import { describe, expect, it } from 'vitest'
 import {
     MAX_VISIBLE_MS,
@@ -24,7 +25,6 @@ import {
     type Viewport,
 } from './viewport'
 
-const YEAR_MS = 365.2425 * 24 * 60 * 60 * 1000
 const SAMPLE: Bounds = { min: Date.UTC(1700, 0, 1), max: Date.UTC(2026, 8, 27) }
 const WIDTH = 1000
 
@@ -106,7 +106,7 @@ describe('clampViewport', () => {
     })
 
     it('shifts inside bounds without changing the span', () => {
-        const span = 10 * YEAR_MS
+        const span = 10 * MS_PER_YEAR
         const vp = clampViewport(
             { start: SAMPLE.max - span / 2, end: SAMPLE.max + span / 2 },
             SAMPLE
@@ -189,7 +189,11 @@ describe('zoomAround', () => {
     })
 
     it('clamps into bounds when zooming near the edge', () => {
-        const zoomedIn = zoomTo(SAMPLE.max - YEAR_MS, 10 * YEAR_MS, SAMPLE)
+        const zoomedIn = zoomTo(
+            SAMPLE.max - MS_PER_YEAR,
+            10 * MS_PER_YEAR,
+            SAMPLE
+        )
         const out = zoomAround(
             zoomedIn,
             WIDTH,
@@ -212,7 +216,7 @@ describe('zoomAround', () => {
 })
 
 describe('zoomTo', () => {
-    const forty = 40 * YEAR_MS
+    const forty = 40 * MS_PER_YEAR
 
     it('centers exactly away from the edges', () => {
         const c = Date.UTC(1900, 5, 1)
@@ -222,10 +226,10 @@ describe('zoomTo', () => {
     })
 
     it('shifts near the edges', () => {
-        const late = zoomTo(SAMPLE.max - YEAR_MS, forty, SAMPLE)
+        const late = zoomTo(SAMPLE.max - MS_PER_YEAR, forty, SAMPLE)
         expect(late.end).toBeCloseTo(SAMPLE.max, 0)
         expect(visibleMs(late)).toBeCloseTo(forty, 0)
-        const early = zoomTo(SAMPLE.min + YEAR_MS, forty, SAMPLE)
+        const early = zoomTo(SAMPLE.min + MS_PER_YEAR, forty, SAMPLE)
         expect(early.start).toBeCloseTo(SAMPLE.min, 0)
     })
 
@@ -241,7 +245,7 @@ describe('zoomTo', () => {
 })
 
 describe('panBy', () => {
-    const vp = zoomTo(Date.UTC(1900, 0, 1), 40 * YEAR_MS, SAMPLE)
+    const vp = zoomTo(Date.UTC(1900, 0, 1), 40 * MS_PER_YEAR, SAMPLE)
 
     it('dragging right shows earlier times', () => {
         const moved = panBy(vp, WIDTH, 100, SAMPLE)
@@ -271,7 +275,7 @@ describe('panBy', () => {
 })
 
 describe('pinch', () => {
-    const vp = zoomTo(Date.UTC(1900, 0, 1), 40 * YEAR_MS, SAMPLE)
+    const vp = zoomTo(Date.UTC(1900, 0, 1), 40 * MS_PER_YEAR, SAMPLE)
 
     it('keeps the times under both fingers when unconstrained', () => {
         const prev = [400, 600] as const
@@ -305,7 +309,7 @@ describe('pinch', () => {
 })
 
 describe('degenerate input', () => {
-    const vp = zoomTo(Date.UTC(1900, 0, 1), 40 * YEAR_MS, SAMPLE)
+    const vp = zoomTo(Date.UTC(1900, 0, 1), 40 * MS_PER_YEAR, SAMPLE)
     const bad: Viewport = { start: Number.NaN, end: Number.NaN }
     const finite = (v: Viewport) =>
         Number.isFinite(v.start) && Number.isFinite(v.end) && v.end > v.start
@@ -367,7 +371,7 @@ describe('interpolateViewport', () => {
 })
 
 describe('stepMomentum', () => {
-    const vp = zoomTo(Date.UTC(1900, 0, 1), 40 * YEAR_MS, SAMPLE)
+    const vp = zoomTo(Date.UTC(1900, 0, 1), 40 * MS_PER_YEAR, SAMPLE)
 
     it('decays and eventually finishes', () => {
         let m: Momentum = { vp, velocityPxPerMs: 1 }
@@ -388,7 +392,7 @@ describe('stepMomentum', () => {
     })
 
     it('stops at the bounds', () => {
-        const atEnd = zoomTo(SAMPLE.max, 40 * YEAR_MS, SAMPLE)
+        const atEnd = zoomTo(SAMPLE.max, 40 * MS_PER_YEAR, SAMPLE)
         const r = stepMomentum(
             { vp: atEnd, velocityPxPerMs: -5 },
             16,
@@ -401,7 +405,11 @@ describe('stepMomentum', () => {
     })
 
     it('stops when a partial move reaches the left bound', () => {
-        const nearStart = zoomTo(SAMPLE.min + YEAR_MS, 40 * YEAR_MS, SAMPLE)
+        const nearStart = zoomTo(
+            SAMPLE.min + MS_PER_YEAR,
+            40 * MS_PER_YEAR,
+            SAMPLE
+        )
         const shifted = panBy(nearStart, WIDTH, -50, SAMPLE)
         const r = stepMomentum(
             { vp: shifted, velocityPxPerMs: 10 },

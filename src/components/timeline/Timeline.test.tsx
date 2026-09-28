@@ -2,9 +2,11 @@ import { entries } from '@/data/entries'
 import type { Entry } from '@/lib/entry'
 import { entryAnchor, MS_PER_YEAR, startOf } from '@/lib/time'
 import { MAX_VISIBLE_MS, ZOOM_STEP_FACTOR } from '@/lib/viewport'
+import { expectNoAxeViolations } from '@/test/axe'
+import { sampleEntry } from '@/test/entries'
+import { stubReducedMotion } from '@/test/motion'
 import { act, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { axe } from 'vitest-axe'
 import { ANIMATION_MS, COLLAPSED_HEIGHT, FOCUS_VISIBLE_MS } from './constants'
 import { revealDelta, Timeline } from './Timeline'
 
@@ -12,7 +14,7 @@ const WIDTH = 1000
 const HEIGHT = 800
 const NOW = Date.UTC(2026, 8, 27, 12)
 /** A point in time with a post that stands alone at the widest zoom. */
-const POST_POINT = entries.find((e) => e.id === 'fall-der-berliner-mauer')!
+const POST_POINT = sampleEntry('fall-der-berliner-mauer')
 /** The first sample entry (a span) plus one card that is never grouped. */
 const FEW: Entry[] = [entries[0]!, POST_POINT]
 
@@ -23,18 +25,6 @@ class ResizeObserverStub {
     }
     unobserve() {}
     disconnect() {}
-}
-
-function setReducedMotion(reduce: boolean) {
-    vi.stubGlobal(
-        'matchMedia',
-        vi.fn((q: string) => ({
-            matches: reduce && q.includes('reduce'),
-            media: q,
-            addEventListener() {},
-            removeEventListener() {},
-        }))
-    )
 }
 
 function renderTimeline(
@@ -96,7 +86,7 @@ beforeEach(() => {
     vi.spyOn(HTMLElement.prototype, 'clientHeight', 'get').mockReturnValue(
         HEIGHT
     )
-    setReducedMotion(false)
+    stubReducedMotion(false)
 })
 afterEach(() => {
     vi.useRealTimers()
@@ -171,10 +161,7 @@ describe('Timeline', () => {
     it('has no axe violations', async () => {
         vi.useRealTimers()
         const { container } = renderTimeline()
-        const results = await axe(container, {
-            rules: { 'color-contrast': { enabled: false } },
-        })
-        expect(results).toHaveNoViolations()
+        await expectNoAxeViolations(container)
     })
 
     it('zoom buttons zoom around the center with animation and disable at the limit', () => {
@@ -195,7 +182,7 @@ describe('Timeline', () => {
     })
 
     it('keyboard: + / - zoom, arrows pan, ctrl/meta combos are left to the browser', () => {
-        setReducedMotion(true)
+        stubReducedMotion(true)
         const { region } = renderTimeline()
         const before = view(region)
         fireEvent.keyDown(region, { key: '+', ctrlKey: true })
@@ -328,8 +315,8 @@ describe('Timeline', () => {
     })
 
     it('a new entries array does not refocus', () => {
-        setReducedMotion(true)
-        const entry = entries.find((e) => e.id === 'russlandfeldzug-1812')!
+        stubReducedMotion(true)
+        const entry = sampleEntry('russlandfeldzug-1812')
         const { region, rerender } = renderTimeline({
             focusEntryId: entry.id,
             collapsed: true,
@@ -523,7 +510,7 @@ describe('Timeline', () => {
         })
 
         it('keyboard focus on an off-screen entry pans the timeline to it', () => {
-            setReducedMotion(true)
+            stubReducedMotion(true)
             const { region, container } = renderTimeline()
             fireEvent.click(
                 screen.getByRole('button', { name: 'Hineinzoomen' })
@@ -548,7 +535,7 @@ describe('Timeline', () => {
         })
 
         it('does not pan for an entry that is already visible', () => {
-            setReducedMotion(true)
+            stubReducedMotion(true)
             const { region, container } = renderTimeline()
             fireEvent.click(
                 screen.getByRole('button', { name: 'Hineinzoomen' })
@@ -567,7 +554,7 @@ describe('Timeline', () => {
         })
 
         it('does not pan when a press (not the keyboard) focuses an entry', () => {
-            setReducedMotion(true)
+            stubReducedMotion(true)
             const { region, container } = renderTimeline()
             fireEvent.click(
                 screen.getByRole('button', { name: 'Hineinzoomen' })
@@ -585,7 +572,7 @@ describe('Timeline', () => {
         })
 
         it('keeps focus on the same entry when a relayout replaces its card', () => {
-            setReducedMotion(true)
+            stubReducedMotion(true)
             const { region, container } = renderTimeline()
             const id = 'februarrevolution'
             const ownCard = () =>
