@@ -361,6 +361,8 @@ describe('EntryCard', () => {
             clientX,
             clientY,
         })
+        const midViewportEntry = rect(100, 400, 176, 56)
+        const mouseLeaving = { pointerType: 'mouse' }
 
         it.each([
             ['above', 'above', rect(100, 400, 176, 56), '100px', '464px'],
@@ -393,7 +395,7 @@ describe('EntryCard', () => {
         )
 
         it('anchors a touch-opened note to the entry', async () => {
-            const restore = mockLayout(rect(100, 400, 176, 56))
+            const restore = mockLayout(midViewportEntry)
             try {
                 const user = userEvent.setup()
                 renderCard({ entry: point })
@@ -407,19 +409,22 @@ describe('EntryCard', () => {
         })
 
         it('follows the mouse 14 px right and below, inside the viewport', async () => {
-            const restore = mockLayout(rect(100, 400, 176, 56))
+            const enter = mouseAt(300, 200)
+            const move = mouseAt(400, 250)
+            const nearCorner = mouseAt(990, 790)
+            const restore = mockLayout(midViewportEntry)
             try {
                 renderCard({ entry: span })
-                fireEvent.pointerOver(card(span), mouseAt(300, 200))
+                fireEvent.pointerOver(card(span), enter)
                 const tip = screen.getByRole('tooltip')
                 expect(tip.style.left).toBe('314px')
                 expect(tip.style.top).toBe('214px')
                 expect(tip.style.pointerEvents).toBe('none')
-                fireEvent.pointerMove(card(span), mouseAt(400, 250))
+                fireEvent.pointerMove(card(span), move)
                 await nextFrame()
                 expect(tip.style.left).toBe('414px')
                 expect(tip.style.top).toBe('264px')
-                fireEvent.pointerMove(card(span), mouseAt(990, 790))
+                fireEvent.pointerMove(card(span), nearCorner)
                 await nextFrame()
                 expect(tip.style.left).toBe('742px')
                 expect(tip.style.top).toBe('692px')
@@ -429,18 +434,18 @@ describe('EntryCard', () => {
         })
 
         it('returns a keyboard-opened note to the entry once the mouse leaves', async () => {
-            const restore = mockLayout(rect(100, 400, 176, 56))
+            const enter = mouseAt(300, 200)
+            const restore = mockLayout(midViewportEntry)
             try {
                 const user = userEvent.setup()
                 renderCard({ entry: span })
                 await user.tab()
                 const tip = screen.getByRole('tooltip')
-                fireEvent.pointerOver(card(span), mouseAt(300, 200))
+                fireEvent.pointerOver(card(span), enter)
                 await nextFrame()
                 expect(tip.style.left).toBe('314px')
-                fireEvent.pointerLeave(card(span).parentElement!, {
-                    pointerType: 'mouse',
-                })
+                const anchor = card(span).parentElement!
+                fireEvent.pointerLeave(anchor, mouseLeaving)
                 await nextFrame()
                 expect(screen.getByRole('tooltip')).toBe(tip)
                 expect(tip.style.left).toBe('100px')

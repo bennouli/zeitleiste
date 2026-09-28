@@ -18,11 +18,8 @@ export type TooltipProps = {
     /** Side of the anchor the note appears on while it is anchored. */
     placement: 'top' | 'bottom'
     /**
-     * The element the note belongs to. When given, the open note renders in a
-     * portal on the page's `main` landmark (or the body) with fixed coordinates, so no `overflow`
-     * ancestor clips it: beside the cursor while a mouse is over the anchor,
-     * beside the anchor otherwise (keyboard focus, touch). Without it the note
-     * is positioned by CSS relative to the nearest positioned ancestor.
+     * The element the note belongs to. When given, the open note sits beside
+     * the cursor while a mouse is over the anchor, beside the anchor otherwise.
      */
     anchorRef?: RefObject<HTMLElement | null>
     /** `TooltipMeta`, `TooltipTitle` and `TooltipBody` lines, in that order. */
@@ -114,7 +111,6 @@ export function TooltipBody(props: NoteLineProps) {
     return <p {...props} className="font-serif text-note text-fg-soft" />
 }
 
-/** Inside `main`, so the note is not content outside every landmark (axe `region`). */
 function portalHost(): Element {
     return document.querySelector('main') ?? document.body
 }
@@ -136,10 +132,7 @@ type Size = { width: number; height: number }
 
 type Placement = TooltipProps['placement']
 
-/**
- * Where a mouse over the anchor is, in client coordinates; null while none is.
- * Tracked while closed too, so a note opened by hovering starts at the cursor.
- */
+/** Where a mouse over the anchor is, in client coordinates; null while none is. */
 function useMouseOverAnchor(
     anchorRef: RefObject<HTMLElement | null> | undefined
 ): RefObject<Point | null> {
