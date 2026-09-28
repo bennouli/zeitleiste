@@ -11,6 +11,7 @@ import {
     stepMomentum,
     tweenViewport,
     viewportEquals,
+    wheelZoom as wheelZoomVp,
     ZOOM_STEP_FACTOR,
     zoomAround,
     zoomTo,
@@ -71,6 +72,8 @@ export type ViewportActions = {
         prev: readonly [number, number],
         next: readonly [number, number]
     ) => void
+    /** Immediate stepless zoom by a wheel delta in px around x (relative to the container). */
+    wheelZoom: (anchorX: number, deltaPx: number) => void
     /** Marks the start of a drag/pinch (stops animations). */
     beginGesture: () => void
     /** Ends a drag/pinch without momentum. */
@@ -251,6 +254,22 @@ export function useViewport({
         [commit, stopMotion]
     )
 
+    const wheelZoom = useCallback(
+        (anchorX: number, deltaPx: number) => {
+            if (targetRef.current) stopMotion()
+            commit(
+                wheelZoomVp(
+                    latest.current.viewport,
+                    latest.current.width,
+                    anchorX,
+                    deltaPx,
+                    latest.current.bounds
+                )
+            )
+        },
+        [commit, stopMotion]
+    )
+
     const beginGesture = useCallback(() => {
         stopMotion()
         setIsAnimating(false)
@@ -312,6 +331,7 @@ export function useViewport({
             panStep,
             panBy,
             pinch,
+            wheelZoom,
             beginGesture,
             endGesture,
             startMomentum,
@@ -324,6 +344,7 @@ export function useViewport({
             panStep,
             panBy,
             pinch,
+            wheelZoom,
             beginGesture,
             endGesture,
             startMomentum,
