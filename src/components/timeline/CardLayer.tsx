@@ -5,10 +5,11 @@ import { compareIds } from '@/lib/order'
 import type { CSSProperties, ReactNode } from 'react'
 import { AXIS_LINE_Y_PX } from './Axis'
 import { Connector } from './Connector'
-import { AXIS_HEIGHT_PX } from './constants'
-import { CARD_WIDTH_PX, CONNECTOR_MIN_PX, EntryCard } from './EntryCard'
+import { CARD_FIRST_ROW_OFFSET_PX } from './constants'
+import { EntryCard } from './EntryCard'
 import { GroupMarker } from './GroupMarker'
 import { GroupStack } from './GroupStack'
+import { LABEL_MAX_WIDTH_PX } from './labelMetrics'
 import { useTimeline } from './TimelineContext'
 import type { LayoutItem } from './useEntryLayout'
 
@@ -31,8 +32,8 @@ export type CardLayerProps = {
 
 /**
  * Every card, group stack and group marker of both sides, in one chronological
- * DOM (and tab) order. Rendered inside the axis band: its top edge is the
- * origin, above-items hang from it, below-items start at its bottom edge.
+ * DOM (and tab) order. Rendered inside the axis band: every item hangs from
+ * the axis line, above-items upwards and below-items downwards.
  * Nothing is culled, so Tab reaches off-screen entries (the timeline pans to
  * the focused one); the timeline's `overflow: clip` hides them.
  */
@@ -105,7 +106,7 @@ type AnchoredItemProps = {
 
 function AnchoredItem({ item, highlighted, children }: AnchoredItemProps) {
     const style = {
-        top: item.slot.side === 'above' ? 0 : AXIS_HEIGHT_PX,
+        top: AXIS_LINE_Y_PX,
         '--z': highlighted ? Z_HIGHLIGHTED : Z_BASE - item.slot.level,
     } as CSSProperties
     return (
@@ -163,18 +164,11 @@ function GroupItem({
             className="absolute"
             style={{
                 left: timeToX(item.t),
-                width: CARD_WIDTH_PX,
-                [side === 'above' ? 'bottom' : 'top']: 0,
-                [side === 'above' ? 'paddingBottom' : 'paddingTop']:
-                    CONNECTOR_MIN_PX,
+                width: LABEL_MAX_WIDTH_PX,
+                [side === 'above' ? 'bottom' : 'top']: CARD_FIRST_ROW_OFFSET_PX,
             }}
         >
-            <Connector
-                region={item.entries[0]!.region}
-                side={side}
-                heightPx={CONNECTOR_MIN_PX}
-                offsetPx={0}
-            />
+            <Connector side={side} lengthPx={CARD_FIRST_ROW_OFFSET_PX} />
             <GroupStack
                 entries={item.entries}
                 visibleCount={visibleCount}

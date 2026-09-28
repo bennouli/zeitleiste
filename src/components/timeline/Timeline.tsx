@@ -17,9 +17,9 @@ import {
     FOCUS_VISIBLE_MS,
     SPAN_LANE_HEIGHT_PX,
 } from './constants'
-import { CARD_WIDTH_PX } from './EntryCard'
 import { useEntryFocus } from './entryFocus'
 import { groupZoomTarget } from './groupZoom'
+import { LABEL_MAX_WIDTH_PX } from './labelMetrics'
 import { DEFAULT_CHAR_WIDTH_PX, SpanBand, spanBandLayout } from './SpanBand'
 import { TimelineContext, type TimelineContextValue } from './TimelineContext'
 import { useEntryLayout } from './useEntryLayout'
@@ -224,7 +224,7 @@ function dataBounds(entries: Entry[], today: number, width: number): Bounds {
         Number.isFinite(earliest) && earliest < today
             ? earliest
             : today - FALLBACK_HISTORY_MS
-    const endRoom = width > 0 ? (CARD_WIDTH_PX + CARD_GAP_PX) / width : 0
+    const endRoom = width > 0 ? (LABEL_MAX_WIDTH_PX + CARD_GAP_PX) / width : 0
     return { min, max: today, endRoom }
 }
 

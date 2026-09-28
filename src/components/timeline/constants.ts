@@ -2,8 +2,10 @@ import { MS_PER_YEAR } from '@/lib/time'
 
 /** Height of the axis band (line, ticks, labels, "Heute" mark). */
 export const AXIS_HEIGHT_PX = 56
-/** Default vertical pitch of one card row above/below the axis. */
-export const CARD_ROW_HEIGHT_PX = 88
+/** Distance from the axis line to the nearest edge of the first card row. */
+export const CARD_FIRST_ROW_OFFSET_PX = 30
+/** Vertical pitch of one card row above/below the axis. */
+export const CARD_ROW_HEIGHT_PX = 54
 /** Height of one lane in the span band. */
 export const SPAN_LANE_HEIGHT_PX = 28
 /** Visible time span when a post opens (the entry is centered). */
