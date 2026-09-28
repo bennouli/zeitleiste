@@ -347,45 +347,23 @@ describe('EntryCard', () => {
         }
 
         it.each([
-            [
-                'above, start',
-                'above',
-                false,
-                rect(100, 400, 176, 56),
-                '100px',
-                '456px',
-            ],
-            [
-                'below, end',
-                'below',
-                true,
-                rect(500, 400, 176, 56),
-                '388px',
-                '300px',
-            ],
+            ['above', 'above', rect(100, 400, 176, 56), '100px', '456px'],
+            ['below', 'below', rect(500, 400, 176, 56), '500px', '300px'],
             [
                 'clamped right',
                 'above',
-                false,
                 rect(900, 400, 176, 56),
                 '704px',
                 '456px',
             ],
-            [
-                'clamped left',
-                'above',
-                true,
-                rect(0, 400, 176, 56),
-                '8px',
-                '456px',
-            ],
+            ['clamped left', 'above', rect(-100, 400, 176, 56), '8px', '456px'],
         ] as const)(
             'places it from the anchor (%s)',
-            async (_, side, alignEnd, anchor, left, top) => {
+            async (_, side, anchor, left, top) => {
                 const restore = mockLayout(anchor)
                 try {
                     const user = userEvent.setup()
-                    renderCard({ entry: span, side, alignEnd })
+                    renderCard({ entry: span, side })
                     await user.hover(card(span))
                     const tip = screen.getByRole('tooltip')
                     expect(tip.style.left).toBe(left)
@@ -520,21 +498,11 @@ describe('EntryCard', () => {
             )
         })
 
-        it('anchors the right edge with alignEnd', () => {
-            renderCard({ entry: span, x: 300, alignEnd: true })
+        it('hangs to the right of its anchor with the connector on its left', () => {
+            renderCard({ entry: span, x: 300 })
             expect(wrapper(span).style.left).toBe('300px')
-            expect(wrapper(span)).toHaveClass('-translate-x-full')
-            expect(connector(span)).toHaveClass('right-0')
-        })
-
-        it('aligns the tooltip to the right edge with alignEnd', async () => {
-            const user = userEvent.setup()
-            renderCard({ entry: span, alignEnd: true })
-            await user.hover(card(span))
-            expect(screen.getByRole('tooltip')).toHaveAttribute(
-                'data-align',
-                'end'
-            )
+            expect(wrapper(span)).not.toHaveClass('-translate-x-full')
+            expect(connector(span)).toHaveClass('left-0')
         })
 
         it('renders inline without absolute positioning or connector', () => {

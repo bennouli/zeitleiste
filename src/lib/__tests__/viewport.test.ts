@@ -71,6 +71,66 @@ describe('initialViewport', () => {
     })
 })
 
+describe('end room', () => {
+    const ROOM = 0.2
+    const ROOMY: Bounds = { ...SAMPLE, endRoom: ROOM }
+    const forty = 40 * MS_PER_YEAR
+
+    it('initialViewport keeps the room after today', () => {
+        const vp = initialViewport(ROOMY)
+        expect(visibleMs(vp)).toBeCloseTo(MAX_VISIBLE_MS, 0)
+        expect(vp.end - SAMPLE.max).toBeCloseTo(ROOM * visibleMs(vp), 0)
+    })
+
+    it('initialViewport shows the whole range and its room when they fit', () => {
+        const range = (MAX_VISIBLE_MS / 2) * (1 - ROOM)
+        const fitting: Bounds = {
+            min: SAMPLE.max - range,
+            max: SAMPLE.max,
+            endRoom: ROOM,
+        }
+        const vp = initialViewport(fitting)
+        expect(vp.start).toBeCloseTo(fitting.min, 0)
+        expect(visibleMs(vp)).toBeCloseTo(MAX_VISIBLE_MS / 2, 0)
+        expect(vp.end - SAMPLE.max).toBeCloseTo(ROOM * visibleMs(vp), 0)
+    })
+
+    it('panning to the end stops with the room after today', () => {
+        const vp = zoomTo(Date.UTC(1900, 0, 1), forty, ROOMY)
+        const atEnd = panBy(vp, WIDTH, -1e9, ROOMY)
+        expect(atEnd.end - SAMPLE.max).toBeCloseTo(ROOM * forty, 0)
+        expect(visibleMs(atEnd)).toBeCloseTo(forty, 0)
+    })
+
+    it('a focus zoom near today keeps the room', () => {
+        const late = zoomTo(SAMPLE.max, forty, ROOMY)
+        expect(late.end - SAMPLE.max).toBeCloseTo(ROOM * forty, 0)
+    })
+
+    it('zooming out stops once the range and its room fill the view', () => {
+        const narrow: Bounds = {
+            min: SAMPLE.max - MAX_VISIBLE_MS / 4,
+            max: SAMPLE.max,
+            endRoom: ROOM,
+        }
+        let cur = zoomTo(
+            SAMPLE.max - MAX_VISIBLE_MS / 8,
+            MIN_VISIBLE_MS,
+            narrow
+        )
+        for (let i = 0; i < 100 && canZoomOut(cur, narrow); i++)
+            cur = zoomAround(cur, WIDTH, 500, 1 / ZOOM_STEP_FACTOR, narrow)
+        expect(visibleMs(cur)).toBeCloseTo(MAX_VISIBLE_MS / 4 / (1 - ROOM), 0)
+        expect(cur.start).toBeCloseTo(narrow.min, 0)
+        expect(canZoomOut(cur, narrow)).toBe(false)
+    })
+
+    it.each([Number.NaN, -0.5, 1, 2])('treats a room of %s as none', (room) => {
+        const odd: Bounds = { ...SAMPLE, endRoom: room }
+        expect(initialViewport(odd)).toEqual(initialViewport(SAMPLE))
+    })
+})
+
 describe('coordinate mapping', () => {
     const vp = initialViewport(SAMPLE)
 

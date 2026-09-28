@@ -20,7 +20,11 @@ export type Viewport = {
 export type Bounds = {
     min: number
     max: number
+    /** Fraction of the visible span kept free after `max`, so a card anchored on today fits. Default 0. */
+    endRoom?: number
 }
+
+type NormalBounds = Required<Bounds>
 
 /** Tolerance for limit checks; floating-point error on ~1e13 ms spans is far below this. */
 const LIMIT_EPSILON_MS = 1
@@ -47,22 +51,36 @@ function clampSpan(span: number): number {
 function gestureSpan(
     current: number,
     factor: number,
-    b: Bounds | null
+    b: NormalBounds | null
 ): number {
     const span = clampSpan(current / factor)
     if (factor >= 1 || !b) return span
-    return Math.min(span, Math.max(clampSpan(current), b.max - b.min))
+    return Math.min(span, Math.max(clampSpan(current), rangeSpan(b)))
+}
+
+/** Where a viewport of `span` may end: `max` plus the room after it. */
+function limitEnd(b: NormalBounds, span: number): number {
+    return b.max + span * b.endRoom
+}
+
+/** The span at which the whole range and its room fill the viewport. */
+function rangeSpan(b: NormalBounds): number {
+    return (b.max - b.min) / (1 - b.endRoom)
 }
 
 function centeredOn(center: number, span: number): Viewport {
     return { start: center - span / 2, end: center + span / 2 }
 }
 
-/** Returns ordered finite bounds, or null if they are unusable. */
-function normalizeBounds(bounds: Bounds): Bounds | null {
-    const { min, max } = bounds
+/** Returns ordered finite bounds with a room in [0, 1), or null if they are unusable. */
+function normalizeBounds(bounds: Bounds): NormalBounds | null {
+    const { min, max, endRoom = 0 } = bounds
     if (!Number.isFinite(min) || !Number.isFinite(max)) return null
-    return min <= max ? { min, max } : { min: max, max: min }
+    const room =
+        Number.isFinite(endRoom) && endRoom >= 0 && endRoom < 1 ? endRoom : 0
+    return min <= max
+        ? { min, max, endRoom: room }
+        : { min: max, max: min, endRoom: room }
 }
 
 /** Span of the viewport; 0 for a non-finite viewport so NaN never propagates. */
@@ -89,23 +107,24 @@ function xToTime(vp: Viewport, width: number, x: number): number {
     )
 }
 
-/** Clamp the span to [MIN_VISIBLE_MS, MAX_VISIBLE_MS] around its center, then shift it inside bounds without changing the span. If bounds are narrower than the span, center on the bounds. */
+/** Clamp the span to [MIN_VISIBLE_MS, MAX_VISIBLE_MS] around its center, then shift it inside bounds (plus the room after max) without changing the span. If bounds are narrower than the span, center on them. */
 export function clampViewport(vp: Viewport, bounds: Bounds): Viewport {
     const b = normalizeBounds(bounds)
     const span = clampSpan(vp.end - vp.start)
     const center = (vp.start + vp.end) / 2
     if (!b) return centeredOn(finiteOr(center, 0), span)
-    const boundsCenter = (b.min + b.max) / 2
-    if (span >= b.max - b.min) return centeredOn(boundsCenter, span)
+    const end = limitEnd(b, span)
+    const boundsCenter = (b.min + end) / 2
+    if (span >= end - b.min) return centeredOn(boundsCenter, span)
     const start = clamp(
         finiteOr(center, boundsCenter) - span / 2,
         b.min,
-        b.max - span
+        end - span
     )
     return { start, end: start + span }
 }
 
-/** The whole range, or as much of it as MAX_VISIBLE_MS allows, right-aligned to bounds.max (today). Ranges shorter than MIN_VISIBLE_MS are centered. */
+/** The whole range and its room, or as much of it as MAX_VISIBLE_MS allows, right-aligned so bounds.max (today) sits before the room. Ranges shorter than MIN_VISIBLE_MS are centered. */
 export function initialViewport(bounds: Bounds): Viewport {
     const b = normalizeBounds(bounds)
     if (!b)
@@ -113,8 +132,9 @@ export function initialViewport(bounds: Bounds): Viewport {
             { start: -MIN_VISIBLE_MS / 2, end: MIN_VISIBLE_MS / 2 },
             bounds
         )
-    const span = clampSpan(b.max - b.min)
-    return clampViewport({ start: b.max - span, end: b.max }, b)
+    const span = clampSpan(rangeSpan(b))
+    const end = limitEnd(b, span)
+    return clampViewport({ start: end - span, end }, b)
 }
 
 /** Zoom by `factor` (>1 zooms in) keeping the time under `anchorX` fixed, then clamp. */
@@ -159,7 +179,7 @@ export function panBy(
 ): Viewport {
     const b = normalizeBounds(bounds)
     const rawShift = -finiteOr(dx, 0) * msPerPx(vp, width)
-    const maxShift = b ? b.max - b.min + MAX_VISIBLE_MS : Infinity
+    const maxShift = b ? rangeSpan(b) + MAX_VISIBLE_MS : Infinity
     // Keep the arithmetic finite for absurd dx; anything beyond the bounds width is clamped anyway.
     const shift = clamp(rawShift, -maxShift, maxShift)
     return clampViewport(
@@ -201,7 +221,7 @@ export function canZoomIn(vp: Viewport): boolean {
 /** False when the span already covers the bounds or reached MAX_VISIBLE_MS. */
 export function canZoomOut(vp: Viewport, bounds: Bounds): boolean {
     const b = normalizeBounds(bounds)
-    const limit = b ? Math.min(MAX_VISIBLE_MS, b.max - b.min) : MAX_VISIBLE_MS
+    const limit = b ? Math.min(MAX_VISIBLE_MS, rangeSpan(b)) : MAX_VISIBLE_MS
     return visibleMs(vp) < limit - LIMIT_EPSILON_MS
 }
 

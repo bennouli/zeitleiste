@@ -2,7 +2,6 @@
 
 import type { Entry } from '@/lib/entry'
 import { compareIds } from '@/lib/order'
-import clsx from 'clsx'
 import type { CSSProperties, ReactNode } from 'react'
 import { AXIS_LINE_Y_PX } from './Axis'
 import { Connector } from './Connector'
@@ -134,7 +133,6 @@ function CardItem({ item, rowHeightPx, focusEntryId, onOpen }: ItemProps) {
         <EntryCard
             entry={entry}
             x={timeToX(item.t)}
-            alignEnd={item.alignEnd}
             side={item.slot.side}
             level={item.slot.level}
             rowHeightPx={rowHeightPx}
@@ -162,7 +160,7 @@ function GroupItem({
     return (
         <div
             data-group-id={item.id}
-            className={clsx('absolute', item.alignEnd && '-translate-x-full')}
+            className="absolute"
             style={{
                 left: timeToX(item.t),
                 width: CARD_WIDTH_PX,
@@ -173,7 +171,6 @@ function GroupItem({
         >
             <Connector
                 region={item.entries[0]!.region}
-                alignEnd={item.alignEnd}
                 side={side}
                 heightPx={CONNECTOR_MIN_PX}
                 offsetPx={0}

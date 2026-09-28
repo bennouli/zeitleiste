@@ -12,8 +12,6 @@ export type TooltipProps = {
     open: boolean
     /** Side of the anchor the bubble appears on. */
     placement: 'top' | 'bottom'
-    /** Horizontal alignment with the anchor: flush with its left ('start') or right ('end') edge. */
-    align?: 'start' | 'end'
     /**
      * The element the bubble belongs to. When given, the open bubble renders in
      * a portal on `document.body` with fixed coordinates taken from the anchor,
@@ -41,13 +39,12 @@ export function Tooltip({
     id,
     open,
     placement,
-    align = 'start',
     anchorRef,
     children,
 }: TooltipProps) {
     const portalRef = useRef<HTMLDivElement>(null)
 
-    useFollowAnchor(open, anchorRef, portalRef, placement, align)
+    useFollowAnchor(open, anchorRef, portalRef, placement)
 
     const bubble = <div className={bubbleClass}>{children}</div>
 
@@ -58,7 +55,6 @@ export function Tooltip({
                 id={id}
                 role="tooltip"
                 data-placement={placement}
-                data-align={align}
                 className={clsx(
                     'fixed z-50',
                     fadeClass,
@@ -82,12 +78,10 @@ export function Tooltip({
             role="tooltip"
             hidden={!open}
             data-placement={placement}
-            data-align={align}
             className={clsx(
-                'absolute z-30',
+                'absolute left-0 z-30',
                 fadeClass,
-                placement === 'top' ? 'bottom-full pb-2' : 'top-full pt-2',
-                align === 'start' ? 'left-0' : 'right-0'
+                placement === 'top' ? 'bottom-full pb-2' : 'top-full pt-2'
             )}
         >
             {bubble}
@@ -107,14 +101,12 @@ type Box = {
 }
 
 type Placement = TooltipProps['placement']
-type Align = NonNullable<TooltipProps['align']>
 
 function useFollowAnchor(
     open: boolean,
     anchorRef: RefObject<HTMLElement | null> | undefined,
     bubbleRef: RefObject<HTMLDivElement | null>,
-    placement: Placement,
-    align: Align
+    placement: Placement
 ) {
     useLayoutEffect(() => {
         if (!open || !anchorRef) return
@@ -140,8 +132,7 @@ function useFollowAnchor(
                     rect,
                     bubbleSize,
                     viewportWidth,
-                    placement,
-                    align
+                    placement
                 )
                 clippers ??= clippingAncestors(anchor)
                 const isHidden = anchorHidden(anchor, rect, clippers)
@@ -157,24 +148,18 @@ function useFollowAnchor(
         }
         update()
         return () => cancelAnimationFrame(frame)
-    }, [open, anchorRef, bubbleRef, placement, align])
+    }, [open, anchorRef, bubbleRef, placement])
 }
 
 function bubblePosition(
     anchor: Box,
     bubble: { width: number; height: number },
     viewportWidth: number,
-    placement: Placement,
-    align: Align
+    placement: Placement
 ): { left: number; top: number } {
-    const preferredLeft =
-        align === 'start' ? anchor.left : anchor.right - bubble.width
     const left = Math.max(
         VIEWPORT_MARGIN_PX,
-        Math.min(
-            preferredLeft,
-            viewportWidth - bubble.width - VIEWPORT_MARGIN_PX
-        )
+        Math.min(anchor.left, viewportWidth - bubble.width - VIEWPORT_MARGIN_PX)
     )
     const top = placement === 'top' ? anchor.top - bubble.height : anchor.bottom
     return { left, top }

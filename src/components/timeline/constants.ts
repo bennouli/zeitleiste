@@ -12,6 +12,8 @@ export const FOCUS_VISIBLE_MS = 40 * MS_PER_YEAR
 export const COLLAPSED_HEIGHT = '50dvh'
 /** Duration of zoom/pan animations and the height transition. */
 export const ANIMATION_MS = 350
+/** Minimum horizontal gap between two cards in a row; also the room kept after a card anchored on today. */
+export const CARD_GAP_PX = 8
 /** Points closer than this sit on one spot and always form a group; otherwise grouping only happens when no card slot is free. */
 export const CLUSTER_MIN_GAP_PX = 8
 /** A merged group may span at most this many px; wider merges would put the marker far from its members. */

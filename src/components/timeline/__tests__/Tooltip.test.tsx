@@ -26,7 +26,7 @@ describe('Tooltip', () => {
         expect(screen.getByRole('tooltip')).toHaveTextContent('Inhalt')
     })
 
-    it('positions by placement and alignment', () => {
+    it('positions by placement, flush with the left edge', () => {
         const { rerender } = render(
             <Tooltip id="tip" open placement="top">
                 x
@@ -34,11 +34,11 @@ describe('Tooltip', () => {
         )
         expect(screen.getByRole('tooltip')).toHaveClass('bottom-full', 'left-0')
         rerender(
-            <Tooltip id="tip" open placement="bottom" align="end">
+            <Tooltip id="tip" open placement="bottom">
                 x
             </Tooltip>
         )
-        expect(screen.getByRole('tooltip')).toHaveClass('top-full', 'right-0')
+        expect(screen.getByRole('tooltip')).toHaveClass('top-full', 'left-0')
     })
 })
 
@@ -48,27 +48,26 @@ describe('bubblePosition', () => {
     const viewportWidth = 1000
 
     it.each([
-        ['top', 'start', { left: 100, top: 300 }],
-        ['bottom', 'start', { left: 100, top: 456 }],
-        ['top', 'end', { left: 8, top: 300 }],
-    ] as const)('places it %s, %s', (placement, align, expected) => {
+        ['top', { left: 100, top: 300 }],
+        ['bottom', { left: 100, top: 456 }],
+    ] as const)('places it %s', (placement, expected) => {
         expect(
-            bubblePosition(anchor, bubble, viewportWidth, placement, align)
+            bubblePosition(anchor, bubble, viewportWidth, placement)
         ).toEqual(expected)
-    })
-
-    it('flushes an end-aligned bubble with the anchor’s right edge', () => {
-        const wideAnchor = { left: 500, top: 400, right: 900, bottom: 456 }
-        expect(
-            bubblePosition(wideAnchor, bubble, viewportWidth, 'top', 'end')
-        ).toEqual({ left: 612, top: 300 })
     })
 
     it('keeps the viewport margin on the right', () => {
         const rightAnchor = { left: 900, top: 400, right: 1076, bottom: 456 }
         expect(
-            bubblePosition(rightAnchor, bubble, viewportWidth, 'top', 'start')
+            bubblePosition(rightAnchor, bubble, viewportWidth, 'top')
         ).toEqual({ left: 704, top: 300 })
+    })
+
+    it('keeps the viewport margin on the left', () => {
+        const leftAnchor = { left: 0, top: 400, right: 176, bottom: 456 }
+        expect(
+            bubblePosition(leftAnchor, bubble, viewportWidth, 'top')
+        ).toEqual({ left: 8, top: 300 })
     })
 })
 
