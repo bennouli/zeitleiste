@@ -103,6 +103,21 @@ test('hovering a span strengthens it and shows its hover note; clicking it opens
     expect(page.url()).toBe(urlBefore)
 })
 
+test('keyboard focus strengthens a span like hover does', async ({ page }) => {
+    await openTimeline(page)
+    const spanBar = bar(page, FINISHED_SPAN)
+    const backgroundColor = () =>
+        spanBar.evaluate((el) => getComputedStyle(el).backgroundColor)
+    const restingColor = await backgroundColor()
+    await page.keyboard.press('Tab')
+    await spanBar.focus()
+    await expect(spanBar).toBeFocused()
+    expect(await spanBar.evaluate((el) => el.matches(':focus-visible'))).toBe(
+        true
+    )
+    expect(await backgroundColor()).not.toBe(restingColor)
+})
+
 test('bars paint behind the dots and connectors that cross them', async ({
     page,
 }) => {
