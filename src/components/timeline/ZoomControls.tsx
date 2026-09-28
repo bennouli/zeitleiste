@@ -20,7 +20,7 @@ const buttonClass = clsx(
     'aria-disabled:cursor-not-allowed aria-disabled:border-fg/30 aria-disabled:text-fg/30'
 )
 
-/** Zoom-out and zoom-in buttons; the only way to zoom on desktop. aria-disabled (not disabled) keeps keyboard focus at the limits. */
+/** Zoom-out and zoom-in buttons. aria-disabled (not disabled) keeps keyboard focus at the limits. */
 export function ZoomControls({
     canZoomIn,
     canZoomOut,
