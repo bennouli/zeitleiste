@@ -53,6 +53,8 @@ const NEAR_1918_LAPTOP: LayoutScenario = {
 }
 const ZERO_WIDTH: LayoutScenario = { pts: points, width: 0, visibleYears: 300 }
 const NO_POINTS: LayoutScenario = { pts: [], width: 1000, visibleYears: 300 }
+const GAP_PX = 8
+const DEFAULT_LEVELS = 3
 
 /** Layout of `pts` with `visibleYears` across `width` px, centered on `centerT`. */
 function layout({
@@ -61,18 +63,17 @@ function layout({
     visibleYears,
     centerT = (T0 + T1) / 2,
     previous = null,
-    maxLevels = 3,
-    groupLevels = 3,
+    maxLevels = DEFAULT_LEVELS,
+    groupLevels = DEFAULT_LEVELS,
 }: LayoutScenario): EntryLayout {
     const span = visibleYears * MS_PER_YEAR
-    const start = centerT - span / 2
     const geometry = {
-        timeToX: (t: number) => ((t - start) / span) * width,
+        timeToX: timeToXOf({ pts, width, visibleYears, centerT }),
         msPerPx: span / width,
         width,
         maxLevels,
         groupLevels,
-        gapPx: 8,
+        gapPx: GAP_PX,
     }
     const tree = buildClusterTree(
         pts.map((e) => ({ id: e.id, t: entryAnchor(e) }))
@@ -89,6 +90,17 @@ function timeToXOf({
     const span = visibleYears * MS_PER_YEAR
     const start = centerT - span / 2
     return (t) => ((t - start) / span) * width
+}
+
+/** Rows an item covers on its side: every group row for a stack, its own row for a card. */
+function rowsOf(item: LayoutItem, groupLevels = DEFAULT_LEVELS): number[] {
+    return item.kind === 'group'
+        ? Array.from({ length: groupLevels }, (_, level) => level)
+        : [item.slot.level]
+}
+
+function isNear(a: [number, number], b: [number, number]): boolean {
+    return a[0] < b[1] + GAP_PX && b[0] < a[1] + GAP_PX
 }
 
 function extent(
@@ -110,8 +122,7 @@ function checkInvariants(
     visibleYears: number,
     centerT: number
 ) {
-    const span = visibleYears * MS_PER_YEAR
-    const timeToX = (t: number) => ((t - (centerT - span / 2)) / span) * width
+    const timeToX = timeToXOf({ pts, width, visibleYears, centerT })
     // Every point exactly once.
     const seen = entryLayout.items
         .flatMap((i) => i.entries.map((e) => e.id))
@@ -135,14 +146,12 @@ function checkInvariants(
             const A = placedItems[a]!
             const B = placedItems[b]!
             const sameSide = A.slot.side === B.slot.side
-            const rowsA = A.kind === 'group' ? [0, 1, 2] : [A.slot.level]
-            const rowsB = B.kind === 'group' ? [0, 1, 2] : [B.slot.level]
-            if (!sameSide || !rowsA.some((r) => rowsB.includes(r))) continue
-            const [a0, a1] = extent(A, timeToX)
-            const [b0, b1] = extent(B, timeToX)
-            expect(a0 < b1 + 8 && b0 < a1 + 8, `${A.id} overlaps ${B.id}`).toBe(
-                false
-            )
+            const rowsB = rowsOf(B)
+            if (!sameSide || !rowsOf(A).some((r) => rowsB.includes(r))) continue
+            expect(
+                isNear(extent(A, timeToX), extent(B, timeToX)),
+                `${A.id} overlaps ${B.id}`
+            ).toBe(false)
         }
     }
 }
@@ -199,7 +208,7 @@ describe('layoutEntries', () => {
         for (const scenario of [evenlySpaced, ...initialViews]) {
             const entryLayout = layout(scenario)
             const timeToX = timeToXOf(scenario)
-            const maxLevels = scenario.maxLevels ?? 3
+            const maxLevels = scenario.maxLevels ?? DEFAULT_LEVELS
             const cardPairs = entryLayout.items
                 .slice(1)
                 .map((later, k) => [entryLayout.items[k]!, later] as const)
@@ -209,18 +218,15 @@ describe('layoutEntries', () => {
                 if (earlier.slot.side !== later.slot.side) continue
                 const otherSide =
                     later.slot.side === 'above' ? 'below' : 'above'
-                const [x0, x1] = extent(later, timeToX)
+                const laterExtent = extent(later, timeToX)
                 const isRowTaken = (level: number) =>
-                    entryLayout.items.some((i) => {
-                        if (i.kind === 'marker' || i.slot.side !== otherSide)
-                            return false
-                        const rows =
-                            i.kind === 'group' ? [0, 1, 2] : [i.slot.level]
-                        const [i0, i1] = extent(i, timeToX)
-                        return (
-                            rows.includes(level) && i0 < x1 + 8 && x0 < i1 + 8
-                        )
-                    })
+                    entryLayout.items.some(
+                        (i) =>
+                            i.kind !== 'marker' &&
+                            i.slot.side === otherSide &&
+                            rowsOf(i, scenario.groupLevels).includes(level) &&
+                            isNear(extent(i, timeToX), laterExtent)
+                    )
                 const levels = Array.from({ length: maxLevels }, (_, l) => l)
                 expect(
                     levels.every(isRowTaken),

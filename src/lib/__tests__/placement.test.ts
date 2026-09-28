@@ -5,8 +5,8 @@ import {
     placeItems,
     type BlockedInterval,
     type PlaceableItem,
-    type PlacedSide,
     type Placement,
+    type PlacementOptions,
     type Side,
     type Slot,
 } from '../placement'
@@ -125,11 +125,9 @@ function checkNoOverlap(
 }
 
 /** One row per side, the row below fully taken: a second item can only share the row above. */
-const BELOW_TAKEN = {
+const BELOW_TAKEN: PlacementOptions = {
     maxLevels: 1,
-    blocked: [
-        { side: 'below', level: 0, x0: -1000, x1: 1000 },
-    ] satisfies BlockedInterval[],
+    blocked: [{ side: 'below', level: 0, x0: -1000, x1: 1000 }],
 }
 
 describe('placeItems', () => {
@@ -158,8 +156,9 @@ describe('placeItems', () => {
         const belowNearTaken: BlockedInterval[] = [
             { side: 'below', level: 0, x0: 0, x1: 200 },
         ]
+        const options: PlacementOptions = { blocked: belowNearTaken }
         const items = [item('a', 300, 400, 0), item('b', 0, 100, 1)]
-        const p = placeItems(items, null, { blocked: belowNearTaken })
+        const p = placeItems(items, null, options)
         expect(p.slots.get('b')).toEqual({ side: 'below', level: 1 })
     })
 
@@ -173,27 +172,28 @@ describe('placeItems', () => {
             item('b', 0, 100, 1),
             item('c', 200, 300, 2),
         ]
-        const p = placeItems(items, null, { blocked: belowTaken })
+        const options: PlacementOptions = { blocked: belowTaken }
+        const p = placeItems(items, null, options)
         expect(p.slots.get('a')).toEqual({ side: 'above', level: 0 })
         expect(p.slots.get('b')).toEqual({ side: 'above', level: 0 })
         expect(p.slots.get('c')).toEqual({ side: 'above', level: 0 })
     })
 
     it('counts items placed elsewhere in the alternation at their chronological position', () => {
-        const aboveBefore: PlacedSide[] = [{ order: 1, side: 'above' }]
-        const aboveAfter: PlacedSide[] = [{ order: 9, side: 'above' }]
-        const belowBetween: PlacedSide[] = [{ order: 1, side: 'below' }]
+        const aboveBefore: PlacementOptions = {
+            placedElsewhere: [{ order: 1, side: 'above' }],
+        }
+        const aboveAfter: PlacementOptions = {
+            placedElsewhere: [{ order: 9, side: 'above' }],
+        }
+        const belowBetween: PlacementOptions = {
+            placedElsewhere: [{ order: 1, side: 'below' }],
+        }
         const lone = [item('a', 0, 100, 5)]
         const pair = [item('a', 0, 100, 0), item('b', 200, 300, 2)]
-        const afterAbove = placeItems(lone, null, {
-            placedElsewhere: aboveBefore,
-        })
-        const beforeAbove = placeItems(lone, null, {
-            placedElsewhere: aboveAfter,
-        })
-        const aroundBelow = placeItems(pair, null, {
-            placedElsewhere: belowBetween,
-        })
+        const afterAbove = placeItems(lone, null, aboveBefore)
+        const beforeAbove = placeItems(lone, null, aboveAfter)
+        const aroundBelow = placeItems(pair, null, belowBetween)
         expect(afterAbove.slots.get('a')?.side).toBe('below')
         expect(beforeAbove.slots.get('a')?.side).toBe('above')
         expect(aroundBelow.slots.get('a')?.side).toBe('above')
@@ -257,7 +257,8 @@ describe('placeItems', () => {
     })
 
     it('breaks order ties by id', () => {
-        const p = placeItems([item('y', 0, 100), item('x', 0, 100)], null)
+        const tied = [item('y', 0, 100), item('x', 0, 100)]
+        const p = placeItems(tied, null)
         expect(p.slots.get('x')?.side).toBe('above')
         expect(p.slots.get('y')?.side).toBe('below')
     })
@@ -281,9 +282,11 @@ describe('placeItems', () => {
             item('b', 0, 100, 1),
             item('c', 0, 100, 2),
         ]
-        const p = placeItems(items, null, { maxLevels: 1 })
+        const oneRow: PlacementOptions = { maxLevels: 1 }
+        const noRows: PlacementOptions = { maxLevels: 0 }
+        const p = placeItems(items, null, oneRow)
         expect(p.overflow).toEqual(['c'])
-        expect(placeItems(items, null, { maxLevels: 0 }).overflow).toEqual([
+        expect(placeItems(items, null, noRows).overflow).toEqual([
             'a',
             'b',
             'c',
@@ -294,21 +297,27 @@ describe('placeItems', () => {
         const sharesRow = (
             first: PlaceableItem,
             second: PlaceableItem,
-            gapPx = 8
-        ) =>
-            placeItems([first, second], null, {
-                ...BELOW_TAKEN,
-                gapPx,
-            }).slots.has(second.id)
-        const a = item('a', 0, 100, 0)
-        const aRight = item('a', 108, 200, 0)
-        expect(sharesRow(a, item('b', 108, 200, 1))).toBe(true)
-        expect(sharesRow(a, item('b', 107, 200, 1))).toBe(false)
-        expect(sharesRow(aRight, item('b', 0, 101, 1))).toBe(false)
-        expect(sharesRow(aRight, item('b', 0, 100, 1))).toBe(true)
-        expect(sharesRow(a, item('b', 100, 200, 1), 0)).toBe(true)
-        expect(sharesRow(a, item('b', 120, 200, 1), 20)).toBe(true)
-        expect(sharesRow(a, item('b', 119, 200, 1), 20)).toBe(false)
+            options: PlacementOptions
+        ) => placeItems([first, second], null, options).slots.has(second.id)
+        const gap8: PlacementOptions = { ...BELOW_TAKEN, gapPx: 8 }
+        const gap0: PlacementOptions = { ...BELOW_TAKEN, gapPx: 0 }
+        const gap20: PlacementOptions = { ...BELOW_TAKEN, gapPx: 20 }
+        const left = item('a', 0, 100, 0)
+        const right = item('a', 108, 200, 0)
+        const touchingRight = item('b', 108, 200, 1)
+        const tooCloseRight = item('b', 107, 200, 1)
+        const tooCloseLeft = item('b', 0, 101, 1)
+        const touchingLeft = item('b', 0, 100, 1)
+        const adjoining = item('b', 100, 200, 1)
+        const touchingAt20 = item('b', 120, 200, 1)
+        const tooCloseAt20 = item('b', 119, 200, 1)
+        expect(sharesRow(left, touchingRight, gap8)).toBe(true)
+        expect(sharesRow(left, tooCloseRight, gap8)).toBe(false)
+        expect(sharesRow(right, tooCloseLeft, gap8)).toBe(false)
+        expect(sharesRow(right, touchingLeft, gap8)).toBe(true)
+        expect(sharesRow(left, adjoining, gap0)).toBe(true)
+        expect(sharesRow(left, touchingAt20, gap20)).toBe(true)
+        expect(sharesRow(left, tooCloseAt20, gap20)).toBe(false)
     })
 
     it('checks neighbours on both sides when inserting between cards', () => {
@@ -379,7 +388,8 @@ describe('placeItems', () => {
             const q = placeItems(items, prevAbove)
             expect(q.slots.get('first')).toEqual({ side: 'above', level: 0 })
             expect(q.slots.get('second')).toEqual({ side: 'above', level: 1 })
-            const oneRow = placeItems(items, prevAbove, { maxLevels: 1 })
+            const oneRowOptions: PlacementOptions = { maxLevels: 1 }
+            const oneRow = placeItems(items, prevAbove, oneRowOptions)
             expect(oneRow.slots.get('second')).toEqual({
                 side: 'below',
                 level: 0,

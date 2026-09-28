@@ -171,15 +171,9 @@ export function placeItems(
     const slots = new Map<string, Slot>()
     const overflow: string[] = []
     const seen = new Set<string>()
-    let last: PlacedSide | undefined
-    let elsewhereIndex = 0
+    let lastPlaced: PlacedSide | undefined
 
     for (const item of [...items].sort(compareItems)) {
-        while (
-            elsewhereIndex < placedElsewhere.length &&
-            placedElsewhere[elsewhereIndex]!.order < item.order
-        )
-            last = placedElsewhere[elsewhereIndex++]
         const x0 = Math.min(item.x0, item.x1)
         const x1 = Math.max(item.x0, item.x1)
         // Duplicate ids and non-finite extents cannot be placed safely.
@@ -193,8 +187,13 @@ export function placeItems(
             rows[slot.side]?.[slot.level]?.isFree(x0, x1) ?? false
         const prev = previous?.get(item.id)
         const keepPrev = prev !== undefined && fits(prev)
+        const precedingSide = sideBefore(
+            item.order,
+            lastPlaced,
+            placedElsewhere
+        )
         const firstSide =
-            prev && rows[prev.side] ? prev.side : alternatingSide(last?.side)
+            prev && rows[prev.side] ? prev.side : alternatingSide(precedingSide)
         const found = keepPrev
             ? prev
             : candidateSlots(maxLevels, firstSide).find(fits)
@@ -204,13 +203,27 @@ export function placeItems(
         if (slot && row) {
             row.insert(x0, x1)
             slots.set(item.id, slot)
-            last = { order: item.order, side: slot.side }
+            lastPlaced = { order: item.order, side: slot.side }
         } else {
             overflow.push(item.id)
         }
     }
 
     return { slots, overflow }
+}
+
+/** Side of the latest item before `order`, from this call or an earlier one. */
+function sideBefore(
+    order: number,
+    lastPlaced: PlacedSide | undefined,
+    placedElsewhere: readonly PlacedSide[]
+): Side | undefined {
+    const lastElsewhere = placedElsewhere.findLast((p) => p.order < order)
+    if (lastElsewhere === undefined) return lastPlaced?.side
+    if (lastPlaced === undefined) return lastElsewhere.side
+    return lastElsewhere.order > lastPlaced.order
+        ? lastElsewhere.side
+        : lastPlaced.side
 }
 
 /** Number of rows actually used per side, for computing the band height. */
