@@ -8,7 +8,7 @@ export type Focused = {
     /** Entries the focused element stands for: its card, stack, marker or span bar. */
     ids: string[]
     t: number | null
-    inPoints: boolean
+    inCards: boolean
     inSpans: boolean
     outline: string
 }
@@ -45,7 +45,7 @@ export function describeFocus(page: Page): Promise<Focused> {
             role: el.getAttribute('role') ?? el.tagName.toLowerCase(),
             ids,
             t: t === undefined ? null : Number(t),
-            inPoints: el.closest('[data-layer="points"]') !== null,
+            inCards: el.closest('[data-layer="cards"]') !== null,
             inSpans: el.closest('[data-layer="spans"]') !== null,
             outline: `${style.outlineStyle} ${style.outlineWidth}`,
         }

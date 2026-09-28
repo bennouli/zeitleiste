@@ -52,7 +52,7 @@ export function CardLayer({
     )
 
     return (
-        <div data-layer="points" className="absolute inset-x-0 top-0 h-0">
+        <div data-layer="cards" className="absolute inset-x-0 top-0 h-0">
             {ordered.flatMap((item) => {
                 const highlighted = item.entries.some(
                     (e) => e.id === focusEntryId
