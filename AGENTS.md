@@ -49,8 +49,8 @@ git subtree pull --prefix=repos/effect https://github.com/Effect-TS/effect.git m
 
 # Code Style
 
-`@/` aliases `src/`. `src/lib` holds logic shared by more than one module, with its test next to it (`x.test.ts`); components in
-`src/components` with `X.test.tsx` beside them.
+`@/` aliases `src/`. `src/lib` holds logic shared by more than one module; components live in `src/components`. Tests sit in a `__tests__/`
+directory next to the module they test (`src/lib/__tests__/x.test.ts`, `src/components/timeline/__tests__/X.test.tsx`).
 
 - Declarative style generally preferred.
 - Run prettier after any coding task (the `commit` skill covers the pre-commit run).
