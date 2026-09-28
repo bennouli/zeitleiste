@@ -57,7 +57,7 @@ export type SpanLayout = {
     laneCount: number
 }
 
-export const DEFAULT_MIN_WIDTH_PX = 64
+const DEFAULT_MIN_WIDTH_PX = 64
 const DEFAULT_GAP_PX = 4
 const DEFAULT_LABEL_PADDING_PX = 12
 
