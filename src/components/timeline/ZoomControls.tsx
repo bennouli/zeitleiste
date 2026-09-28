@@ -1,6 +1,7 @@
 'use client'
 
 import clsx from 'clsx'
+import { Minus, Plus } from 'lucide-react'
 
 import { NO_DRAG_ATTR } from './useGestures'
 
@@ -38,7 +39,7 @@ export function ZoomControls({
                 aria-disabled={!canZoomOut}
                 onClick={canZoomOut ? onZoomOut : undefined}
             >
-                <ZoomIcon />
+                <Minus aria-hidden size={18} strokeWidth={1.5} />
             </button>
             <button
                 type="button"
@@ -47,25 +48,8 @@ export function ZoomControls({
                 aria-disabled={!canZoomIn}
                 onClick={canZoomIn ? onZoomIn : undefined}
             >
-                <ZoomIcon plus />
+                <Plus aria-hidden size={18} strokeWidth={1.5} />
             </button>
         </div>
-    )
-}
-
-function ZoomIcon({ plus = false }: { plus?: boolean }) {
-    return (
-        <svg
-            aria-hidden="true"
-            width="18"
-            height="18"
-            viewBox="0 0 18 18"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.5"
-            strokeLinecap="round"
-        >
-            <path d={plus ? 'M4 9h10M9 4v10' : 'M4 9h10'} />
-        </svg>
     )
 }
