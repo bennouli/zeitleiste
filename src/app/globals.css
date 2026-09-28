@@ -75,20 +75,20 @@
         var(--font-eb-garamond-italic), ui-serif, Georgia, Cambria,
         'Times New Roman', Times, serif;
 
-    --text-label: 0.625rem;
-    --text-label-lg: 0.6875rem;
-    --text-meta: 0.65625rem;
-    --text-entry: 1.0625rem;
+    --text-label: 0.75rem;
+    --text-label-lg: 0.8125rem;
+    --text-meta: 0.75rem;
+    --text-entry: 1.25rem;
     --text-entry--line-height: 1.1;
-    --text-note-title: 0.9375rem;
+    --text-note-title: 1.1875rem;
     --text-note-title--line-height: 1.2;
-    --text-note: 0.8125rem;
+    --text-note: 1.0625rem;
     --text-note--line-height: 1.4;
     --text-post-title: 2.75rem;
     --text-post-title--line-height: 1.05;
-    --text-lead: 1.25rem;
+    --text-lead: 1.375rem;
     --text-lead--line-height: 1.35;
-    --text-body: 1.03125rem;
+    --text-body: 1.125rem;
     --text-body--line-height: 1.5;
 
     --tracking-label: 0.06em;

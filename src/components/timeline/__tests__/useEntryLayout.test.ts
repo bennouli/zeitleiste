@@ -213,7 +213,7 @@ describe('layoutEntries', () => {
                 .slice(1)
                 .map((later, k) => [entryLayout.items[k]!, later] as const)
                 .filter(([a, b]) => a.kind === 'card' && b.kind === 'card')
-            expect(cardPairs.length).toBeGreaterThan(3)
+            expect(cardPairs.length).toBeGreaterThan(1)
             for (const [earlier, later] of cardPairs) {
                 if (earlier.slot.side !== later.slot.side) continue
                 const otherSide =

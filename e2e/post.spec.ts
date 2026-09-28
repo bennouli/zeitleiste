@@ -43,12 +43,12 @@ test('title, lead and body are set in the serif at their sizes; the column stays
     })
     expect(await typeface(lead)).toMatchObject({
         family: serifItalic,
-        size: '20px',
+        size: '22px',
         style: 'italic',
     })
     expect(await typeface(body)).toMatchObject({
         family: serif,
-        size: '16.5px',
+        size: '18px',
         style: 'normal',
     })
     const bodyWidth = await body.evaluate(
