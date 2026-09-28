@@ -205,7 +205,7 @@ export function Timeline({
                 )}
                 <p
                     aria-hidden="true"
-                    className="pointer-events-none absolute top-[22px] left-8 z-20 font-sans text-[11px] font-medium tracking-[0.18em] text-fg uppercase"
+                    className="pointer-events-none absolute top-5.5 left-8 z-20 font-sans text-label-lg font-medium tracking-wordmark text-fg uppercase"
                 >
                     Zeitleiste
                 </p>
