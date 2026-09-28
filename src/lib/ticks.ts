@@ -51,7 +51,7 @@ export type TickResult = {
 }
 
 /** Free space kept between the edges of two neighbouring labels, in px. */
-export const LABEL_PADDING_PX = 8
+const LABEL_PADDING_PX = 8
 
 /** Days of the month that carry a tick at 'week' steps; keeps month starts on the grid. */
 const WEEK_DAYS = new Set([1, 8, 15, 22])
@@ -285,4 +285,4 @@ function timeToX(
     return ((t - start) / (end - start)) * widthPx
 }
 
-export const PRIVATE_UNDER_TESTS = { timeToX }
+export const PRIVATE_UNDER_TESTS = { LABEL_PADDING_PX, timeToX }

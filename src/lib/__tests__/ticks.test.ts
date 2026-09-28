@@ -1,13 +1,8 @@
 import { MS_PER_DAY, MS_PER_YEAR } from '@/lib/time'
 import { describe, expect, it } from 'vitest'
-import {
-    LABEL_PADDING_PX,
-    PRIVATE_UNDER_TESTS,
-    ticks,
-    type TickUnit,
-} from '../ticks'
+import { PRIVATE_UNDER_TESTS, ticks, type TickUnit } from '../ticks'
 
-const { timeToX } = PRIVATE_UNDER_TESTS
+const { LABEL_PADDING_PX, timeToX } = PRIVATE_UNDER_TESTS
 
 const UNITS: TickUnit[] = [
     'century',

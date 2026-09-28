@@ -36,7 +36,7 @@ export type GroupStackProps = {
 /** Height of the controls row below the cards (incl. its top margin), when present. */
 export const GROUP_STACK_CONTROLS_HEIGHT_PX = 36
 /** Minimum vertical travel of a touch swipe that steps the stack. */
-export const SWIPE_THRESHOLD_PX = 30
+const SWIPE_THRESHOLD_PX = 30
 
 const CONTROLS_GAP_PX = 4
 

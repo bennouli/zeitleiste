@@ -5,16 +5,14 @@ import { precisionOf, type HDate } from '../entry'
 import {
     MS_PER_DAY,
     MS_PER_YEAR,
-    compareHDate,
-    endOf,
+    PRIVATE_UNDER_TESTS,
     entryAnchor,
     entryRange,
-    midOf,
     startOf,
-    toHDate,
     todayMs,
-    yearOf,
 } from '../time'
+
+const { endOf, midOf, yearOf, toHDate, compareHDate } = PRIVATE_UNDER_TESTS
 
 const TODAY = Date.UTC(2026, 8, 27)
 

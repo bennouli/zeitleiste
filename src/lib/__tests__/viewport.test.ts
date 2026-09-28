@@ -1,15 +1,13 @@
 import { MS_PER_YEAR } from '@/lib/time'
 import { describe, expect, it } from 'vitest'
 import {
-    MAX_VISIBLE_MS,
-    MIN_VISIBLE_MS,
+    PRIVATE_UNDER_TESTS,
     ZOOM_STEP_FACTOR,
     canZoomIn,
     canZoomOut,
     clampViewport,
     estimateVelocity,
     initialViewport,
-    interpolateViewport,
     msPerPx,
     panBy,
     pinch,
@@ -17,14 +15,20 @@ import {
     timeToX,
     tweenViewport,
     viewportEquals,
-    visibleMs,
-    xToTime,
     zoomAround,
     zoomTo,
     type Bounds,
     type Momentum,
     type Viewport,
 } from '../viewport'
+
+const {
+    MIN_VISIBLE_MS,
+    MAX_VISIBLE_MS,
+    visibleMs,
+    xToTime,
+    interpolateViewport,
+} = PRIVATE_UNDER_TESTS
 
 const SAMPLE: Bounds = { min: Date.UTC(1700, 0, 1), max: Date.UTC(2026, 8, 27) }
 const WIDTH = 1000
