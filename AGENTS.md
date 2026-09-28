@@ -75,8 +75,8 @@ directory next to the module they test (`src/lib/__tests__/x.test.ts`, `src/comp
 - Loose guideline: exported before private, then in order of first use (counting uses nested in earlier helpers).
 - A private helper that earns a direct unit test goes in a `PRIVATE_UNDER_TESTS` object at the bottom of the file, never a bare `export`
   (lint-enforced: `local/no-test-only-exports` reports an export nothing outside the tests imports, and production code may not import
-  `PRIVATE_UNDER_TESTS`). It holds computation with edge cases of its own (`datesBetween`, `variance`), never a "part of X" step — test X
-  instead.
+  `PRIVATE_UNDER_TESTS`). It holds computation with edge cases of its own (`datesBetween`, `variance`) and the constants its tests are
+  written in terms of, never a "part of X" step — test X instead.
 
 ## Tests
 

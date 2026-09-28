@@ -10,7 +10,6 @@ import * as axeMatchers from 'vitest-axe/matchers'
 expect.extend(axeMatchers)
 
 declare module 'vitest' {
-    // Declaration merging: the one case where only an interface works.
     // eslint-disable-next-line @typescript-eslint/no-empty-object-type, @typescript-eslint/no-unused-vars, @typescript-eslint/consistent-type-definitions
     interface Matchers<R, T> extends AxeMatchers {}
 }
