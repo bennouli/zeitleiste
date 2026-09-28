@@ -1,7 +1,7 @@
 'use client'
 
-import { CATEGORY_LABEL, type Entry } from '@/lib/entry'
-import { entryLabel, formatEntryDate } from '@/lib/format'
+import type { Entry } from '@/lib/entry'
+import { entryLabel, formatEntryMeta } from '@/lib/format'
 import clsx from 'clsx'
 import type { CSSProperties } from 'react'
 import { useId, useRef } from 'react'
@@ -9,7 +9,7 @@ import { AxisDot, Connector } from './Connector'
 import { CARD_FIRST_ROW_OFFSET_PX } from './constants'
 import { EntryLabel } from './EntryLabel'
 import { LABEL_HEIGHT_PX } from './labelMetrics'
-import { Tooltip } from './Tooltip'
+import { Tooltip, TooltipBody, TooltipMeta, TooltipTitle } from './Tooltip'
 import { useTooltipTrigger } from './useTooltipTrigger'
 
 export type EntryCardProps = {
@@ -150,18 +150,13 @@ export function EntryCard({
     )
 }
 
-/** Tooltip body of an entry; the title is hidden from screen readers because the anchor's label names it. */
+/** Hover note of an entry; the title is hidden from screen readers because the anchor's label names it. */
 export function EntryTooltipContent({ entry }: { entry: Entry }) {
     return (
         <>
-            <p className="font-medium" aria-hidden="true">
-                {entry.title}
-            </p>
-            <p className="text-xs text-fg-muted">
-                {formatEntryDate(entry, 'long')} ·{' '}
-                {CATEGORY_LABEL[entry.category]}
-            </p>
-            <p className="mt-2">{entry.summary}</p>
+            <TooltipMeta>{formatEntryMeta(entry)}</TooltipMeta>
+            <TooltipTitle aria-hidden="true">{entry.title}</TooltipTitle>
+            <TooltipBody>{entry.summary}</TooltipBody>
         </>
     )
 }

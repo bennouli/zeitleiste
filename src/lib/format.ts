@@ -1,4 +1,10 @@
-import { precisionOf, type Entry, type HDate } from './entry'
+import {
+    CATEGORY_LABEL,
+    precisionOf,
+    REGION_LABEL,
+    type Entry,
+    type HDate,
+} from './entry'
 import { startOf } from './time'
 
 export type DateStyle = 'short' | 'long'
@@ -89,6 +95,15 @@ export function formatEntryDate(
 export function entryLabel(entry: Entry): string {
     const label = `${entry.title}, ${formatEntryDate(entry, 'short')}`
     return entry.post ? `${label}, Beitrag` : label
+}
+
+/** Meta line of an entry's hover note: '1700 – 10. September 1721 · Krieg · Russland/Sowjetunion'. */
+export function formatEntryMeta(entry: Entry): string {
+    return [
+        formatEntryDate(entry, 'long'),
+        CATEGORY_LABEL[entry.category],
+        REGION_LABEL[entry.region],
+    ].join(' · ')
 }
 
 /** Year label for the axis, e.g. '1917'. */
