@@ -42,7 +42,9 @@ export function Post({ entry }: { entry: Entry }) {
                 >
                     {entry.title}
                 </h2>
-                <p className="text-lead italic">{entry.summary}</p>
+                <p className="font-serif-italic text-lead italic">
+                    {entry.summary}
+                </p>
                 {entry.post &&
                     paragraphs(entry.post.body).map((p, i) => (
                         <p key={i} className="text-body text-pretty">

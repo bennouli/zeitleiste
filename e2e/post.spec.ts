@@ -33,17 +33,17 @@ test('title, lead and body are set in the serif at their sizes; the column stays
     const body = article.getByText(FIRST_BODY_PARAGRAPH_START)
 
     expect(await typeface(title)).toMatchObject({
-        family: expect.stringContaining('EB Garamond'),
+        family: expect.stringMatching(/^ebGaramond,/),
         size: '44px',
         style: 'normal',
     })
     expect(await typeface(lead)).toMatchObject({
-        family: expect.stringContaining('EB Garamond'),
+        family: expect.stringMatching(/^ebGaramondItalic,/),
         size: '20px',
         style: 'italic',
     })
     expect(await typeface(body)).toMatchObject({
-        family: expect.stringContaining('EB Garamond'),
+        family: expect.stringMatching(/^ebGaramond,/),
         size: '16.5px',
         style: 'normal',
     })

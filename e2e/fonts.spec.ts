@@ -13,35 +13,57 @@ const MAX_FONT_LAYOUT_SHIFT = 0.001
 /** How long to wait for a buffered layout-shift entry before counting none. */
 const SHIFT_OBSERVE_MS = 500
 
-const FONTS = [
-    {
-        family: /^['"]?EB Garamond['"]?$/,
-        selector: '[data-entry-id] .font-serif',
-    },
-    { family: /^['"]?IBM Plex Sans['"]?$/, selector: 'body' },
+const SERIF = { family: 'ebGaramond', selector: '[data-entry-id] .font-serif' }
+const SANS = { family: 'ibmPlexSans', selector: 'body' }
+const SERIF_ITALIC = {
+    family: 'ebGaramondItalic',
+    selector: '.font-serif-italic',
+}
+
+const FONTS_BY_PAGE = [
+    { path: '/', fonts: [SERIF, SANS] },
+    { path: POST_PATH, fonts: [SERIF, SANS, SERIF_ITALIC] },
 ] as const
 
-for (const path of PAGES) {
-    test(`${path} renders EB Garamond and IBM Plex Sans`, async ({ page }) => {
+const GOOGLE_FONTS_HOST = /^https?:\/\/fonts\.(googleapis|gstatic)\.com\//
+
+for (const { path, fonts } of FONTS_BY_PAGE) {
+    test(`${path} renders its text in the web fonts`, async ({ page }) => {
         await openTimeline(page, path)
         await page.evaluate(() => document.fonts.ready)
-        for (const { family, selector } of FONTS) {
-            const renderedFamilies = await page
+        for (const { family, selector } of fonts) {
+            const rendered = await page
                 .locator(selector)
                 .first()
                 .evaluate((el) => {
                     const style = getComputedStyle(el)
-                    const loadedFaces = [...document.fonts].filter(
+                    const unquote = (name: string) =>
+                        name.trim().replace(/['"]/g, '')
+                    const firstFamily = unquote(
+                        style.fontFamily.split(',')[0] ?? ''
+                    )
+                    const loaded = [...document.fonts].some(
                         (f) =>
                             f.status === 'loaded' &&
-                            style.fontFamily.includes(
-                                f.family.replace(/['"]/g, '')
-                            )
+                            unquote(f.family) === firstFamily &&
+                            f.style === style.fontStyle
                     )
-                    return loadedFaces.map((f) => f.family)
+                    return { firstFamily, loaded }
                 })
-            expect(renderedFamilies.some((f) => family.test(f))).toBe(true)
+            expect(rendered).toEqual({ firstFamily: family, loaded: true })
         }
+    })
+}
+
+for (const path of PAGES) {
+    test(`${path} requests nothing from Google Fonts`, async ({ page }) => {
+        const requestedUrls: string[] = []
+        page.on('request', (request) => requestedUrls.push(request.url()))
+        await openTimeline(page, path)
+        await page.evaluate(() => document.fonts.ready)
+        expect(
+            requestedUrls.filter((url) => GOOGLE_FONTS_HOST.test(url))
+        ).toEqual([])
     })
 }
 

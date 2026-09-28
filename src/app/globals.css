@@ -59,8 +59,9 @@
  * width when the web fonts replace their fallback (`65ch` would).
  * Font stacks: the `next/font` variables set on `<html>` in the root
  * layout, then system fallbacks. Declared in a `@theme static` block so they
- * are always emitted as `--font-sans` / `--font-serif` on `:root` and power
- * the `font-sans` / `font-serif` utilities without a self-referencing
+ * are always emitted as `--font-sans` / `--font-serif` /
+ * `--font-serif-italic` on `:root` and power the `font-sans` / `font-serif` /
+ * `font-serif-italic` utilities without a self-referencing
  * `var(--font-sans)` cycle. */
 @theme static {
     --container-reading: 41.25rem;
@@ -70,6 +71,9 @@
     --font-serif:
         var(--font-eb-garamond), ui-serif, Georgia, Cambria, 'Times New Roman',
         Times, serif;
+    --font-serif-italic:
+        var(--font-eb-garamond-italic), ui-serif, Georgia, Cambria,
+        'Times New Roman', Times, serif;
 
     --text-label: 0.625rem;
     --text-label-lg: 0.6875rem;
