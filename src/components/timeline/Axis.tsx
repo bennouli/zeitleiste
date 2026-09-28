@@ -12,7 +12,7 @@ export const AXIS_LINE_THICKNESS_PX = 1
 const LABEL_TOP_PX = AXIS_LINE_Y_PX + 14
 const TODAY_MARK_HEIGHT_PX = 16
 const TICK_OPTIONS = { minYearWidthForMonthsPx: 420, charWidthPx: 7.7 }
-/** Above the unfocused card layer items (rows 100 − level, open entry 200), so their connectors pass behind the labels; a focused item (z 300, later in the DOM) still paints over them. */
+/** Ties with a focused card layer item (`focus-within:z-300`), which wins by DOM order. */
 const Z_AXIS_LABEL = 300
 
 /** Hairline axis across the full width, short ticks with small-caps labels, and the "Heute" mark. */
