@@ -5,7 +5,6 @@ import { REGION_BG } from './regionStyles'
 
 export type ConnectorProps = {
     region: Region
-    alignEnd: boolean
     side: Side
     heightPx: number
     /** How far the line reaches past the card wrapper's axis-side edge. */
@@ -14,7 +13,6 @@ export type ConnectorProps = {
 
 export function Connector({
     region,
-    alignEnd,
     side,
     heightPx,
     offsetPx,
@@ -22,11 +20,7 @@ export function Connector({
     return (
         <div
             aria-hidden="true"
-            className={clsx(
-                'absolute w-0.5',
-                alignEnd ? 'right-0' : 'left-0',
-                REGION_BG[region]
-            )}
+            className={clsx('absolute left-0 w-0.5', REGION_BG[region])}
             style={{
                 height: heightPx,
                 [side === 'above' ? 'bottom' : 'top']: -offsetPx,

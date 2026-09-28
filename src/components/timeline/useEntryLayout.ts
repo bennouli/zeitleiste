@@ -31,8 +31,6 @@ export type LayoutItem = {
     /** Chronological members; one entry for a card. */
     entries: Entry[]
     slot: Slot
-    /** Card anchored at its right edge because it would leave the right border. */
-    alignEnd: boolean
 }
 
 export type EntryLayout = {
@@ -53,7 +51,7 @@ export type LayoutGeometry = {
     gapPx: number
 }
 
-type CardExtent = { x0: number; x1: number; alignEnd: boolean }
+type CardExtent = { x0: number; x1: number }
 
 type CutPlacement = {
     slots: ReadonlyMap<string, Slot>
@@ -155,9 +153,9 @@ function placeCut(
     byId: ReadonlyMap<string, Entry>,
     previous: ReadonlyMap<string, Slot> | null
 ): CutPlacement {
-    const { timeToX, width, maxLevels, groupLevels, gapPx } = geometry
+    const { timeToX, maxLevels, groupLevels, gapPx } = geometry
     const extents = new Map(
-        cut.map((cluster) => [cluster.id, extentOf(timeToX(cluster.t), width)])
+        cut.map((cluster) => [cluster.id, extentOf(timeToX(cluster.t))])
     )
     const toPlaceable = (cluster: Cluster): PlaceableItem => {
         const extent = extents.get(cluster.id)!
@@ -198,11 +196,8 @@ function placeCut(
     }
 }
 
-function extentOf(x: number, width: number): CardExtent {
-    const alignEnd = x + CARD_WIDTH_PX > width && x - CARD_WIDTH_PX >= 0
-    return alignEnd
-        ? { x0: x - CARD_WIDTH_PX, x1: x, alignEnd }
-        : { x0: x, x1: x + CARD_WIDTH_PX, alignEnd }
+function extentOf(x: number): CardExtent {
+    return { x0: x, x1: x + CARD_WIDTH_PX }
 }
 
 function importanceOf(
@@ -247,7 +242,6 @@ function toLayout(
                     t: cluster.t,
                     entries,
                     slot: MARKER_SLOT,
-                    alignEnd: false,
                 },
             ]
         const slot = placement.slots.get(cluster.id)
@@ -259,7 +253,6 @@ function toLayout(
                 t: cluster.t,
                 entries,
                 slot,
-                alignEnd: placement.extents.get(cluster.id)!.alignEnd,
             },
         ]
     })

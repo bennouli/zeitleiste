@@ -11,11 +11,13 @@ import { CardLayer } from './CardLayer'
 import {
     ANIMATION_MS,
     AXIS_HEIGHT_PX,
+    CARD_GAP_PX,
     CARD_ROW_HEIGHT_PX,
     COLLAPSED_HEIGHT,
     FOCUS_VISIBLE_MS,
     SPAN_LANE_HEIGHT_PX,
 } from './constants'
+import { CARD_WIDTH_PX } from './EntryCard'
 import { useEntryFocus } from './entryFocus'
 import { groupZoomTarget } from './groupZoom'
 import { DEFAULT_CHAR_WIDTH_PX, SpanBand, spanBandLayout } from './SpanBand'
@@ -44,8 +46,11 @@ export function Timeline({
     onOpenEntry,
 }: TimelineProps) {
     const [today] = useState(todayMs)
-    const bounds = useMemo(() => dataBounds(entries, today), [entries, today])
     const { width, height: liveHeight, ref, elRef } = useElementSize()
+    const bounds = useMemo(
+        () => dataBounds(entries, today, width),
+        [entries, today, width]
+    )
     const height = useSettled(liveHeight, HEIGHT_SETTLE_MS)
     const helpId = useId()
     const controls = useViewport({ bounds, width })
@@ -115,7 +120,7 @@ export function Timeline({
             width,
             maxLevels: bands.maxLevels,
             groupLevels: bands.groupLevels,
-            gapPx: 8,
+            gapPx: CARD_GAP_PX,
         },
         `${layoutKey}|${bands.maxLevels}|${bands.groupLevels}`
     )
@@ -209,14 +214,18 @@ export function Timeline({
     )
 }
 
-/** Earliest entry start … today; a century back when no entry lies in the past. */
-function dataBounds(entries: Entry[], today: number): Bounds {
+/**
+ * Earliest entry start … today, plus room for one card anchored on today;
+ * a century back when no entry lies in the past.
+ */
+function dataBounds(entries: Entry[], today: number, width: number): Bounds {
     const earliest = Math.min(...entries.map((e) => startOf(e.start)))
     const min =
         Number.isFinite(earliest) && earliest < today
             ? earliest
             : today - FALLBACK_HISTORY_MS
-    return { min, max: today }
+    const endRoom = width > 0 ? (CARD_WIDTH_PX + CARD_GAP_PX) / width : 0
+    return { min, max: today, endRoom }
 }
 
 function useElementSize() {

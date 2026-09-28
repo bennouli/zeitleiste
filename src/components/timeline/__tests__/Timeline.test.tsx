@@ -16,7 +16,13 @@ import {
     screen,
 } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { ANIMATION_MS, COLLAPSED_HEIGHT, FOCUS_VISIBLE_MS } from '../constants'
+import {
+    ANIMATION_MS,
+    CARD_GAP_PX,
+    COLLAPSED_HEIGHT,
+    FOCUS_VISIBLE_MS,
+} from '../constants'
+import { CARD_WIDTH_PX } from '../EntryCard'
 import { PRIVATE_UNDER_TESTS, Timeline } from '../Timeline'
 
 const { dataBounds, useSnapshotPerKey } = PRIVATE_UNDER_TESTS
@@ -24,6 +30,8 @@ const { MAX_VISIBLE_MS } = VIEWPORT_UNDER_TESTS
 
 const WIDTH = 1000
 const HEIGHT = 800
+/** Room after today, as a fraction of the visible span. */
+const END_ROOM = (CARD_WIDTH_PX + CARD_GAP_PX) / WIDTH
 const NOW = Date.UTC(2026, 8, 27, 12)
 /** A point in time with a post that stands alone at the widest zoom. */
 const POST_POINT = sampleEntry('fall-der-berliner-mauer')
@@ -60,6 +68,12 @@ function view(region: HTMLElement) {
     const start = Number(region.dataset.viewStart)
     const end = Number(region.dataset.viewEnd)
     return { start, end, span: end - start, center: (start + end) / 2 }
+}
+
+/** x of `t` in the region's current view. */
+function xOf(region: HTMLElement, t: number) {
+    const v = view(region)
+    return ((t - v.start) / v.span) * WIDTH
 }
 
 function flush(ms = ANIMATION_MS + 100) {
@@ -137,14 +151,28 @@ describe('Timeline', () => {
         )
     })
 
-    it('axis runs from the earliest entry to today; an earlier entry moves the start', () => {
+    it('shows no tick after today, although the axis runs past it', () => {
+        const { region, container } = renderTimeline()
+        const today = Date.UTC(2026, 8, 27)
+        expect(view(region).end).toBeGreaterThan(today)
+        const tickTimes = [
+            ...container.querySelectorAll<HTMLElement>('[data-tick]'),
+        ].map((tick) => Number(tick.dataset.t))
+        expect(tickTimes.length).toBeGreaterThan(2)
+        expect(tickTimes.every((t) => t <= today)).toBe(true)
+    })
+
+    it('axis runs from the earliest entry to today plus room for a card; an earlier entry moves the start', () => {
         const { region, rerender } = renderTimeline()
         const earliest = Math.min(...entries.map((e) => startOf(e.start)))
         const today = Date.UTC(2026, 8, 27)
         const v = view(region)
-        expect(v.end).toBe(today)
-        expect(v.start).toBeCloseTo(
-            Math.max(earliest, today - MAX_VISIBLE_MS),
+        expect(xOf(region, today)).toBeCloseTo(
+            WIDTH - CARD_WIDTH_PX - CARD_GAP_PX,
+            6
+        )
+        expect(v.span).toBeCloseTo(
+            Math.min((today - earliest) / (1 - END_ROOM), MAX_VISIBLE_MS),
             -3
         )
         expect(
@@ -166,8 +194,31 @@ describe('Timeline', () => {
                 onOpenEntry={() => {}}
             />
         )
-        // Range now exceeds MAX_VISIBLE_MS: still right-aligned to today, but zooming out is limited by MAX.
-        expect(view(region).end).toBe(today)
+        // Range now exceeds MAX_VISIBLE_MS: still right-aligned to today's room, but zooming out is limited by MAX.
+        expect(xOf(region, today)).toBeCloseTo(
+            WIDTH - CARD_WIDTH_PX - CARD_GAP_PX,
+            6
+        )
+        expect(view(region).span).toBeCloseTo(MAX_VISIBLE_MS, -3)
+    })
+
+    it('panning to the end stops with today one card before the right edge', () => {
+        stubReducedMotion(true)
+        const { region } = renderTimeline()
+        const today = Date.UTC(2026, 8, 27)
+        const zoomIn = { key: '+' }
+        const panLeft = { key: 'ArrowLeft' }
+        const panRight = { key: 'ArrowRight' }
+        const stepsPastTheEnd = 20
+        fireEvent.keyDown(region, zoomIn)
+        fireEvent.keyDown(region, panLeft)
+        expect(xOf(region, today)).toBeGreaterThan(WIDTH)
+        for (let i = 0; i < stepsPastTheEnd; i++)
+            fireEvent.keyDown(region, panRight)
+        expect(xOf(region, today)).toBeCloseTo(
+            WIDTH - CARD_WIDTH_PX - CARD_GAP_PX,
+            6
+        )
     })
 
     it('has no axe violations', async () => {
@@ -451,7 +502,7 @@ describe('Timeline', () => {
             />
         )
         const v = view(screen.getByRole('region'))
-        expect(v.span).toBeCloseTo(100 * MS_PER_YEAR, -3)
+        expect(v.span).toBeCloseTo((100 * MS_PER_YEAR) / (1 - END_ROOM), -3)
     })
 
     describe('keyboard access', () => {
@@ -611,23 +662,36 @@ describe('Timeline', () => {
 
 describe('dataBounds', () => {
     const TODAY = Date.UTC(2026, 8, 27)
-    const CENTURY_BACK = { min: TODAY - 100 * MS_PER_YEAR, max: TODAY }
+    const CENTURY_BACK = {
+        min: TODAY - 100 * MS_PER_YEAR,
+        max: TODAY,
+        endRoom: END_ROOM,
+    }
 
-    it('reaches from the earliest entry start to today', () => {
+    it('reaches from the earliest entry start to today, with room for a card', () => {
         const earliest = sampleEntry('grosser-nordischer-krieg')
         const mixed = [POST_POINT, earliest]
-        const bounds = dataBounds(mixed, TODAY)
-        expect(bounds).toEqual({ min: startOf(earliest.start), max: TODAY })
+        const bounds = dataBounds(mixed, TODAY, WIDTH)
+        expect(bounds).toEqual({
+            min: startOf(earliest.start),
+            max: TODAY,
+            endRoom: END_ROOM,
+        })
+    })
+
+    it('keeps no room before the width is measured', () => {
+        const unmeasured = 0
+        expect(dataBounds([POST_POINT], TODAY, unmeasured).endRoom).toBe(0)
     })
 
     it('reaches a century back without entries', () => {
         const none: Entry[] = []
-        expect(dataBounds(none, TODAY)).toEqual(CENTURY_BACK)
+        expect(dataBounds(none, TODAY, WIDTH)).toEqual(CENTURY_BACK)
     })
 
     it('reaches a century back when every entry lies in the future', () => {
         const future: Entry[] = [{ ...POST_POINT, start: { year: 2100 } }]
-        expect(dataBounds(future, TODAY)).toEqual(CENTURY_BACK)
+        expect(dataBounds(future, TODAY, WIDTH)).toEqual(CENTURY_BACK)
     })
 })
 

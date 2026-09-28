@@ -86,7 +86,7 @@ function extent(
     timeToX: (t: number) => number
 ): [number, number] {
     const x = timeToX(item.t)
-    return item.alignEnd ? [x - CARD_WIDTH_PX, x] : [x, x + CARD_WIDTH_PX]
+    return [x, x + CARD_WIDTH_PX]
 }
 
 function checkInvariants(

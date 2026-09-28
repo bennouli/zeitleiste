@@ -86,16 +86,18 @@ export function useViewport({
     width,
     initial,
 }: UseViewportOptions): ViewportControls {
-    const [storedViewport, setStoredViewport] = useState<Viewport>(
-        () => initial ?? initialViewport(bounds)
-    )
+    const [storedViewport, setStoredViewport] = useState<Viewport | null>(null)
     const [isAnimating, setIsAnimating] = useState(false)
     const [isInteracting, setIsInteracting] = useState(false)
     const [gestureEnd, setGestureEnd] = useState(0)
 
     const viewport = useMemo(
-        () => clampViewport(storedViewport, bounds),
-        [storedViewport, bounds]
+        () =>
+            clampViewport(
+                storedViewport ?? initial ?? initialViewport(bounds),
+                bounds
+            ),
+        [storedViewport, initial, bounds]
     )
 
     const latest = useRef({ viewport, bounds, width })

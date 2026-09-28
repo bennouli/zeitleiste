@@ -16,9 +16,8 @@ export const CONNECTOR_MIN_PX = 12
 
 export type EntryCardProps = {
     entry: Entry
-    /** x of the entry's anchor within the layer, px. The card's left edge is at `x` (or its right edge with `alignEnd`). */
+    /** x of the entry's anchor within the layer, px. The card's left edge is at `x`. */
     x: number
-    alignEnd?: boolean
     side: 'above' | 'below'
     /** Row index, 0 nearest the axis. */
     level: number
@@ -36,7 +35,6 @@ export type EntryCardProps = {
 export function EntryCard({
     entry,
     x,
-    alignEnd = false,
     side,
     level,
     rowHeightPx,
@@ -142,7 +140,6 @@ export function EntryCard({
                 id={tooltipId}
                 open={open}
                 placement={side === 'above' ? 'bottom' : 'top'}
-                align={alignEnd ? 'end' : 'start'}
                 anchorRef={bodyRef}
             >
                 <EntryTooltipContent entry={entry} />
@@ -172,7 +169,6 @@ export function EntryCard({
         <div
             className={clsx(
                 'absolute',
-                alignEnd && '-translate-x-full',
                 open ? 'z-30' : highlighted ? 'z-20' : 'z-0'
             )}
             style={style}
@@ -181,7 +177,6 @@ export function EntryCard({
         >
             <Connector
                 region={entry.region}
-                alignEnd={alignEnd}
                 side={side}
                 heightPx={offset + CONNECTOR_MIN_PX}
                 offsetPx={offset}

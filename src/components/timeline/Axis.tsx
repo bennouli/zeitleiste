@@ -16,6 +16,7 @@ export function Axis() {
         () => ticks(viewport.start, viewport.end, width),
         [viewport.start, viewport.end, width]
     )
+    const pastTicks = result.ticks.filter((tick) => tick.t <= today)
     const todayX = timeToX(today)
     const todayVisible = todayX >= -1 && todayX <= width + 1
     const todayAlign =
@@ -35,10 +36,11 @@ export function Axis() {
                 className="absolute inset-x-0 h-px bg-fg-muted"
                 style={{ top: AXIS_LINE_Y_PX }}
             />
-            {result.ticks.map((tick) => (
+            {pastTicks.map((tick) => (
                 <div
                     key={tick.t}
                     data-tick={tick.major ? 'major' : 'minor'}
+                    data-t={tick.t}
                     className="absolute top-0"
                     style={{ left: timeToX(tick.t) }}
                 >
