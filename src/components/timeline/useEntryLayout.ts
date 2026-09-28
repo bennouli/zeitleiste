@@ -13,6 +13,7 @@ import {
     placeItems,
     type BlockedInterval,
     type PlaceableItem,
+    type PlacedSide,
     type Slot,
 } from '@/lib/placement'
 import { entryAnchor } from '@/lib/time'
@@ -100,9 +101,10 @@ export function useEntryLayout(
 
 /**
  * Lays out points as cards and groups. Points closer than CLUSTER_MIN_GAP_PX always form a
- * group (they would sit on one spot). Cards go above the axis, then below, then to the next
- * row; only cards that fit nowhere are merged into groups by climbing the cluster tree, and a
- * cluster that can't be merged further is shown as a bare marker on the axis.
+ * group (they would sit on one spot). Groups are placed first and passed on as preceding items, so
+ * placeItems chooses each card's side knowing the groups around it; only cards that fit nowhere
+ * are merged into groups by climbing the cluster tree, and a cluster that can't be merged further
+ * is shown as a bare marker on the axis.
  * `previous` slots are kept where they still fit, so cards don't flip sides needlessly.
  */
 function layoutEntries(
@@ -166,16 +168,15 @@ function placeCut(
             id: cluster.id,
             x0: extent.x0,
             x1: extent.x1,
-            importance: importanceOf(cluster, byId),
             order: cluster.t,
         }
     }
     const placeable = cut.filter((cluster) => !markerOnly.has(cluster.id))
-    const groupPlacement = placeItems(
-        placeable.filter(isGroup).map(toPlaceable),
-        previous,
-        { gapPx, maxLevels: 1 }
-    )
+    const groups = placeable.filter(isGroup)
+    const groupPlacement = placeItems(groups.map(toPlaceable), previous, {
+        gapPx,
+        maxLevels: 1,
+    })
     const blocked: BlockedInterval[] = [...groupPlacement.slots].flatMap(
         ([id, slot]) => {
             const extent = extents.get(id)!
@@ -187,10 +188,14 @@ function placeCut(
             }))
         }
     )
+    const placedGroups: PlacedSide[] = groups.flatMap((group) => {
+        const slot = groupPlacement.slots.get(group.id)
+        return slot ? [{ order: group.t, side: slot.side }] : []
+    })
     const cardPlacement = placeItems(
         placeable.filter((cluster) => !isGroup(cluster)).map(toPlaceable),
         previous,
-        { gapPx, maxLevels, blocked }
+        { gapPx, maxLevels, blocked, placedElsewhere: placedGroups }
     )
     return {
         slots: new Map([...groupPlacement.slots, ...cardPlacement.slots]),
@@ -208,15 +213,6 @@ function widthOf(cluster: Cluster, byId: ReadonlyMap<string, Entry>): number {
     return isGroup(cluster)
         ? LABEL_MAX_WIDTH_PX
         : estimateLabelWidthPx(byId.get(cluster.id)!)
-}
-
-function importanceOf(
-    cluster: Cluster,
-    byId: ReadonlyMap<string, Entry>
-): number {
-    return isGroup(cluster)
-        ? 10 + cluster.count
-        : (byId.get(cluster.id)?.importance ?? 1)
 }
 
 function markerCollisions(
