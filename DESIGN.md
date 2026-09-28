@@ -18,8 +18,36 @@ beyond ink.
   arrive. `weight` × `style` loads every combination, so EB Garamond also ships a 500 italic; it costs a file, nothing more.
 - Widths of text columns are set in `rem` (`max-w-reading`, 40.625 rem): a `ch` width changes when the web font replaces its fallback.
 - **Small caps** = uppercase, letter-spacing 0.06–0.18 em, 10–11 px, IBM Plex Sans. It is the label style for dates, tick labels and meta
-  lines. The `small-caps` utility in `globals.css` sets the font, 10 px and uppercase; each use adds its letter-spacing
-  (`tracking-[0.06em]`, `tracking-[0.1em]`).
+  lines. The `small-caps` utility in `globals.css` sets the font, `text-label` and uppercase; each use adds its tracking token.
+
+## Type scale
+
+Tokens in the `@theme static` block of `globals.css`. `text-<name>` sets the size and, where a line height is listed, the line height;
+`tracking-<name>` sets the letter spacing. Components use these, never `text-[Npx]`, `leading-[…]` or `tracking-[…]`.
+
+| Token             | Size / line height | Role                                                                 |
+| ----------------- | ------------------ | -------------------------------------------------------------------- |
+| `text-label`      | 10 px              | Small caps: tick labels, "Heute", date lines, counter, position line |
+| `text-label-lg`   | 11 px              | Wordmark                                                             |
+| `text-meta`       | 10.5 px            | Post meta line                                                       |
+| `text-entry`      | 17 px / 1.1        | Entry title on the timeline                                          |
+| `text-note-title` | 15 px / 1.2        | Hover note title                                                     |
+| `text-note`       | 13 px / 1.4        | Hover note text                                                      |
+| `text-post-title` | 44 px / 1.05       | Post title                                                           |
+| `text-lead`       | 20 px / 1.35       | Post lead                                                            |
+| `text-body`       | 16.5 px / 1.5      | Post body                                                            |
+
+| Token               | Letter spacing | Role                 |
+| ------------------- | -------------- | -------------------- |
+| `tracking-label`    | 0.06 em        | Tick labels, "Heute" |
+| `tracking-date`     | 0.1 em         | Entry date lines     |
+| `tracking-meta`     | 0.12 em        | Post meta line       |
+| `tracking-wordmark` | 0.18 em        | Wordmark             |
+
+Offsets use the spacing scale in 0.25 steps of `--spacing` (`gap-0.75` = 3 px, `top-5.5` = 22 px). Geometry that feeds layout math (row
+offsets, label width cap, dot sizes) lives in the timeline's JS constants and is applied through `style`.
+
+Icons are inline SVG in `currentColor`, never text glyphs (arrows, chevrons, bullets as characters).
 
 ## Colours
 

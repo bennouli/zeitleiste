@@ -55,10 +55,7 @@ describe('Axis', () => {
         expect(tickLabel(major)).toHaveClass('font-medium', 'text-fg')
         expect(tickLabel(minor)).toHaveClass('font-normal', 'text-fg-muted')
         for (const tick of [major, minor])
-            expect(tickLabel(tick)).toHaveClass(
-                'small-caps',
-                'tracking-[0.06em]'
-            )
+            expect(tickLabel(tick)).toHaveClass('small-caps', 'tracking-label')
         const weightOrColour = /^(font-(medium|normal)|text-fg(-muted)?)$/
         const shapeClasses = (el: HTMLElement | null) =>
             [...(el?.classList ?? [])].filter((c) => !weightOrColour.test(c))

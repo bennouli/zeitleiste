@@ -117,7 +117,7 @@ describe('EntryCard', () => {
         const el = screen.getByRole('button', {
             name: 'Oktoberrevolution, 7. Nov. 1917, Beitrag',
         })
-        expect(el).toHaveTextContent('Beitrag ›')
+        expect(el).toHaveTextContent('Beitrag')
         await user.click(el)
         expect(onOpen).toHaveBeenCalledExactlyOnceWith('oktoberrevolution')
     })

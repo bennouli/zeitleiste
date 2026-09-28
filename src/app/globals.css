@@ -70,6 +70,29 @@
     --font-serif:
         var(--font-eb-garamond), ui-serif, Georgia, Cambria, 'Times New Roman',
         Times, serif;
+
+    /* Type scale: `text-<name>` sets the size and, where given, the line
+     * height; `tracking-<name>` the letter spacing. Roles in DESIGN.md. */
+    --text-label: 10px;
+    --text-label-lg: 11px;
+    --text-meta: 10.5px;
+    --text-entry: 17px;
+    --text-entry--line-height: 1.1;
+    --text-note-title: 15px;
+    --text-note-title--line-height: 1.2;
+    --text-note: 13px;
+    --text-note--line-height: 1.4;
+    --text-post-title: 44px;
+    --text-post-title--line-height: 1.05;
+    --text-lead: 20px;
+    --text-lead--line-height: 1.35;
+    --text-body: 16.5px;
+    --text-body--line-height: 1.5;
+
+    --tracking-label: 0.06em;
+    --tracking-date: 0.1em;
+    --tracking-meta: 0.12em;
+    --tracking-wordmark: 0.18em;
 }
 
 /* ---------- Layer 2: semantic tokens ---------- */
@@ -137,6 +160,6 @@
 /* Small caps: the label style for dates, tick labels and meta lines. */
 @utility small-caps {
     font-family: var(--font-sans);
-    font-size: 10px;
+    font-size: var(--text-label);
     text-transform: uppercase;
 }

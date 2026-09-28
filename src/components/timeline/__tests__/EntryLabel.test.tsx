@@ -36,27 +36,26 @@ describe('EntryLabel', () => {
         render(<EntryLabel entry={point} side="above" />)
         expect(screen.getByText(point.title)).toHaveClass(
             'font-serif',
-            'text-[17px]',
-            'leading-[1.1]',
+            'text-entry',
             'truncate'
         )
         expect(screen.getByText('26. Dez. 1825')).toHaveClass(
             'small-caps',
-            'tracking-[0.1em]',
+            'tracking-date',
             'text-fg-muted'
         )
     })
 
-    it('appends an underlined "Beitrag ›" in ink for an entry with a post, hidden from screen readers', () => {
+    it('appends an underlined "Beitrag" and a chevron icon in ink for an entry with a post, hidden from screen readers', () => {
         render(<EntryLabel entry={withPost} side="above" />)
-        const suffix = screen.getByText('Beitrag ›')
-        expect(suffix).toHaveClass(
-            'font-medium',
-            'text-fg',
-            'underline',
-            'underline-offset-3'
-        )
+        const suffix = screen.getByText('Beitrag')
+        expect(suffix).toHaveClass('underline', 'underline-offset-3')
+        expect(suffix.parentElement).toHaveClass('font-medium', 'text-fg')
+        const chevron = suffix.parentElement!.querySelector('svg')
+        expect(chevron).toHaveAttribute('stroke', 'currentColor')
+        expect(chevron).toHaveAttribute('aria-hidden', 'true')
         expect(suffix.closest('[aria-hidden="true"]')).not.toBeNull()
+        expect(suffix.parentElement).toHaveTextContent(/^Beitrag$/)
     })
 
     it('shows no suffix without a post', () => {

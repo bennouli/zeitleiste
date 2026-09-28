@@ -7,7 +7,8 @@ import {
     PRIVATE_UNDER_TESTS,
 } from '../labelMetrics'
 
-const { TITLE_CHAR_WIDTH_PX, DATE_CHAR_WIDTH_PX } = PRIVATE_UNDER_TESTS
+const { TITLE_CHAR_WIDTH_PX, DATE_CHAR_WIDTH_PX, POST_CHEVRON_WIDTH_PX } =
+    PRIVATE_UNDER_TESTS
 
 const point = sampleEntry('dekabristenaufstand')
 const withPost = sampleEntry('oktoberrevolution')
@@ -31,10 +32,10 @@ describe('estimateLabelWidthPx', () => {
         expect(estimateLabelWidthPx(tinyTitle)).toBe(13 * DATE_CHAR_WIDTH_PX)
     })
 
-    it('counts the post suffix on the date line', () => {
+    it('counts the post suffix and its chevron on the date line', () => {
         const hugeTitle: Entry = { ...withPost, title: 'x'.repeat(80) }
-        // '7. Nov. 1917 · Beitrag ›'
-        const dateLineWidth = 24 * DATE_CHAR_WIDTH_PX
+        // '7. Nov. 1917 · Beitrag' and the chevron
+        const dateLineWidth = 22 * DATE_CHAR_WIDTH_PX + POST_CHEVRON_WIDTH_PX
         expect(estimateLabelWidthPx(hugeTitle)).toBe(
             Math.max(LABEL_MAX_WIDTH_PX, dateLineWidth)
         )
