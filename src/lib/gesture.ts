@@ -1,4 +1,4 @@
-import { estimateVelocity } from './viewport'
+import { estimateVelocity, finiteOr } from './viewport'
 
 /** A press that moves less than this is a click, not a drag. */
 const DRAG_THRESHOLD_PX = 6
@@ -50,6 +50,11 @@ export type GestureTransition = {
 }
 
 const MAX_VELOCITY_SAMPLES = 20
+
+const DOM_DELTA_LINE = 1
+const DOM_DELTA_PAGE = 2
+/** px per line-mode wheel unit. */
+const WHEEL_LINE_PX = 16
 
 export const initialGestureState: GestureState = {
     mode: 'idle',
@@ -118,6 +123,40 @@ export function clearDrag(state: GestureState): GestureState {
 
 export function isGrabbing(state: GestureState): boolean {
     return state.mode === 'drag' || state.mode === 'pinch'
+}
+
+/** The deltas and modifiers of a wheel event; a DOM `WheelEvent` is one. */
+export type WheelSample = {
+    deltaX: number
+    deltaY: number
+    /** Unit of the deltas, as `WheelEvent.deltaMode`: pixels, lines or pages. */
+    deltaMode: number
+    shiftKey: boolean
+    ctrlKey: boolean
+    metaKey: boolean
+}
+
+/** What a wheel event does to the timeline; deltas in px. */
+export type WheelIntent =
+    | { type: 'browser' }
+    | { type: 'pan'; deltaPx: number }
+    | { type: 'zoom'; deltaPx: number }
+
+/**
+ * Ctrl/Cmd + wheel stays with the browser. Shift + wheel, or a mostly
+ * horizontal delta, pans by the dominant axis (browsers differ in which axis
+ * they report for Shift + wheel). Anything else zooms by the vertical delta.
+ * `pagePx` is the size of one page for page-mode deltas.
+ */
+export function wheelIntent(sample: WheelSample, pagePx: number): WheelIntent {
+    if (sample.ctrlKey || sample.metaKey) return { type: 'browser' }
+    const pxPerUnit = wheelPxPerUnit(sample.deltaMode, pagePx)
+    const deltaX = finiteOr(sample.deltaX, 0) * pxPerUnit
+    const deltaY = finiteOr(sample.deltaY, 0) * pxPerUnit
+    const isHorizontal = Math.abs(deltaX) > Math.abs(deltaY)
+    if (sample.shiftKey || isHorizontal)
+        return { type: 'pan', deltaPx: isHorizontal ? deltaX : deltaY }
+    return { type: 'zoom', deltaPx: deltaY }
 }
 
 function dropStalePress(
@@ -324,4 +363,14 @@ function withEffectsBefore(
     transition: GestureTransition
 ): GestureTransition {
     return { ...transition, effects: [...effects, ...transition.effects] }
+}
+
+function wheelPxPerUnit(deltaMode: number, pagePx: number): number {
+    if (deltaMode === DOM_DELTA_LINE) return WHEEL_LINE_PX
+    if (deltaMode === DOM_DELTA_PAGE) return pagePx
+    return 1
+}
+
+export const PRIVATE_UNDER_TESTS = {
+    WHEEL_LINE_PX,
 }

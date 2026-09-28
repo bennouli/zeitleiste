@@ -8,13 +8,14 @@ import {
     pointerDown,
     pointerEnd,
     pointerMove,
+    wheelIntent,
     type GestureEffect,
     type GestureState,
     type GestureTransition,
     type PointerSample,
 } from '@/lib/gesture'
 import type { KeyboardEvent, MouseEvent, PointerEvent } from 'react'
-import { useCallback, useRef, useState, type RefObject } from 'react'
+import { useCallback, useEffect, useRef, useState, type RefObject } from 'react'
 import { KEY_PAN_FRACTION } from './constants'
 import type { ViewportActions } from './useViewport'
 
@@ -22,6 +23,7 @@ type GestureActions = Pick<
     ViewportActions,
     | 'panBy'
     | 'pinch'
+    | 'wheelZoom'
     | 'beginGesture'
     | 'endGesture'
     | 'startMomentum'
@@ -52,10 +54,10 @@ export type Gestures = {
 /** Elements with this attribute (e.g. zoom buttons) never start a drag. */
 export const NO_DRAG_ATTR = 'data-no-drag'
 
-/**
- * Pointer drag/pinch and keyboard handling for the timeline container.
- * No wheel listener on purpose: wheel scrolls the page, ctrl+wheel zooms the page.
- */
+/** Quiet time after the last wheel event before the wheel gesture ends and the layout settles. */
+const WHEEL_SETTLE_MS = 150
+
+/** Pointer drag/pinch, wheel zoom/pan and keyboard handling for the timeline container. */
 export function useGestures(
     containerRef: RefObject<HTMLElement | null>,
     actions: GestureActions,
@@ -63,6 +65,7 @@ export function useGestures(
 ): Gestures {
     const gesture = useRef<GestureState>(initialGestureState)
     const [isDragging, setIsDragging] = useState(false)
+    useWheelGesture(containerRef, actions)
 
     const toSample = useCallback(
         (e: PointerEvent<HTMLElement>): PointerSample => ({
@@ -220,4 +223,48 @@ export function useGestures(
         isDragging,
         wasDrag,
     }
+}
+
+/**
+ * Wheel over the container zooms or pans (see `wheelIntent`). Attached
+ * natively: React's `onWheel` is passive and cannot prevent the page scroll.
+ */
+function useWheelGesture(
+    containerRef: RefObject<HTMLElement | null>,
+    actions: GestureActions
+) {
+    useEffect(() => {
+        const container = containerRef.current
+        if (!container) return
+        let settleTimer: ReturnType<typeof setTimeout> | null = null
+        const endWheelGesture = () => {
+            settleTimer = null
+            actions.endGesture()
+        }
+        const onWheel = (e: WheelEvent) => {
+            const intent = wheelIntent(e, container.clientWidth)
+            if (intent.type === 'browser') return
+            e.preventDefault()
+            if (settleTimer === null) actions.beginGesture()
+            else clearTimeout(settleTimer)
+            if (intent.type === 'pan') actions.panBy(-intent.deltaPx)
+            else
+                actions.wheelZoom(
+                    e.clientX - container.getBoundingClientRect().left,
+                    intent.deltaPx
+                )
+            settleTimer = setTimeout(endWheelGesture, WHEEL_SETTLE_MS)
+        }
+        container.addEventListener('wheel', onWheel, { passive: false })
+        return () => {
+            container.removeEventListener('wheel', onWheel)
+            if (settleTimer === null) return
+            clearTimeout(settleTimer)
+            endWheelGesture()
+        }
+    }, [containerRef, actions])
+}
+
+export const PRIVATE_UNDER_TESTS = {
+    WHEEL_SETTLE_MS,
 }

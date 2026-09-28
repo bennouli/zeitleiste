@@ -262,26 +262,61 @@ describe('Timeline', () => {
         expect(view(region).span).toBeCloseTo(before.span, -3)
     })
 
-    it('wheel events do not change the viewport and are not prevented', () => {
-        const { region } = renderTimeline()
-        const before = view(region)
-        const plain = new WheelEvent('wheel', {
-            deltaY: 100,
-            bubbles: true,
-            cancelable: true,
+    describe('wheel', () => {
+        const wheel = (init: WheelEventInit) =>
+            new WheelEvent('wheel', {
+                bubbles: true,
+                cancelable: true,
+                ...init,
+            })
+
+        it('zooms around the pointer without scrolling the page', () => {
+            const { region } = renderTimeline()
+            const before = view(region)
+            const pointerX = 300
+            const timeUnderPointer =
+                before.start + (pointerX / WIDTH) * before.span
+            const scrollUp = wheel({ deltaY: -120, clientX: pointerX })
+            act(() => {
+                region.dispatchEvent(scrollUp)
+            })
+            flush()
+            expect(scrollUp.defaultPrevented).toBe(true)
+            expect(view(region).span).toBeLessThan(before.span)
+            expect(xOf(region, timeUnderPointer)).toBeCloseTo(pointerX, 3)
         })
-        const ctrl = new WheelEvent('wheel', {
-            deltaY: -100,
-            ctrlKey: true,
-            bubbles: true,
-            cancelable: true,
+
+        it('pans on Shift + wheel without changing the span', () => {
+            const { region } = renderTimeline()
+            fireEvent.click(
+                screen.getByRole('button', { name: 'Hineinzoomen' })
+            )
+            flush()
+            const before = view(region)
+            const shiftScroll = wheel({ deltaY: -100, shiftKey: true })
+            act(() => {
+                region.dispatchEvent(shiftScroll)
+            })
+            flush()
+            expect(shiftScroll.defaultPrevented).toBe(true)
+            expect(view(region).start).toBeCloseTo(
+                before.start - (before.span / WIDTH) * 100,
+                -3
+            )
+            expect(view(region).span).toBeCloseTo(before.span, -3)
         })
-        region.dispatchEvent(plain)
-        region.dispatchEvent(ctrl)
-        flush()
-        expect(plain.defaultPrevented).toBe(false)
-        expect(ctrl.defaultPrevented).toBe(false)
-        expect(view(region)).toEqual(before)
+
+        it('leaves Ctrl + wheel to the browser', () => {
+            const { region } = renderTimeline()
+            const before = view(region)
+            const ctrlScroll = wheel({ deltaY: -100, ctrlKey: true })
+            act(() => {
+                region.dispatchEvent(ctrlScroll)
+            })
+            flush()
+            expect(ctrlScroll.defaultPrevented).toBe(false)
+            expect(view(region)).toEqual(before)
+        })
     })
 
     it('dragging pans by dx, shows grabbing cursor, glides after release', () => {
