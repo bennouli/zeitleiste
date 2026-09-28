@@ -80,5 +80,7 @@ any parallel agent.
 
 ## Pushing
 
-Push when the work is ready to leave the machine, not after every commit. Never force-push without the owner saying so, and never to `main`
-or `staging`. If a push is rejected as non-fast-forward, pull and integrate — never resolve it with force.
+Push when the work is ready to leave the machine, not after every commit. Never force-push to `main` or `staging`. On a feature branch,
+rebase onto `origin/staging` and `git push --force-with-lease origin <branch>` is the standing way to bring a pushed branch up to date
+(owner decision, 2026-09-28); `--force-with-lease` refuses if someone else pushed in the meantime. On `staging` a non-fast-forward rejection
+means pull and integrate — never force.
