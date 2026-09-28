@@ -120,14 +120,15 @@ computations, or a callback that computes before it renders, is the candidate.
 
 Product decisions from the timeline issues, each broken silently by one line:
 
-- **No wheel listener on the timeline, ever.** The wheel scrolls the page; Ctrl+wheel and trackpad pinch are browser page zoom.
+- **Ctrl/Cmd + wheel stays with the browser.** The wheel zooms and Shift + wheel pans (#45), but a handler that calls `preventDefault()` on
+  a `ctrlKey`/`metaKey` wheel event takes page zoom away.
 - **No scroll container inside the timeline** (`overflow-auto`/`overflow-scroll`); the section clips.
 - **Layout is recomputed at gesture end, not per frame.** A new dependency on `viewport` in the layout memo is a finding.
 - **Reduced motion means no animation** — a new transition or rAF loop needs its `motion-reduce:`/`prefersReducedMotion` path.
 - **Dark mode remaps only the semantic layer** — a `dark:` variant in a component is a finding.
 
 ```bash
-git diff $R -- 'src' | grep -nE '^\+.*(onWheel|addEventListener\((.)wheel|overflow-(auto|scroll)|dark:)'
+git diff $R -- 'src' | grep -nE '^\+.*(overflow-(auto|scroll)|dark:)'
 git diff $R -- 'src' | grep -nE '^\+.*(transition-|requestAnimationFrame|animate)' | grep -vE 'motion-reduce|reducedMotion|ReducedMotion'
 ```
 
