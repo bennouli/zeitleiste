@@ -14,6 +14,7 @@ import {
     GROUP_STACK_CONTROLS_HEIGHT_PX,
     GroupStack,
     groupStackHeightPx,
+    PRIVATE_UNDER_TESTS,
 } from './GroupStack'
 
 function makeEntries(n: number): Entry[] {
@@ -562,6 +563,31 @@ describe('GroupStack', () => {
     it('has no detectable accessibility violations', async () => {
         const { container } = setup()
         await expectNoAxeViolations(container)
+    })
+})
+
+describe('stepForKey', () => {
+    const { stepForKey } = PRIVATE_UNDER_TESTS
+
+    it('steps one entry with the arrow keys', () => {
+        expect(stepForKey('ArrowUp', 3, 7)).toBe(2)
+        expect(stepForKey('ArrowDown', 3, 7)).toBe(4)
+    })
+
+    it('jumps to the ends with Home and End', () => {
+        expect(stepForKey('Home', 3, 7)).toBe(0)
+        expect(stepForKey('End', 3, 7)).toBe(7)
+    })
+
+    it('leaves the clamping at the ends to the caller', () => {
+        expect(stepForKey('ArrowUp', 0, 7)).toBe(-1)
+        expect(stepForKey('ArrowDown', 7, 7)).toBe(8)
+    })
+
+    it('ignores every other key', () => {
+        expect(stepForKey('ArrowLeft', 3, 7)).toBeNull()
+        expect(stepForKey('PageDown', 3, 7)).toBeNull()
+        expect(stepForKey(' ', 3, 7)).toBeNull()
     })
 })
 

@@ -1,11 +1,17 @@
 import { entries } from '@/data/entries'
 import { isSpan, type Entry } from '@/lib/entry'
+import type { SpanBar } from '@/lib/spans'
 import { startOf } from '@/lib/time'
 import { expectNoAxeViolations } from '@/test/axe'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
-import { SpanBand, spanBandLayout, type SpanBandProps } from './SpanBand'
+import {
+    PRIVATE_UNDER_TESTS,
+    SpanBand,
+    spanBandLayout,
+    type SpanBandProps,
+} from './SpanBand'
 
 const TODAY = Date.UTC(2026, 8, 27)
 const WIDTH = 1920
@@ -284,5 +290,69 @@ describe('SpanBand', () => {
             charWidthPx: 7,
         })
         expect(layout.laneCount).toBe(0)
+    })
+})
+
+describe('withFrozenLanes', () => {
+    const { withFrozenLanes } = PRIVATE_UNDER_TESTS
+
+    function barIn(id: string, lane: number): SpanBar {
+        return {
+            id,
+            x0: 0,
+            x1: 100,
+            trueX0: 0,
+            trueX1: 100,
+            extended: false,
+            lane,
+            labelFits: true,
+        }
+    }
+
+    it('moves bars to their frozen lanes and counts lanes from them', () => {
+        const liveLayout = {
+            bars: new Map([
+                ['a', barIn('a', 0)],
+                ['b', barIn('b', 1)],
+            ]),
+            laneCount: 2,
+        }
+        const lanes = new Map([
+            ['a', 2],
+            ['b', 0],
+        ])
+        const frozen = withFrozenLanes(liveLayout, lanes)
+        expect(frozen.bars.get('a')!.lane).toBe(2)
+        expect(frozen.bars.get('b')!.lane).toBe(0)
+        expect(frozen.laneCount).toBe(3)
+    })
+
+    it('keeps the live lane of a bar without a frozen one, and can shrink the lane count', () => {
+        const liveLayout = {
+            bars: new Map([
+                ['a', barIn('a', 0)],
+                ['b', barIn('b', 1)],
+            ]),
+            laneCount: 2,
+        }
+        const lanes = new Map([['b', 0]])
+        const frozen = withFrozenLanes(liveLayout, lanes)
+        expect(frozen.bars.get('a')!.lane).toBe(0)
+        expect(frozen.laneCount).toBe(1)
+    })
+
+    it('leaves the live layout untouched', () => {
+        const liveBar = barIn('a', 0)
+        const liveLayout = { bars: new Map([['a', liveBar]]), laneCount: 1 }
+        const lanes = new Map([['a', 3]])
+        withFrozenLanes(liveLayout, lanes)
+        expect(liveLayout.bars.get('a')).toBe(liveBar)
+        expect(liveBar.lane).toBe(0)
+    })
+
+    it('counts no lanes for no bars', () => {
+        const liveLayout = { bars: new Map<string, SpanBar>(), laneCount: 0 }
+        const lanes = new Map([['a', 3]])
+        expect(withFrozenLanes(liveLayout, lanes).laneCount).toBe(0)
     })
 })

@@ -34,6 +34,8 @@ export type SpanBandProps = {
 
 export const DEFAULT_CHAR_WIDTH_PX = 7
 
+type BandLayout = { bars: Map<string, SpanBar>; laneCount: number }
+
 /**
  * Bars and lane count for the given spans at the current zoom.
  * The band needs `laneCount * laneHeightPx` of height.
@@ -47,22 +49,23 @@ export function spanBandLayout(
     timeToX: (t: number) => number,
     today: number,
     options: { minWidthPx: number; charWidthPx: number; maxX?: number }
-): { bars: Map<string, SpanBar>; laneCount: number } {
-    const inputs: SpanInput[] = []
-    for (const e of spans) {
-        if (!isSpan(e)) continue
+): BandLayout {
+    const toSpanInput = (e: Entry): SpanInput[] => {
         const [start, end] = entryRange(e, today)
         const x0 = timeToX(start)
         const x1 = timeToX(end)
-        if (!Number.isFinite(x0) || !Number.isFinite(x1)) continue
-        inputs.push({
-            id: e.id,
-            x0,
-            x1,
-            importance: e.importance,
-            labelWidthPx: e.title.length * options.charWidthPx,
-        })
+        if (!Number.isFinite(x0) || !Number.isFinite(x1)) return []
+        return [
+            {
+                id: e.id,
+                x0,
+                x1,
+                importance: e.importance,
+                labelWidthPx: e.title.length * options.charWidthPx,
+            },
+        ]
     }
+    const inputs = spans.filter(isSpan).flatMap(toSpanInput)
     const layout = layoutSpans(inputs, {
         minWidthPx: options.minWidthPx,
         maxX: options.maxX ?? timeToX(today),
@@ -87,20 +90,13 @@ export function SpanBand({
     lanes,
     className,
 }: SpanBandProps): JSX.Element {
-    const live = spanBandLayout(spans, timeToX, today, {
+    const liveLayout = spanBandLayout(spans, timeToX, today, {
         minWidthPx,
         charWidthPx,
     })
-    const bars = live.bars
-    let laneCount = live.laneCount
-    if (lanes) {
-        laneCount = 0
-        for (const [id, bar] of bars) {
-            const lane = lanes.get(id) ?? bar.lane
-            bars.set(id, { ...bar, lane })
-            laneCount = Math.max(laneCount, lane + 1)
-        }
-    }
+    const { bars, laneCount } = lanes
+        ? withFrozenLanes(liveLayout, lanes)
+        : liveLayout
     // DOM (and tab) order is chronological: true start, then id.
     const ordered = spans
         .filter((e) => bars.has(e.id))
@@ -132,3 +128,20 @@ export function SpanBand({
         </div>
     )
 }
+
+/** The live layout with each bar moved to its frozen lane, where one is known. */
+function withFrozenLanes(
+    layout: BandLayout,
+    lanes: ReadonlyMap<string, number>
+): BandLayout {
+    const bars = new Map(
+        [...layout.bars].map(([id, bar]): [string, SpanBar] => [
+            id,
+            { ...bar, lane: lanes.get(id) ?? bar.lane },
+        ])
+    )
+    const laneCount = Math.max(0, ...[...bars.values()].map((b) => b.lane + 1))
+    return { bars, laneCount }
+}
+
+export const PRIVATE_UNDER_TESTS = { withFrozenLanes }
