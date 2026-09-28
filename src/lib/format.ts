@@ -106,6 +106,28 @@ export function formatEntryMeta(entry: Entry): string {
     ].join(' · ')
 }
 
+/** Years a chronological group covers, from its first to its last entry's start: '1917–1922', or '1917' once. Empty for no entries. */
+export function formatGroupYears(entries: readonly Entry[]): string {
+    const first = entries[0]
+    const last = entries[entries.length - 1]
+    if (!first || !last) return ''
+    const from = first.start.year
+    const to = last.start.year
+    return from === to ? String(from) : `${from}${EN_DASH}${to}`
+}
+
+/** Meta line of a group's hover note: '6 Einträge · 1917–1922'. */
+export function formatGroupMeta(entries: readonly Entry[]): string {
+    const count = entries.length
+    const noun = count === 1 ? 'Eintrag' : 'Einträge'
+    return `${count} ${noun} · ${formatGroupYears(entries)}`
+}
+
+/** Position of a stack's window: zero-based `index` of `count` → '1 von 6'. */
+export function formatPosition(index: number, count: number): string {
+    return `${index + 1} von ${count}`
+}
+
 /** Year label for the axis, e.g. '1917'. */
 export function formatYear(t: number, locale = 'de'): string {
     return plainSpaces(dtf(locale, { year: 'numeric' }).format(t))

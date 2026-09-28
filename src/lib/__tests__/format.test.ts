@@ -7,7 +7,10 @@ import {
     formatDay,
     formatEntryDate,
     formatEntryMeta,
+    formatGroupMeta,
+    formatGroupYears,
     formatMonth,
+    formatPosition,
     formatYear,
     PRIVATE_UNDER_TESTS,
 } from '../format'
@@ -252,6 +255,35 @@ describe('formatEntryMeta', () => {
         expect(formatEntryMeta(range)).toBe(
             '1700 – 10. September 1721 · Krieg · Russland/Sowjetunion'
         )
+    })
+})
+
+describe('group lines', () => {
+    const revolution = span({ year: 1917 })
+    const civilWar = span({ year: 1920 })
+    const nep = span({ year: 1922 })
+
+    it('formatGroupYears spans the first to the last start year', () => {
+        expect(formatGroupYears([revolution, civilWar, nep])).toBe(
+            `1917${DASH}1922`
+        )
+    })
+
+    it('formatGroupYears names a single year once and nothing for no entries', () => {
+        expect(formatGroupYears([revolution, revolution])).toBe('1917')
+        expect(formatGroupYears([])).toBe('')
+    })
+
+    it('formatGroupMeta counts the entries before the years', () => {
+        expect(formatGroupMeta([revolution, civilWar, nep])).toBe(
+            `3 Einträge · 1917${DASH}1922`
+        )
+        expect(formatGroupMeta([revolution])).toBe('1 Eintrag · 1917')
+    })
+
+    it('formatPosition counts from one', () => {
+        expect(formatPosition(0, 6)).toBe('1 von 6')
+        expect(formatPosition(4, 7)).toBe('5 von 7')
     })
 })
 
