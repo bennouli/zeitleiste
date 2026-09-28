@@ -9,10 +9,10 @@ import { Axis } from './Axis'
 import { bandGeometry, SLOT_HEIGHT_PX } from './bandGeometry'
 import { CardLayer } from './CardLayer'
 import {
-    ANIMATION_MS,
     AXIS_HEIGHT_PX,
     CARD_GAP_PX,
     CARD_ROW_HEIGHT_PX,
+    COLLAPSE_ANIMATION_MS,
     COLLAPSED_HEIGHT,
     FOCUS_VISIBLE_MS,
     SPAN_LANE_HEIGHT_PX,
@@ -36,7 +36,7 @@ export type TimelineProps = {
     onOpenEntry: (id: string) => void
 }
 
-const HEIGHT_SETTLE_MS = ANIMATION_MS + 50
+const HEIGHT_SETTLE_MS = COLLAPSE_ANIMATION_MS + 50
 const FALLBACK_HISTORY_MS = 100 * MS_PER_YEAR
 
 export function Timeline({
@@ -150,7 +150,7 @@ export function Timeline({
                 className={clsx(
                     // clip, not hidden: a clipped box is no scroll container, so focusing an off-screen card can't scroll it.
                     'relative flex w-full touch-pan-y flex-col overflow-clip bg-surface text-fg select-none',
-                    'transition-[height] duration-350 ease-out motion-reduce:transition-none',
+                    'transition-[height] duration-500 ease-in-out motion-reduce:transition-none',
                     'focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-focus',
                     gestures.isDragging
                         ? 'cursor-grabbing [&_*]:cursor-grabbing'

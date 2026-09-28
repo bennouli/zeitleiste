@@ -25,7 +25,7 @@ import {
     useRef,
     useState,
 } from 'react'
-import { ANIMATION_MS } from './constants'
+import { ZOOM_ANIMATION_MS } from './constants'
 import { useFrameLoop } from './useFrameLoop'
 
 const useIsomorphicLayoutEffect =
@@ -159,7 +159,7 @@ export function useViewport({
                         from,
                         target,
                         now - startedAt,
-                        ANIMATION_MS
+                        ZOOM_ANIMATION_MS
                     )
                     commit(tween.vp)
                     return tween.done ? 'done' : 'continue'
