@@ -18,6 +18,8 @@ beyond ink.
   arrive. `weight` × `style` loads every combination, so EB Garamond also ships a 500 italic; it costs a file, nothing more.
 - Widths of text columns are set in `rem` (`max-w-reading`, 41.25 rem = 660 px): a `ch` width changes when the web font replaces its
   fallback.
+- **Post type roles** (theme tokens in `globals.css`): `text-meta` 10.5 px with `tracking-meta` 0.12 em (meta line), `text-post-title` 44 px
+  / 1.05, `text-lead` 20 px / 1.35 (italic), `text-body` 16.5 px / 1.5.
 - **Small caps** = uppercase, letter-spacing 0.06–0.18 em, 10–11 px, IBM Plex Sans. It is the label style for dates, tick labels and meta
   lines. The `small-caps` utility in `globals.css` sets the font, `text-label` and uppercase; each use adds its tracking token.
 
