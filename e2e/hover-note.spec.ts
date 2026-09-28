@@ -8,7 +8,7 @@ const CURSOR_OFFSET_PX = 14
 
 test.use({ viewport: VIEWPORT })
 
-/** Room right of and below a card for a 288 px note, so it follows the cursor unclamped. */
+/** Room right of and below a card for a 320 px note, so it follows the cursor unclamped. */
 const NOTE_ROOM_PX = 400
 
 type Box = { x: number; y: number }

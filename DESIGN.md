@@ -50,8 +50,8 @@ are px measured at the 16 px default.
 | `text-label-lg`   | 0.8125 rem (13 px)       | Wordmark                                                             |
 | `text-meta`       | 0.75 rem (12 px)         | Post meta line                                                       |
 | `text-entry`      | 1.25 rem (20 px) / 1.1   | Entry title on the timeline                                          |
-| `text-note-title` | 1.0625 rem (17 px) / 1.2 | Hover note title                                                     |
-| `text-note`       | 0.9375 rem (15 px) / 1.4 | Hover note text                                                      |
+| `text-note-title` | 1.1875 rem (19 px) / 1.2 | Hover note title                                                     |
+| `text-note`       | 1.0625 rem (17 px) / 1.4 | Hover note text                                                      |
 | `text-post-title` | 2.75 rem (44 px) / 1.05  | Post title                                                           |
 | `text-lead`       | 1.375 rem (22 px) / 1.35 | Post lead                                                            |
 | `text-body`       | 1.125 rem (18 px) / 1.5  | Post body                                                            |
