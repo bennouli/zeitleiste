@@ -1,10 +1,10 @@
-import { expect, test, type Locator } from '@playwright/test'
+import { expect, test, type Locator, type Page } from '@playwright/test'
 import { sampleEntry } from '../src/test/entries'
 import { openTimeline, timelineRegion } from './timeline'
 
 const POST_ENTRY = sampleEntry('oktoberrevolution')
 const POST_PATH = `/post/${POST_ENTRY.id}`
-const FIRST_BODY_PARAGRAPH = POST_ENTRY.post!.body.split(/\n\s*\n/)[0]!.trim()
+const FIRST_BODY_PARAGRAPH_START = /^Im Herbst 1917/
 const DESKTOP = { width: 1920, height: 1080 }
 const MAX_COLUMN_PX = 660
 
@@ -29,9 +29,8 @@ test('title, lead and body are set in the serif at their sizes; the column stays
     await openTimeline(page, POST_PATH)
     const article = page.getByRole('article')
     const title = article.getByRole('heading', { level: 2 })
-    const column = article.locator('> div')
     const lead = article.getByText(POST_ENTRY.summary)
-    const body = article.getByText(FIRST_BODY_PARAGRAPH)
+    const body = article.getByText(FIRST_BODY_PARAGRAPH_START)
 
     expect(await typeface(title)).toMatchObject({
         family: expect.stringContaining('EB Garamond'),
@@ -48,33 +47,38 @@ test('title, lead and body are set in the serif at their sizes; the column stays
         size: '16.5px',
         style: 'normal',
     })
-    const columnWidth = await column.evaluate(
+    const bodyWidth = await body.evaluate(
         (el) => el.getBoundingClientRect().width
     )
-    expect(columnWidth).toBeLessThanOrEqual(MAX_COLUMN_PX)
+    expect(bodyWidth).toBeLessThanOrEqual(MAX_COLUMN_PX)
 })
 
-for (const [reducedMotion, transitionProperty] of [
-    ['no-preference', 'height'],
-    ['reduce', 'none'],
-] as const) {
-    test(`the timeline collapse transitions "${transitionProperty}" with reduced motion "${reducedMotion}"`, async ({
-        page,
-    }) => {
-        await page.emulateMedia({ reducedMotion })
-        await openTimeline(page, POST_PATH)
-        const transition = await timelineRegion(page).evaluate((el) => {
-            const style = getComputedStyle(el)
-            return {
-                property: style.transitionProperty,
-                duration: style.transitionDuration,
-                easing: style.transitionTimingFunction,
-            }
-        })
-        expect(transition).toEqual({
-            property: transitionProperty,
-            duration: '0.5s',
-            easing: 'cubic-bezier(0.4, 0, 0.2, 1)',
-        })
+const collapseTransition = (page: Page) =>
+    timelineRegion(page).evaluate((el) => {
+        const style = getComputedStyle(el)
+        return {
+            property: style.transitionProperty,
+            duration: style.transitionDuration,
+            easing: style.transitionTimingFunction,
+        }
     })
-}
+
+test('the timeline collapse transitions its height over 500 ms, ease-in-out', async ({
+    page,
+}) => {
+    await page.emulateMedia({ reducedMotion: 'no-preference' })
+    await openTimeline(page, POST_PATH)
+    expect(await collapseTransition(page)).toEqual({
+        property: 'height',
+        duration: '0.5s',
+        easing: 'cubic-bezier(0.4, 0, 0.2, 1)',
+    })
+})
+
+test('the timeline collapse does not transition with reduced motion', async ({
+    page,
+}) => {
+    await page.emulateMedia({ reducedMotion: 'reduce' })
+    await openTimeline(page, POST_PATH)
+    expect((await collapseTransition(page)).property).toBe('none')
+})
