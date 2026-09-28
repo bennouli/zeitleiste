@@ -1,17 +1,18 @@
 /*
  * Design tokens — two layers.
  *
- * 1. Primitive tokens (`:root`, first block): raw values only — the
- *    monochrome palette (paper, ink, ink-muted, ink-soft, ink at n %),
- *    the focus blue, a spacing and a radius scale. The font stacks live in
- *    the `@theme static` block below and are always emitted on `:root` as
- *    `--font-sans` / `--font-serif`.
+ * 1. Primitive tokens (`:root`, first block): fixed raw values only — the
+ *    monochrome palette in a light and a dark set (paper, ink, ink-muted,
+ *    ink-soft and their `-dark` counterparts), the focus blues, a spacing
+ *    and a radius scale. The font stacks live in the `@theme static` block
+ *    below and are always emitted on `:root` as `--font-sans` /
+ *    `--font-serif`.
  *    Change a primitive here and every semantic token pointing to it follows.
- *    Dark mode (OS setting) redefines ONLY the colour primitives; the
- *    "ink at n %" steps are alphas of `--ink` and follow it.
  *
  * 2. Semantic tokens (`:root`, second block): named by purpose
  *    (`--surface`, `--fg`, `--russia`, …) and defined only as references to
+ *    primitives; `--border` is `--fg` at 25 % alpha, so it follows `--fg`.
+ *    Dark mode (OS setting) redefines ONLY this layer, picking the dark
  *    primitives. They are registered with Tailwind via `@theme inline`, which
  *    yields utilities such as `bg-surface`, `text-fg`, `border-border`,
  *    `bg-accent`, `text-russia`, `bg-west`, `bg-both`, `ring-focus`.
@@ -33,11 +34,11 @@
     --ink-soft: oklch(0.343 0.017 82.3);
     --focus-blue: oklch(0.623 0.214 259.8);
 
-    --ink-40: oklch(from var(--ink) l c h / 40%);
-    --ink-30: oklch(from var(--ink) l c h / 30%);
-    --ink-25: oklch(from var(--ink) l c h / 25%);
-    --ink-12: oklch(from var(--ink) l c h / 12%);
-    --ink-2: oklch(from var(--ink) l c h / 2%);
+    --paper-dark: oklch(0.164 0.004 84.6);
+    --ink-dark: oklch(0.947 0.02 87.5);
+    --ink-muted-dark: oklch(0.697 0.02 86.2);
+    --ink-soft-dark: oklch(0.835 0.021 84.6);
+    --focus-blue-dark: oklch(0.809 0.105 251.8);
 
     /* Spacing scale */
     --space-1: 0.25rem;
@@ -52,16 +53,6 @@
     --radius-2: 0.25rem;
     --radius-3: 0.5rem;
     --radius-4: 1rem;
-}
-
-@media (prefers-color-scheme: dark) {
-    :root {
-        --paper: oklch(0.164 0.004 84.6);
-        --ink: oklch(0.947 0.02 87.5);
-        --ink-muted: oklch(0.697 0.02 86.2);
-        --ink-soft: oklch(0.835 0.021 84.6);
-        --focus-blue: oklch(0.809 0.105 251.8);
-    }
 }
 
 /* Reading width: `max-w-reading`, in rem so the column does not change
@@ -90,13 +81,29 @@
     --fg: var(--ink);
     --fg-muted: var(--ink-muted);
     --fg-soft: var(--ink-soft);
-    --border: var(--ink-25);
+    --border: oklch(from var(--fg) l c h / 25%);
     --accent: var(--ink);
     --accent-fg: var(--paper);
     --russia: var(--ink);
     --west: var(--ink);
     --both: var(--ink);
     --focus: var(--focus-blue);
+}
+
+@media (prefers-color-scheme: dark) {
+    :root {
+        --surface: var(--paper-dark);
+        --surface-raised: var(--paper-dark);
+        --fg: var(--ink-dark);
+        --fg-muted: var(--ink-muted-dark);
+        --fg-soft: var(--ink-soft-dark);
+        --accent: var(--ink-dark);
+        --accent-fg: var(--paper-dark);
+        --russia: var(--ink-dark);
+        --west: var(--ink-dark);
+        --both: var(--ink-dark);
+        --focus: var(--focus-blue-dark);
+    }
 }
 
 /* Register the semantic layer with Tailwind. `--color-*: initial` removes

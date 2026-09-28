@@ -23,29 +23,34 @@ beyond ink.
 
 ## Colours
 
-Monochrome. Hex values are the prototype's; `globals.css` holds them as oklch.
+Monochrome. Hex values are the prototype's; `globals.css` holds them as oklch. Primitives are fixed values, one set per theme; the semantic
+tokens pick the light or the dark primitive.
 
-| Primitive      | Light     | Dark       | Semantic tokens                                    | Used for                                                                       |
-| -------------- | --------- | ---------- | -------------------------------------------------- | ------------------------------------------------------------------------------ |
-| `--paper`      | `#f3eddf` | `#0f0e0c`  | `--surface`, `--surface-raised`, `--accent-fg`     | Page background, hover note, group counter. No raised surfaces in this design. |
-| `--ink`        | `#171411` | `#f3eddf`  | `--fg`, `--accent`, `--russia`, `--west`, `--both` | Text, axis, dots, connectors of the open entry, accent.                        |
-| `--ink-muted`  | `#6a6357` | `#a39d90`  | `--fg-muted`                                       | Dates, minor tick labels, span label in the header.                            |
-| `--ink-soft`   | `#3d382f` | `#cfc8ba`  | `--fg-soft`                                        | Summary text in the hover note.                                                |
-| `--ink-40`     | ink 40 %  | ink 40 %   | —                                                  | Connectors.                                                                    |
-| `--ink-30`     | ink 30 %  | ink 30 %   | —                                                  | Disabled arrows.                                                               |
-| `--ink-25`     | ink 25 %  | ink 25 %   | `--border`                                         | Rule above the post, borders.                                                  |
-| `--ink-12`     | ink 12 %  | ink 12 %   | —                                                  | Span bars.                                                                     |
-| `--ink-2`      | ink 2 %   | ink 2 %    | —                                                  | Fading end of an ongoing span.                                                 |
-| `--focus-blue` | blue      | light blue | `--focus`                                          | Focus ring: the one colour, because focus must never be missed.                |
+| Semantic token                                     | Light primitive         | Dark primitive                | Used for                                                                       |
+| -------------------------------------------------- | ----------------------- | ----------------------------- | ------------------------------------------------------------------------------ |
+| `--surface`, `--surface-raised`, `--accent-fg`     | `--paper` `#f3eddf`     | `--paper-dark` `#0f0e0c`      | Page background, hover note, group counter. No raised surfaces in this design. |
+| `--fg`, `--accent`, `--russia`, `--west`, `--both` | `--ink` `#171411`       | `--ink-dark` `#f3eddf`        | Text, axis, dots, connectors of the open entry, accent.                        |
+| `--fg-muted`                                       | `--ink-muted` `#6a6357` | `--ink-muted-dark` `#a39d90`  | Dates, minor tick labels, span label in the header.                            |
+| `--fg-soft`                                        | `--ink-soft` `#3d382f`  | `--ink-soft-dark` `#cfc8ba`   | Summary text in the hover note.                                                |
+| `--border`                                         | `--fg` at 25 %          | `--fg` at 25 %                | Rule above the post, borders.                                                  |
+| `--focus`                                          | `--focus-blue`          | `--focus-blue-dark` (lighter) | Focus ring: the one colour, because focus must never be missed.                |
+
+The other ink steps are Tailwind opacity modifiers on `fg`, so they follow the theme with `--fg`:
+
+| Step     | Class (example) | Used for                       |
+| -------- | --------------- | ------------------------------ |
+| ink 40 % | `border-fg/40`  | Connectors.                    |
+| ink 30 % | `text-fg/30`    | Disabled arrows.               |
+| ink 12 % | `bg-fg/12`      | Span bars.                     |
+| ink 2 %  | `to-fg/2`       | Fading end of an ongoing span. |
 
 - **Why monochrome:** the timeline is read by position and time, not by region; colour-coding Russia and the West would suggest a two-sided
   story the content does not tell. `--russia`, `--west` and `--both` stay as names so a region colour can return in one line.
 - **Why warm paper:** pure white under a serif reads as a screen form; the paper tone makes long posts calmer.
-- **Dark mode** follows the OS setting and swaps only the primitives: paper becomes near black, ink becomes the light paper tone. The "ink
-  at n %" steps are alphas of `--ink` (relative colour syntax), so they follow without being redefined. The dark paper uses the prototype's
-  hex `#0f0e0c` (`oklch(0.164 0.004 84.6)`), not the rounder `oklch(0.14 …)` quoted with it.
-- The alpha steps without a semantic token get one when the component that uses them is built; components may only use semantic tokens
-  (`pnpm check:tokens`).
+- **Dark mode** follows the OS setting; the semantic layer switches to the `-dark` primitives: paper becomes near black, ink becomes the
+  light paper tone. `--border` is a relative colour of `--fg` and follows without being redefined. The dark paper uses the prototype's hex
+  `#0f0e0c` (`oklch(0.164 0.004 84.6)`), not the rounder `oklch(0.14 …)` quoted with it.
+- Components use semantic tokens only (`pnpm check:tokens`).
 - **Contrast** (axe, Chromium): ink-muted on paper is 5.08 : 1 light and 7.15 : 1 dark, above the 4.5 : 1 small-text threshold; ink on paper
   is 15.7 : 1 and 16.5 : 1. The focus blue is about 3.2 : 1 against light paper, above the 3 : 1 for non-text.
 
