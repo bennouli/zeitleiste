@@ -4,18 +4,13 @@ import { ticks, type Tick } from '@/lib/ticks'
 import clsx from 'clsx'
 import { useMemo } from 'react'
 import { useTimeline } from './TimelineContext'
+import { overlapsTodayLabel, todayAlignment } from './todayLabel'
 
 /** y of the axis line inside the axis band, in px. */
 export const AXIS_LINE_Y_PX = 24
 const LABEL_TOP_PX = AXIS_LINE_Y_PX + 14
 const TODAY_MARK_HEIGHT_PX = 16
-const TODAY_LABEL_HALF_WIDTH_PX = 24
-/** Matches the default of `ticks`, which spaces the labels with it. */
-const TICK_LABEL_CHAR_WIDTH_PX = 7.5
-const LABEL_CLEARANCE_PX = 8
-const TICK_OPTIONS = { minYearWidthForMonthsPx: 420 }
-
-type TodayAlign = 'left' | 'center' | 'right'
+const TICK_OPTIONS = { minYearWidthForMonthsPx: 420, charWidthPx: 7.5 }
 
 /** Hairline axis up to today, short ticks with small-caps labels, and the "Heute" mark. */
 export function Axis() {
@@ -31,7 +26,12 @@ export function Axis() {
     const lineWidth = Math.min(Math.max(todayX, 0), width)
     const labelHidden = (tick: Tick) =>
         todayVisible &&
-        overlapsTodayLabel(timeToX(tick.t), tick.label, todayX, todayAlign)
+        overlapsTodayLabel(
+            timeToX(tick.t),
+            tick.label.length * TICK_OPTIONS.charWidthPx,
+            todayX,
+            todayAlign
+        )
 
     return (
         <div
@@ -103,32 +103,5 @@ export function Axis() {
                 </div>
             )}
         </div>
-    )
-}
-
-function todayAlignment(todayX: number, width: number): TodayAlign {
-    if (todayX > width - TODAY_LABEL_HALF_WIDTH_PX) return 'right'
-    if (todayX < TODAY_LABEL_HALF_WIDTH_PX) return 'left'
-    return 'center'
-}
-
-/** Whether a tick label centred on `tickX` would run into the "Heute" label. */
-function overlapsTodayLabel(
-    tickX: number,
-    label: string,
-    todayX: number,
-    align: TodayAlign
-): boolean {
-    const todayWidth = 2 * TODAY_LABEL_HALF_WIDTH_PX
-    const todayX0 =
-        align === 'right'
-            ? todayX - todayWidth
-            : align === 'center'
-              ? todayX - todayWidth / 2
-              : todayX
-    const halfLabel = (label.length * TICK_LABEL_CHAR_WIDTH_PX) / 2
-    return (
-        tickX + halfLabel + LABEL_CLEARANCE_PX > todayX0 &&
-        tickX - halfLabel - LABEL_CLEARANCE_PX < todayX0 + todayWidth
     )
 }

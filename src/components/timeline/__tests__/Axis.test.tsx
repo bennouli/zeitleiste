@@ -59,9 +59,12 @@ describe('Axis', () => {
                 'small-caps',
                 'tracking-[0.06em]'
             )
-        const sizeClass = (el: HTMLElement | null) =>
-            [...(el?.classList ?? [])].filter((c) => c.startsWith('text-['))
-        expect(sizeClass(tickLabel(major))).toEqual(sizeClass(tickLabel(minor)))
+        const weightOrColour = /^(font-(medium|normal)|text-fg(-muted)?)$/
+        const shapeClasses = (el: HTMLElement | null) =>
+            [...(el?.classList ?? [])].filter((c) => !weightOrColour.test(c))
+        expect(shapeClasses(tickLabel(major))).toEqual(
+            shapeClasses(tickLabel(minor))
+        )
     })
 
     it('hangs 8 px ticks for labelled steps and 4 px ticks for minor ones', () => {

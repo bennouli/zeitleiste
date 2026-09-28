@@ -9,9 +9,9 @@ export const LABEL_HEIGHT_PX = 34
 export const POST_SUFFIX = 'Beitrag ›'
 export const POST_SEPARATOR = ' · '
 
-/** Advance of one title glyph (EB Garamond 17 px); the sample titles measure 6.4–9.0 px, 7.6 on average. */
-const TITLE_CHAR_WIDTH_PX = 8.5
-/** Advance of one date-line glyph (IBM Plex Sans 10 px, uppercase, 0.1 em tracking); the sample dates measure 5.8–7.0 px. */
+/** Advance of one title glyph (EB Garamond 17 px): the widest sample title measures 9.0 px per character. */
+const TITLE_CHAR_WIDTH_PX = 9
+/** Advance of one date-line glyph (IBM Plex Sans 10 px, uppercase, 0.1 em tracking): the widest sample date measures 7.0 px per character. */
 const DATE_CHAR_WIDTH_PX = 7
 
 /** Estimated rendered width of an entry's label: its truncated title or its date line, whichever is wider. */

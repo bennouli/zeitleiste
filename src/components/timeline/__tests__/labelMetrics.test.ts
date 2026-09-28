@@ -14,10 +14,10 @@ const withPost = sampleEntry('oktoberrevolution')
 
 describe('estimateLabelWidthPx', () => {
     it('grows with the title', () => {
-        const shortTitle: Entry = { ...point, title: 'x'.repeat(14) }
-        const longTitle: Entry = { ...point, title: 'x'.repeat(20) }
-        expect(estimateLabelWidthPx(shortTitle)).toBe(14 * TITLE_CHAR_WIDTH_PX)
-        expect(estimateLabelWidthPx(longTitle)).toBe(20 * TITLE_CHAR_WIDTH_PX)
+        const shortTitle: Entry = { ...point, title: 'x'.repeat(12) }
+        const longTitle: Entry = { ...point, title: 'x'.repeat(18) }
+        expect(estimateLabelWidthPx(shortTitle)).toBe(12 * TITLE_CHAR_WIDTH_PX)
+        expect(estimateLabelWidthPx(longTitle)).toBe(18 * TITLE_CHAR_WIDTH_PX)
     })
 
     it('caps the title where it truncates', () => {

@@ -425,7 +425,8 @@ describe('EntryCard', () => {
         'sets the entry as type on the page colour, without border, shadow or region colour (%s)',
         (_, id) => {
             const e = sampleEntry(id)
-            renderCard({ entry: e })
+            const atRest = { entry: e }
+            renderCard(atRest)
             const boxClass = /^(border|bg-|shadow|rounded|ring)/
             const classes = [card(e), ...card(e).querySelectorAll('*')]
                 .flatMap((el) => [...el.classList])
@@ -438,7 +439,8 @@ describe('EntryCard', () => {
     )
 
     it('switches hover states without a transition', () => {
-        renderCard({ entry: withPost })
+        const postEntry = { entry: withPost }
+        renderCard(postEntry)
         expect(card(withPost).className).not.toMatch(/transition|duration/)
     })
 
@@ -470,7 +472,13 @@ describe('EntryCard', () => {
         }
 
         it('places a level-1 card above the axis, its connector reaching down to the axis', () => {
-            renderCard({ entry: span, x: 123, level: 1, rowHeightPx: 72 })
+            const secondRowAbove = {
+                entry: span,
+                x: 123,
+                level: 1,
+                rowHeightPx: 72,
+            }
+            renderCard(secondRowAbove)
             const offset = CARD_FIRST_ROW_OFFSET_PX + 72
             const w = wrapper(span)
             expect(w).toHaveClass('absolute')
@@ -483,7 +491,8 @@ describe('EntryCard', () => {
         })
 
         it('centres a 7 px dot on the axis line', () => {
-            renderCard({ entry: span, level: 0 })
+            const firstRow = { entry: span, level: 0 }
+            renderCard(firstRow)
             const d = dot(span)
             expect(d.style.width).toBe('7px')
             expect(d.style.height).toBe('7px')
@@ -494,13 +503,14 @@ describe('EntryCard', () => {
         })
 
         it('places a card below the axis from the top', () => {
-            renderCard({
+            const thirdRowBelow = {
                 entry: span,
                 x: 10,
                 side: 'below',
                 level: 2,
                 rowHeightPx: 60,
-            })
+            } as const
+            renderCard(thirdRowBelow)
             const offset = CARD_FIRST_ROW_OFFSET_PX + 120
             const w = wrapper(span)
             expect(w.style.left).toBe('10px')
@@ -529,7 +539,8 @@ describe('EntryCard', () => {
         })
 
         it('renders inline without absolute positioning, connector or dot', () => {
-            renderCard({ entry: span, inline: true })
+            const inStack = { entry: span, inline: true }
+            renderCard(inStack)
             expect(document.querySelector('[data-entry-id]')).not.toHaveClass(
                 'absolute'
             )
@@ -539,7 +550,8 @@ describe('EntryCard', () => {
         })
 
         it('marks the open entry by title weight and underline, a 13 px dot and an ink connector', () => {
-            renderCard({ entry: span, highlighted: true })
+            const openEntry = { entry: span, highlighted: true }
+            renderCard(openEntry)
             expect(titleOf(span)).toHaveClass(
                 'font-medium',
                 'underline',
@@ -552,7 +564,8 @@ describe('EntryCard', () => {
         })
 
         it('keeps a closed entry at regular weight without underline', () => {
-            renderCard({ entry: span })
+            const closedEntry = { entry: span }
+            renderCard(closedEntry)
             expect(titleOf(span)).toHaveClass('font-normal')
             expect(titleOf(span)).not.toHaveClass('underline')
         })

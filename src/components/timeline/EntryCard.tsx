@@ -8,7 +8,7 @@ import { useId, useRef } from 'react'
 import { AxisDot, Connector } from './Connector'
 import { CARD_FIRST_ROW_OFFSET_PX } from './constants'
 import { EntryLabel } from './EntryLabel'
-import { LABEL_HEIGHT_PX, LABEL_MAX_WIDTH_PX } from './labelMetrics'
+import { LABEL_HEIGHT_PX } from './labelMetrics'
 import { Tooltip } from './Tooltip'
 import { useTooltipTrigger } from './useTooltipTrigger'
 
@@ -67,16 +67,12 @@ export function EntryCard({
     }
 
     const cardClass = clsx(
-        // Paper, not a box: it masks the connectors of outer rows that pass behind the label.
         'block w-max cursor-pointer bg-surface text-left',
         'focus-visible:outline-2 focus-visible:outline-focus',
         // Inside a stack the card fills the clipping window, so an outer outline would be cut off.
         inline && 'focus-visible:-outline-offset-2'
     )
-    const cardStyle: CSSProperties = {
-        maxWidth: LABEL_MAX_WIDTH_PX,
-        height: LABEL_HEIGHT_PX,
-    }
+    const cardStyle: CSSProperties = { height: LABEL_HEIGHT_PX }
 
     const content = <EntryLabel entry={entry} side={side} open={highlighted} />
 

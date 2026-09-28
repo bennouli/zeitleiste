@@ -32,8 +32,10 @@ export function Connector({ side, lengthPx, open = false }: ConnectorProps) {
     )
 }
 
+type AxisDotProps = ConnectorProps
+
 /** The entry's dot on the axis, centred on the connector's foot. */
-export function AxisDot({ side, lengthPx, open = false }: ConnectorProps) {
+export function AxisDot({ side, lengthPx, open = false }: AxisDotProps) {
     const sizePx = open ? OPEN_DOT_PX : DOT_PX
     const centringPx = (sizePx - AXIS_LINE_PX) / 2
     return (

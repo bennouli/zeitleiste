@@ -2,7 +2,7 @@ import type { Entry } from '@/lib/entry'
 import { formatEntryDate } from '@/lib/format'
 import type { Side } from '@/lib/placement'
 import clsx from 'clsx'
-import { POST_SEPARATOR, POST_SUFFIX } from './labelMetrics'
+import { LABEL_MAX_WIDTH_PX, POST_SEPARATOR, POST_SUFFIX } from './labelMetrics'
 
 export type EntryLabelProps = {
     entry: Entry
@@ -29,6 +29,7 @@ export function EntryLabel({ entry, side, open = false }: EntryLabelProps) {
                         ? 'font-medium underline decoration-1 underline-offset-4'
                         : 'font-normal'
                 )}
+                style={{ maxWidth: LABEL_MAX_WIDTH_PX }}
             >
                 {entry.title}
             </span>

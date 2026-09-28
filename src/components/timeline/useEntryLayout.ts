@@ -205,10 +205,9 @@ function extentOf(x: number, widthPx: number): CardExtent {
 
 /** A card is as wide as its label; a group stack as wide as its widest possible label. */
 function widthOf(cluster: Cluster, byId: ReadonlyMap<string, Entry>): number {
-    const entry = byId.get(cluster.id)
-    return isGroup(cluster) || !entry
+    return isGroup(cluster)
         ? LABEL_MAX_WIDTH_PX
-        : estimateLabelWidthPx(entry)
+        : estimateLabelWidthPx(byId.get(cluster.id)!)
 }
 
 function importanceOf(

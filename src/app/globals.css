@@ -134,8 +134,7 @@
     --radius-lg: var(--radius-4);
 }
 
-/* Small caps: the label style for dates, tick labels and meta lines. Letter
- * spacing differs per use (0.06–0.18 em) and is set next to the class. */
+/* Small caps: the label style for dates, tick labels and meta lines. */
 @utility small-caps {
     font-family: var(--font-sans);
     font-size: 10px;
