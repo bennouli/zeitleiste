@@ -11,7 +11,7 @@ import {
 import { LABEL_HEIGHT_PX } from './labelMetrics'
 
 /** Vertical gap between cards in a group stack. */
-const STACK_GAP_PX = 8
+const STACK_GAP_PX = 14
 export const SLOT_HEIGHT_PX = LABEL_HEIGHT_PX + STACK_GAP_PX
 /** The axis line's distance to the nearer edge of the axis band, where a card band begins. */
 const AXIS_LINE_TO_BAND_PX = Math.min(
