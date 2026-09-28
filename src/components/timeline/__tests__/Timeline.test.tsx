@@ -17,8 +17,8 @@ import {
 } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
-    ANIMATION_MS,
     CARD_GAP_PX,
+    COLLAPSE_ANIMATION_MS,
     COLLAPSED_HEIGHT,
     FOCUS_VISIBLE_MS,
 } from '../constants'
@@ -76,7 +76,7 @@ function xOf(region: HTMLElement, t: number) {
     return ((t - v.start) / v.span) * WIDTH
 }
 
-function flush(ms = ANIMATION_MS + 100) {
+function flush(ms = COLLAPSE_ANIMATION_MS + 100) {
     act(() => {
         vi.advanceTimersByTime(ms)
     })
@@ -488,6 +488,8 @@ describe('Timeline', () => {
         expect(region.style.height).toBe(COLLAPSED_HEIGHT)
         expect(region).toHaveClass(
             'transition-[height]',
+            'duration-500',
+            'ease-in-out',
             'motion-reduce:transition-none'
         )
     })

@@ -20,7 +20,7 @@ export function Post({ entry }: { entry: Entry }) {
     return (
         <article
             aria-labelledby={titleId}
-            className="mx-auto max-w-prose bg-surface px-4 pt-8 pb-[60vh] text-fg sm:px-6"
+            className="mx-auto max-w-reading bg-surface px-4 pt-8 pb-[60vh] text-fg sm:px-6"
         >
             <header className="flex items-start gap-4">
                 <div className="min-w-0 flex-1">

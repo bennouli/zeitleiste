@@ -10,8 +10,10 @@ export const SPAN_LANE_HEIGHT_PX = 28
 export const FOCUS_VISIBLE_MS = 40 * MS_PER_YEAR
 /** Height of the timeline while a post is open. */
 export const COLLAPSED_HEIGHT = '50dvh'
-/** Duration of zoom/pan animations and the height transition. */
-export const ANIMATION_MS = 350
+/** Duration of zoom/pan animations (eased out). */
+export const ZOOM_ANIMATION_MS = 300
+/** Duration of the height transition when a post opens or closes; matches `duration-500` on the timeline. */
+export const COLLAPSE_ANIMATION_MS = 500
 /** Minimum horizontal gap between two cards in a row; also the room kept after a card anchored on today. */
 export const CARD_GAP_PX = 8
 /** Points closer than this sit on one spot and always form a group; otherwise grouping only happens when no card slot is free. */

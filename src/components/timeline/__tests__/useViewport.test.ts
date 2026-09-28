@@ -7,7 +7,7 @@ import {
 import { stubReducedMotion } from '@/test/motion'
 import { act, renderHook } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { ANIMATION_MS } from '../constants'
+import { ZOOM_ANIMATION_MS } from '../constants'
 import { useViewport } from '../useViewport'
 
 const { MIN_VISIBLE_MS, MAX_VISIBLE_MS, visibleMs } = PRIVATE_UNDER_TESTS
@@ -24,7 +24,7 @@ function setup(initialSpanYears = 100) {
     return renderHook(() => useViewport({ bounds, width: WIDTH, initial }))
 }
 
-function flush(ms = ANIMATION_MS + 100) {
+function flush(ms = ZOOM_ANIMATION_MS + 100) {
     act(() => {
         vi.advanceTimersByTime(ms)
     })
@@ -56,7 +56,7 @@ describe('useViewport', () => {
         expect(result.current.isAnimating).toBe(true)
         expect(result.current.isGesturing).toBe(true)
         act(() => {
-            vi.advanceTimersByTime(ANIMATION_MS / 3)
+            vi.advanceTimersByTime(ZOOM_ANIMATION_MS / 3)
         })
         const mid = visibleMs(result.current.viewport)
         expect(mid).toBeLessThan(visibleMs(before))
