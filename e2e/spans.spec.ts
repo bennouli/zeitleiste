@@ -140,11 +140,13 @@ test('bars paint behind the dots and connectors that cross them', async ({
                 const top = Math.max(m.top, b.top)
                 const bottom = Math.min(m.bottom, b.bottom)
                 if (right - left < 1 || bottom - top < 1) return []
+                const x = (left + right) / 2
+                const y = (top + bottom) / 2
+                // elementsFromPoint sees nothing off-screen; nothing is culled, so such crossings exist.
+                if (x < 0 || y < 0 || x >= innerWidth || y >= innerHeight)
+                    return []
                 mark.style.pointerEvents = 'auto'
-                const stack = document.elementsFromPoint(
-                    (left + right) / 2,
-                    (top + bottom) / 2
-                )
+                const stack = document.elementsFromPoint(x, y)
                 mark.style.pointerEvents = ''
                 return [stack.indexOf(mark) < stack.indexOf(bar)]
             })
