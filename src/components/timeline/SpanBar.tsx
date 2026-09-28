@@ -8,6 +8,7 @@ import clsx from 'clsx'
 import type { JSX } from 'react'
 import { useId, useRef } from 'react'
 import { EntryTooltipContent } from './EntryCard'
+import { laneBox } from './spanGeometry'
 import { Tooltip } from './Tooltip'
 import { useTooltipTrigger } from './useTooltipTrigger'
 
@@ -17,13 +18,6 @@ export type SpanBarProps = {
     /** Runs until today or later: the bar fades out over its last 40 %. */
     ongoing: boolean
 }
-
-/** The axis line's thickness; lane 0 is centred on it. */
-const AXIS_LINE_THICKNESS_PX = 1
-const AXIS_LANE_HEIGHT_PX = 7
-const LOWER_LANE_HEIGHT_PX = 3
-const FIRST_LOWER_LANE_TOP_PX = 8
-const LOWER_LANE_PITCH_PX = 6
 
 /**
  * One time span drawn as a thin bar at [bar.x0, bar.x1]: lane 0 straddles the
@@ -77,17 +71,4 @@ export function SpanBarView({
             </Tooltip>
         </>
     )
-}
-
-/** Top edge (relative to the axis line's top edge) and height of a lane. */
-function laneBox(lane: number): { top: number; height: number } {
-    if (lane === 0)
-        return {
-            top: (AXIS_LINE_THICKNESS_PX - AXIS_LANE_HEIGHT_PX) / 2,
-            height: AXIS_LANE_HEIGHT_PX,
-        }
-    return {
-        top: FIRST_LOWER_LANE_TOP_PX + (lane - 1) * LOWER_LANE_PITCH_PX,
-        height: LOWER_LANE_HEIGHT_PX,
-    }
 }

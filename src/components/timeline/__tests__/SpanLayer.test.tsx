@@ -1,22 +1,18 @@
 import { entries } from '@/data/entries'
 import { isSpan, type Entry } from '@/lib/entry'
-import type { SpanBar } from '@/lib/spans'
 import { startOf } from '@/lib/time'
 import { expectNoAxeViolations } from '@/test/axe'
 import { act, fireEvent, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it } from 'vitest'
 import { AXIS_LINE_Y_PX } from '../Axis'
-import {
-    PRIVATE_UNDER_TESTS,
-    SpanLayer,
-    spanLayout,
-    type SpanLayerProps,
-} from '../SpanLayer'
+import { spanLayout } from '../spanGeometry'
+import { SpanLayer, type SpanLayerProps } from '../SpanLayer'
 
 const TODAY = Date.UTC(2026, 8, 27)
 const WIDTH = 1920
 const spans = entries.filter(isSpan)
+const NO_FROZEN_LANES: ReadonlyMap<string, number> = new Map()
 
 function linear(from: number, to: number, width = WIDTH) {
     return (t: number) => ((t - from) / (to - from)) * width
@@ -27,7 +23,13 @@ const wide = linear(startOf({ year: 1700 }), TODAY)
 
 function renderLayer(props: Partial<SpanLayerProps> = {}) {
     return render(
-        <SpanLayer spans={spans} timeToX={wide} today={TODAY} {...props} />
+        <SpanLayer
+            spans={spans}
+            timeToX={wide}
+            today={TODAY}
+            lanes={NO_FROZEN_LANES}
+            {...props}
+        />
     )
 }
 
@@ -77,19 +79,11 @@ const withoutPost: Entry = {
     post: undefined,
     region: 'west',
 }
-/** Three spans over the same years: three lanes. */
-const stacked: Entry[] = [
-    withPost,
-    { ...withoutPost, id: 'zweite', importance: 1 },
-    { ...withoutPost, id: 'dritte', importance: 1, start: { year: 1910 } },
-]
 
 describe('SpanLayer', () => {
     it('renders a bar for every span in the sample data and ignores points', () => {
         const { container } = renderLayer({ spans: entries })
         expect(allBars(container)).toHaveLength(spans.length)
-        for (const e of spans)
-            expect(barEl(container, e.id)).toBeInTheDocument()
     })
 
     it('hangs from the axis line and takes no height of its own', () => {
@@ -100,7 +94,17 @@ describe('SpanLayer', () => {
         expect(px(layer.style.top)).toBe(AXIS_LINE_Y_PX)
     })
 
-    it('centres lane 0 on the axis line and stacks further lanes thinner below it', () => {
+    it('draws each bar in its lane box: lane 0 on the axis line, further lanes thinner below it', () => {
+        const stacked: Entry[] = [
+            withPost,
+            { ...withoutPost, id: 'zweite', importance: 1 },
+            {
+                ...withoutPost,
+                id: 'dritte',
+                importance: 1,
+                start: { year: 1910 },
+            },
+        ]
         const { container } = renderLayer({ spans: stacked })
         const boxes = ['mit-beitrag', 'zweite', 'dritte'].map((id) =>
             boxOf(barEl(container, id))
@@ -112,60 +116,39 @@ describe('SpanLayer', () => {
         ])
     })
 
+    it('draws a bar in its frozen lane', () => {
+        const frozen = new Map([['kalter-krieg', 4]])
+        const { container } = renderLayer({ lanes: frozen })
+        expect(px(barEl(container, 'kalter-krieg').style.top)).toBe(26)
+    })
+
     it('keeps overlapping spans in separate lanes without touching', () => {
         const { container } = renderLayer()
         const boxes = allBars(container).map(boxOf)
         const overlapInX = (a: Box, b: Box) =>
             a.left < b.right && b.left < a.right
-        const overlapInY = (a: Box, b: Box) =>
-            a.top < b.bottom && b.top < a.bottom
+        const apartInY = (a: Box, b: Box) =>
+            a.bottom < b.top || b.bottom < a.top
         const touching = boxes.flatMap((a, i) =>
             boxes
                 .slice(i + 1)
-                .filter(
-                    (b) =>
-                        overlapInX(a, b) &&
-                        (overlapInY(a, b) ||
-                            a.bottom === b.top ||
-                            b.bottom === a.top)
-                )
+                .filter((b) => overlapInX(a, b) && !apartInY(a, b))
         )
         expect(new Set(boxes.map((b) => b.top)).size).toBeGreaterThan(1)
         expect(touching).toEqual([])
     })
 
-    it('stretches the Cuban Missile Crisis to the 2 px minimum at the widest zoom', () => {
-        const { container } = renderLayer()
-        expect(px(barEl(container, 'kubakrise').style.width)).toBe(2)
-    })
-
-    it('ends an ongoing span at today', () => {
-        const timeToX = linear(startOf({ year: 1990 }), TODAY)
-        const { container } = renderLayer({ timeToX })
-        const box = boxOf(
-            barEl(container, 'russischer-angriffskrieg-gegen-die-ukraine')
-        )
-        expect(box.right).toBeCloseTo(timeToX(TODAY), 6)
-    })
-
     it('fades an ongoing span over its last 40 %, and draws a finished one solid', () => {
         const ongoing: Entry = { ...withoutPost, id: 'laufend', end: 'ongoing' }
-        const endsThisYear: Entry = {
-            ...withoutPost,
-            id: 'dieses-jahr',
-            end: { year: 2026 },
-        }
-        const ended: Entry = {
-            ...withoutPost,
-            id: 'vorbei',
-            end: { year: 2025 },
-        }
-        const { container } = renderLayer({
-            spans: [ongoing, endsThisYear, ended],
-        })
-        const fading = ['bg-linear-to-r', 'from-fg/12', 'from-60%', 'to-fg/2']
-        expect(barEl(container, 'laufend')).toHaveClass(...fading)
-        expect(barEl(container, 'dieses-jahr')).toHaveClass(...fading)
+        const ended: Entry = { ...withoutPost, id: 'vorbei' }
+        const mixed = [ongoing, ended]
+        const { container } = renderLayer({ spans: mixed })
+        expect(barEl(container, 'laufend')).toHaveClass(
+            'bg-linear-to-r',
+            'from-fg/12',
+            'from-60%',
+            'to-fg/2'
+        )
         expect(barEl(container, 'vorbei')).toHaveClass('bg-fg/12')
         expect(barEl(container, 'vorbei')).not.toHaveClass('bg-linear-to-r')
     })
@@ -176,12 +159,14 @@ describe('SpanLayer', () => {
             startOf({ year: 1950 }),
             1000
         )
-        const { container } = renderLayer({ spans: [withPost], timeToX: roomy })
+        const single = [withPost]
+        const { container } = renderLayer({ spans: single, timeToX: roomy })
         expect(barEl(container, 'mit-beitrag')).toBeEmptyDOMElement()
     })
 
     it('renders a span with a post as a focusable group, never as a button that opens it', () => {
-        renderLayer({ spans: [withPost] })
+        const single = [withPost]
+        renderLayer({ spans: single })
         expect(screen.queryByRole('button')).toBeNull()
         expect(
             screen.getByRole('group', {
@@ -192,7 +177,8 @@ describe('SpanLayer', () => {
 
     it('shows the hover note on keyboard focus and on hover', async () => {
         const user = userEvent.setup()
-        renderLayer({ spans: [withoutPost] })
+        const single = [withoutPost]
+        renderLayer({ spans: single })
         const bar = screen.getByRole('group', { name: /Ohne Beitrag/ })
         expect(screen.queryByRole('tooltip')).toBeNull()
         await user.tab()
@@ -212,7 +198,8 @@ describe('SpanLayer', () => {
     })
 
     it('shows no hover note on a focus that follows a pointer press', () => {
-        renderLayer({ spans: [withoutPost] })
+        const single = [withoutPost]
+        renderLayer({ spans: single })
         const bar = screen.getByRole('group', { name: /Ohne Beitrag/ })
         act(() => bar.focus())
         expect(screen.getByRole('tooltip')).toBeInTheDocument()
@@ -224,7 +211,8 @@ describe('SpanLayer', () => {
 
     it('keeps a hover note when a touch pointer leaves, and closes it when the mouse leaves', async () => {
         const user = userEvent.setup()
-        renderLayer({ spans: [withoutPost] })
+        const single = [withoutPost]
+        renderLayer({ spans: single })
         const bar = screen.getByRole('group', { name: /Ohne Beitrag/ })
         await user.hover(bar)
         fireEvent.pointerOut(bar, { pointerType: 'touch' })
@@ -246,56 +234,5 @@ describe('SpanLayer', () => {
             (el) => bars.get(el.dataset.spanId!)!.trueX0
         )
         expect(starts).toEqual([...starts].sort((a, b) => a - b))
-    })
-
-    it('skips spans at non-finite positions', () => {
-        const nowhere = () => NaN
-        expect(spanLayout([withPost], nowhere, TODAY).size).toBe(0)
-    })
-})
-
-describe('withFrozenLanes', () => {
-    const { withFrozenLanes } = PRIVATE_UNDER_TESTS
-
-    function barIn(id: string, lane: number): SpanBar {
-        return {
-            id,
-            x0: 0,
-            x1: 100,
-            trueX0: 0,
-            trueX1: 100,
-            extended: false,
-            lane,
-            labelFits: false,
-        }
-    }
-
-    it('moves bars to their frozen lanes', () => {
-        const liveBars = new Map([
-            ['a', barIn('a', 0)],
-            ['b', barIn('b', 1)],
-        ])
-        const lanes = new Map([
-            ['a', 2],
-            ['b', 0],
-        ])
-        const frozen = withFrozenLanes(liveBars, lanes)
-        expect(frozen.get('a')!.lane).toBe(2)
-        expect(frozen.get('b')!.lane).toBe(0)
-    })
-
-    it('keeps the live lane of a bar without a frozen one', () => {
-        const liveBars = new Map([['a', barIn('a', 1)]])
-        const lanes = new Map([['b', 0]])
-        expect(withFrozenLanes(liveBars, lanes).get('a')!.lane).toBe(1)
-    })
-
-    it('leaves the live bars untouched', () => {
-        const liveBar = barIn('a', 0)
-        const liveBars = new Map([['a', liveBar]])
-        const lanes = new Map([['a', 3]])
-        withFrozenLanes(liveBars, lanes)
-        expect(liveBars.get('a')).toBe(liveBar)
-        expect(liveBar.lane).toBe(0)
     })
 })

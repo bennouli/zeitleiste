@@ -10,14 +10,8 @@ import {
 
 const { drawnExtent, firstFreeLane } = PRIVATE_UNDER_TESTS
 
-function span(
-    id: string,
-    x0: number,
-    x1: number,
-    importance = 1,
-    labelWidthPx?: number
-): SpanInput {
-    return { id, x0, x1, importance, labelWidthPx }
+function span(id: string, x0: number, x1: number, importance = 1): SpanInput {
+    return { id, x0, x1, importance }
 }
 
 function byId(bars: SpanBar[], id: string): SpanBar {
@@ -215,13 +209,6 @@ describe('layoutSpans: maxX', () => {
             layoutSpans(input, { maxX: 1000 })
         )
     })
-
-    it('measures labelFits against the drawn width', () => {
-        const bar = only(
-            layoutSpans([span('a', 990, 1000, 1, 52)], { maxX: 1000 }).bars
-        )
-        expect(bar.labelFits).toBe(true)
-    })
 })
 
 describe('layoutSpans: lanes', () => {
@@ -340,38 +327,6 @@ describe('layoutSpans: lanes', () => {
             [0, 'a'],
             [1, 'm'],
         ])
-    })
-})
-
-describe('layoutSpans: labels', () => {
-    it('fits the label iff width plus padding is at most the drawn width', () => {
-        const { bars } = layoutSpans([
-            span('fits', 0, 100, 1, 88),
-            span('tight', 200, 300, 1, 89),
-            span('none', 400, 500),
-        ])
-        expect(byId(bars, 'fits').labelFits).toBe(true)
-        expect(byId(bars, 'tight').labelFits).toBe(false)
-        expect(byId(bars, 'none').labelFits).toBe(false)
-    })
-
-    it('measures against the extended width', () => {
-        const { bars } = layoutSpans([span('a', 0, 2, 1, 52)])
-        expect(only(bars).labelFits).toBe(true)
-    })
-
-    it('clamps a negative label padding to zero', () => {
-        const { bars } = layoutSpans([span('a', 0, 100, 1, 101)], {
-            labelPaddingPx: -10,
-        })
-        expect(only(bars).labelFits).toBe(false)
-    })
-
-    it('honours a custom label padding', () => {
-        const { bars } = layoutSpans([span('a', 0, 100, 1, 90)], {
-            labelPaddingPx: 10,
-        })
-        expect(only(bars).labelFits).toBe(true)
     })
 })
 
@@ -560,7 +515,6 @@ describe('firstFreeLane', () => {
         trueX1: x1,
         extended: false,
         lane: 0,
-        labelFits: false,
     })
 
     it('opens lane 0 when there are no lanes', () => {
