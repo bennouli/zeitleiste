@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test'
 import { openTimeline } from './timeline'
+import { firstFamily, webFontFamily } from './webFont'
 
 const POST_PATH = '/post/oktoberrevolution'
 
@@ -7,41 +8,71 @@ const PAGES = ['/', POST_PATH] as const
 
 const FONT_DELAY_MS = 1000
 
-/** A subpixel line-height nudge where the fallback font is not the one next/font measured; a column changing width scores 0.008. */
-const MAX_FONT_LAYOUT_SHIFT = 0.001
+/** The fallback matches average glyph width, not line breaks: a paragraph near a line boundary may reflow by one line (0.0027 at a 22 px italic lead). A tenth of Lighthouse's "good" 0.1. */
+const MAX_FONT_LAYOUT_SHIFT = 0.01
 
 /** How long to wait for a buffered layout-shift entry before counting none. */
 const SHIFT_OBSERVE_MS = 500
 
-const FONTS = [
-    {
-        family: /^['"]?EB Garamond['"]?$/,
-        selector: '[data-entry-id] .font-serif',
-    },
-    { family: /^['"]?IBM Plex Sans['"]?$/, selector: 'body' },
+const SERIF = {
+    variable: '--font-eb-garamond',
+    selector: '[data-entry-id] .font-serif',
+}
+const SANS = { variable: '--font-ibm-plex-sans', selector: 'body' }
+const SERIF_ITALIC = {
+    variable: '--font-eb-garamond-italic',
+    selector: '.font-serif-italic',
+}
+
+const FONTS_BY_PAGE = [
+    { path: '/', fonts: [SERIF, SANS] },
+    { path: POST_PATH, fonts: [SERIF, SANS, SERIF_ITALIC] },
 ] as const
 
-for (const path of PAGES) {
-    test(`${path} renders EB Garamond and IBM Plex Sans`, async ({ page }) => {
+const GOOGLE_FONTS_HOST = /^https?:\/\/fonts\.(googleapis|gstatic)\.com\//
+
+for (const { path, fonts } of FONTS_BY_PAGE) {
+    test(`${path} renders its text in the web fonts`, async ({ page }) => {
         await openTimeline(page, path)
         await page.evaluate(() => document.fonts.ready)
-        for (const { family, selector } of FONTS) {
-            const renderedFamilies = await page
+        for (const { variable, selector } of fonts) {
+            const family = await webFontFamily(page, variable)
+            const renderedFace = await page
                 .locator(selector)
                 .first()
                 .evaluate((el) => {
                     const style = getComputedStyle(el)
-                    const loadedFaces = [...document.fonts].filter(
-                        (f) =>
-                            f.status === 'loaded' &&
-                            style.fontFamily.includes(
-                                f.family.replace(/['"]/g, '')
-                            )
-                    )
-                    return loadedFaces.map((f) => f.family)
+                    return {
+                        fontFamily: style.fontFamily,
+                        fontStyle: style.fontStyle,
+                    }
                 })
-            expect(renderedFamilies.some((f) => family.test(f))).toBe(true)
+            const loadedFaces = await page.evaluate(() =>
+                [...document.fonts]
+                    .filter((f) => f.status === 'loaded')
+                    .map((f) => ({ family: f.family, style: f.style }))
+            )
+            expect(firstFamily(renderedFace.fontFamily)).toBe(family)
+            expect(
+                loadedFaces.some(
+                    (f) =>
+                        firstFamily(f.family) === family &&
+                        f.style === renderedFace.fontStyle
+                )
+            ).toBe(true)
         }
+    })
+}
+
+for (const path of PAGES) {
+    test(`${path} requests nothing from Google Fonts`, async ({ page }) => {
+        const requestedUrls: string[] = []
+        page.on('request', (request) => requestedUrls.push(request.url()))
+        await openTimeline(page, path)
+        await page.evaluate(() => document.fonts.ready)
+        expect(
+            requestedUrls.filter((url) => GOOGLE_FONTS_HOST.test(url))
+        ).toEqual([])
     })
 }
 

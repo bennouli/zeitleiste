@@ -9,13 +9,26 @@ beyond ink.
 
 ## Fonts
 
-| Font          | Weights / styles     | Variable               | Used for                                                       | Why                                                                                          |
-| ------------- | -------------------- | ---------------------- | -------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
-| EB Garamond   | 400, 500, italic 400 | `--font-eb-garamond`   | `font-serif`: entry titles, post title, lead and body          | A book face for long reading and for titles that should read as history, not as a dashboard. |
-| IBM Plex Sans | 400, 500             | `--font-ibm-plex-sans` | `font-sans`: tick labels, dates, meta lines, buttons, wordmark | Neutral and legible at 10–11 px; separates data from prose.                                  |
+| Font          | Weights / styles     | Variable                                          | Used for                                                                | Why                                                                                          |
+| ------------- | -------------------- | ------------------------------------------------- | ----------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| EB Garamond   | 400, 500, italic 400 | `--font-eb-garamond`, `--font-eb-garamond-italic` | `font-serif`: entry titles, post title, body; `font-serif-italic`: lead | A book face for long reading and for titles that should read as history, not as a dashboard. |
+| IBM Plex Sans | 400, 500             | `--font-ibm-plex-sans`                            | `font-sans`: tick labels, dates, meta lines, buttons, wordmark          | Neutral and legible at 10–11 px; separates data from prose.                                  |
 
-- Loaded with `next/font/google` (self-hosted, `display: 'swap'`, metric-adjusted fallback), so the page does not shift when the fonts
-  arrive. `weight` × `style` loads every combination, so EB Garamond also ships a 500 italic; it costs a file, nothing more.
+- Served from the repository: static woff2 files in `src/fonts/<family>/`, latin and latin-ext subsets, each family with its OFL `LICENSE`.
+  Copied from `@fontsource/eb-garamond` 5.3.0 and `@fontsource/ibm-plex-sans` 5.3.0 (`files/<family>-<subset>-<weight>-<style>.woff2`); the
+  packages are not dependencies. No request goes to Google Fonts, at build time or at runtime.
+    - `eb-garamond/`: `eb-garamond-{latin,latin-ext}-{400-normal,500-normal,400-italic}.woff2`
+    - `ibm-plex-sans/`: `ibm-plex-sans-{latin,latin-ext}-{400-normal,500-normal}.woff2`
+- Three `next/font/local` calls in `src/app/layout.tsx`, all `display: 'swap'` with a metric-adjusted fallback (`adjustFontFallback`), so
+  the page does not shift when the fonts arrive:
+    - `ebGaramond`: EB Garamond 400 and 500 upright, fallback Times New Roman, preloaded.
+    - `ebGaramondItalic`: EB Garamond 400 italic in a call of its own, so the italic lead gets fallback metrics measured on the italic;
+      fallback Times New Roman, not preloaded.
+    - `ibmPlexSans`: IBM Plex Sans 400 and 500, fallback Arial, preloaded.
+- `next/font/local` has no per-file `unicode-range`: both subsets of a face are declared with the same descriptors and the browser falls
+  back from one file to the other per glyph. The fallback metrics come from one file per call; the order of `src` in each call is chosen so
+  that file is the latin one (a latin-ext file yields default metrics, `size-adjust: 100%`). Check the `* Fallback` rules in the built CSS
+  after reordering.
 - Widths of text columns are set in `rem` (`max-w-reading`, 41.25 rem = 660 px): a `ch` width changes when the web font replaces its
   fallback.
 - **Small caps** = uppercase, letter-spacing 0.06–0.18 em, 10–11 px, IBM Plex Sans. It is the label style for dates, tick labels and meta
