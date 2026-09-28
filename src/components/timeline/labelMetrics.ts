@@ -30,8 +30,8 @@ export function estimateLabelWidthPx(entry: Entry): number {
 function dateLineWidthPx(entry: Entry): number {
     const date = formatEntryDate(entry, 'short')
     if (!entry.post) return date.length * DATE_CHAR_WIDTH_PX
-    const text = `${date}${POST_SEPARATOR}${POST_SUFFIX}`
-    return text.length * DATE_CHAR_WIDTH_PX + POST_CHEVRON_WIDTH_PX
+    const dateLine = `${date}${POST_SEPARATOR}${POST_SUFFIX}`
+    return dateLine.length * DATE_CHAR_WIDTH_PX + POST_CHEVRON_WIDTH_PX
 }
 
 export const PRIVATE_UNDER_TESTS = {

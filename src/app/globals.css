@@ -71,8 +71,6 @@
         var(--font-eb-garamond), ui-serif, Georgia, Cambria, 'Times New Roman',
         Times, serif;
 
-    /* Type scale: `text-<name>` sets the size and, where given, the line
-     * height; `tracking-<name>` the letter spacing. Roles in DESIGN.md. */
     --text-label: 10px;
     --text-label-lg: 11px;
     --text-meta: 10.5px;
