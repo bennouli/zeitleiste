@@ -1,6 +1,7 @@
 import { expect, test, type Locator, type Page } from '@playwright/test'
 import { sampleEntry } from '../src/test/entries'
 import { openTimeline, timelineRegion } from './timeline'
+import { firstFamily, webFontFamily } from './webFont'
 
 const POST_ENTRY = sampleEntry('oktoberrevolution')
 const POST_PATH = `/post/${POST_ENTRY.id}`
@@ -10,8 +11,8 @@ const MAX_COLUMN_PX = 660
 
 type Typeface = { family: string; size: string; style: string }
 
-function typeface(el: Locator): Promise<Typeface> {
-    return el.evaluate((node) => {
+async function typeface(el: Locator): Promise<Typeface> {
+    const computed = await el.evaluate((node) => {
         const style = getComputedStyle(node)
         return {
             family: style.fontFamily,
@@ -19,6 +20,7 @@ function typeface(el: Locator): Promise<Typeface> {
             style: style.fontStyle,
         }
     })
+    return { ...computed, family: firstFamily(computed.family) }
 }
 
 test.use({ viewport: DESKTOP })
@@ -31,19 +33,21 @@ test('title, lead and body are set in the serif at their sizes; the column stays
     const title = article.getByRole('heading', { level: 2 })
     const lead = article.getByText(POST_ENTRY.summary)
     const body = article.getByText(FIRST_BODY_PARAGRAPH_START)
+    const serif = await webFontFamily(page, '--font-eb-garamond')
+    const serifItalic = await webFontFamily(page, '--font-eb-garamond-italic')
 
     expect(await typeface(title)).toMatchObject({
-        family: expect.stringMatching(/^ebGaramond,/),
+        family: serif,
         size: '44px',
         style: 'normal',
     })
     expect(await typeface(lead)).toMatchObject({
-        family: expect.stringMatching(/^ebGaramondItalic,/),
+        family: serifItalic,
         size: '20px',
         style: 'italic',
     })
     expect(await typeface(body)).toMatchObject({
-        family: expect.stringMatching(/^ebGaramond,/),
+        family: serif,
         size: '16.5px',
         style: 'normal',
     })

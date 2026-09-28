@@ -10,8 +10,7 @@ const timelineEntries = entries.map((e) =>
     e.post ? { ...e, post: { body: '' } } : e
 )
 
-// Footgun: next/font measures the fallback metrics from one file per call and which one is undocumented. This order makes it
-// the latin file in each call (see DESIGN.md § Fonts); a latin-ext file there yields default metrics (size-adjust 100%).
+// Footgun: the order of `src` decides which file the fallback metrics are measured on (DESIGN.md § Fonts).
 const ebGaramond = localFont({
     src: [
         {

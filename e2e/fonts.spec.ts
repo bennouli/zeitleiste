@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test'
 import { openTimeline } from './timeline'
+import { firstFamily, webFontFamily } from './webFont'
 
 const POST_PATH = '/post/oktoberrevolution'
 
@@ -13,10 +14,13 @@ const MAX_FONT_LAYOUT_SHIFT = 0.001
 /** How long to wait for a buffered layout-shift entry before counting none. */
 const SHIFT_OBSERVE_MS = 500
 
-const SERIF = { family: 'ebGaramond', selector: '[data-entry-id] .font-serif' }
-const SANS = { family: 'ibmPlexSans', selector: 'body' }
+const SERIF = {
+    variable: '--font-eb-garamond',
+    selector: '[data-entry-id] .font-serif',
+}
+const SANS = { variable: '--font-ibm-plex-sans', selector: 'body' }
 const SERIF_ITALIC = {
-    family: 'ebGaramondItalic',
+    variable: '--font-eb-garamond-italic',
     selector: '.font-serif-italic',
 }
 
@@ -31,26 +35,31 @@ for (const { path, fonts } of FONTS_BY_PAGE) {
     test(`${path} renders its text in the web fonts`, async ({ page }) => {
         await openTimeline(page, path)
         await page.evaluate(() => document.fonts.ready)
-        for (const { family, selector } of fonts) {
-            const rendered = await page
+        for (const { variable, selector } of fonts) {
+            const family = await webFontFamily(page, variable)
+            const renderedFace = await page
                 .locator(selector)
                 .first()
                 .evaluate((el) => {
                     const style = getComputedStyle(el)
-                    const unquote = (name: string) =>
-                        name.trim().replace(/['"]/g, '')
-                    const firstFamily = unquote(
-                        style.fontFamily.split(',')[0] ?? ''
-                    )
-                    const loaded = [...document.fonts].some(
-                        (f) =>
-                            f.status === 'loaded' &&
-                            unquote(f.family) === firstFamily &&
-                            f.style === style.fontStyle
-                    )
-                    return { firstFamily, loaded }
+                    return {
+                        fontFamily: style.fontFamily,
+                        fontStyle: style.fontStyle,
+                    }
                 })
-            expect(rendered).toEqual({ firstFamily: family, loaded: true })
+            const loadedFaces = await page.evaluate(() =>
+                [...document.fonts]
+                    .filter((f) => f.status === 'loaded')
+                    .map((f) => ({ family: f.family, style: f.style }))
+            )
+            expect(firstFamily(renderedFace.fontFamily)).toBe(family)
+            expect(
+                loadedFaces.some(
+                    (f) =>
+                        firstFamily(f.family) === family &&
+                        f.style === renderedFace.fontStyle
+                )
+            ).toBe(true)
         }
     })
 }
