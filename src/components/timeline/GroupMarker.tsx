@@ -5,7 +5,7 @@ import { formatGroupMeta } from '@/lib/format'
 import type { Side } from '@/lib/placement'
 import clsx from 'clsx'
 import { useId, useRef } from 'react'
-import { Tooltip } from './Tooltip'
+import { Tooltip, TooltipBody, TooltipMeta, TooltipTitle } from './Tooltip'
 import { useTooltipTrigger } from './useTooltipTrigger'
 
 export type GroupMarkerProps = {
@@ -80,17 +80,13 @@ export function GroupMarker({
 function GroupTooltipContent({ entries }: { entries: Entry[] }) {
     return (
         <>
-            <p className="small-caps tracking-date text-fg-muted">
-                {formatGroupMeta(entries)}
-            </p>
-            <p className="font-medium" aria-hidden="true">
+            <TooltipMeta>{formatGroupMeta(entries)}</TooltipMeta>
+            <TooltipTitle aria-hidden="true">
                 Gruppe · Klicken zum Hineinzoomen
-            </p>
-            <ul className="mt-2 list-none p-0">
-                {entries.map((entry) => (
-                    <li key={entry.id}>{entry.title}</li>
-                ))}
-            </ul>
+            </TooltipTitle>
+            {entries.map((entry) => (
+                <TooltipBody key={entry.id}>{entry.title}</TooltipBody>
+            ))}
         </>
     )
 }

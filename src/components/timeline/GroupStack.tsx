@@ -231,7 +231,7 @@ export function GroupStack({
                 <p
                     aria-live="polite"
                     className={clsx(
-                        'm-0 small-caps leading-3 tracking-label tabular-nums text-fg-muted',
+                        'm-0 small-caps text-label leading-3 tracking-label tabular-nums text-fg-muted',
                         anchoredAt === 'end' && 'text-right'
                     )}
                     style={{ height: GROUP_STACK_CONTROLS_HEIGHT_PX }}

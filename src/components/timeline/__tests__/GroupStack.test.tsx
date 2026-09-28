@@ -673,8 +673,8 @@ describe('GroupMarker', () => {
         ).toBeVisible()
         expect(
             within(note)
-                .getAllByRole('listitem')
-                .map((item) => item.textContent)
+                .getAllByText(/^Eintrag \d$/)
+                .map((line) => line.textContent)
         ).toEqual(['Eintrag 1', 'Eintrag 2', 'Eintrag 3', 'Eintrag 4'])
     })
 
