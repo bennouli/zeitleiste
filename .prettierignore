@@ -1,0 +1,10 @@
+# Vendored upstream sources (git subtree, see AGENTS.md § Libraries). Upstream's tree
+# is upstream's to format — reformatting it makes every `git subtree pull` a conflict.
+repos/
+
+# Generated
+.next/
+next-env.d.ts
+pnpm-lock.yaml
+test-results/
+playwright-report/

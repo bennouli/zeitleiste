@@ -1,0 +1,17 @@
+{
+    "plugins": ["prettier-plugin-organize-imports"],
+    "organizeImportsSkipDestructiveCodeActions": false,
+    "trailingComma": "es5",
+    "tabWidth": 4,
+    "semi": false,
+    "singleQuote": true,
+    "overrides": [
+        {
+            "files": "*.md",
+            "options": {
+                "printWidth": 140,
+                "proseWrap": "always"
+            }
+        }
+    ]
+}
