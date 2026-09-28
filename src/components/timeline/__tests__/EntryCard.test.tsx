@@ -5,8 +5,8 @@ import { act, fireEvent, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
+import { CARD_FIRST_ROW_OFFSET_PX } from '../constants'
 import {
-    CONNECTOR_MIN_PX,
     EntryCard,
     PRIVATE_UNDER_TESTS,
     type EntryCardProps,
@@ -117,7 +117,7 @@ describe('EntryCard', () => {
         const el = screen.getByRole('button', {
             name: 'Oktoberrevolution, 7. Nov. 1917, Beitrag',
         })
-        expect(el).toHaveTextContent('Beitrag ›')
+        expect(el).toHaveTextContent('Beitrag')
         await user.click(el)
         expect(onOpen).toHaveBeenCalledExactlyOnceWith('oktoberrevolution')
     })
@@ -418,18 +418,30 @@ describe('EntryCard', () => {
     })
 
     it.each([
+        ['russia', 'dekabristenaufstand'],
         ['west', 'franzoesische-revolution'],
         ['both', 'wiener-kongress'],
-    ])('colors card and connector by region (%s)', (region, id) => {
-        const e = sampleEntry(id)
-        renderCard({ entry: e })
-        expect(card(e)).toHaveClass(`border-l-${region}`)
-        const w = document.querySelector<HTMLElement>(
-            `[data-entry-id="${id}"]`
-        )!
-        expect(w.querySelector('[aria-hidden="true"]')).toHaveClass(
-            `bg-${region}`
-        )
+    ])(
+        'sets the entry as type on the page colour, without border, shadow or region colour (%s)',
+        (_, id) => {
+            const e = sampleEntry(id)
+            const atRest = { entry: e }
+            renderCard(atRest)
+            const boxClass = /^(border|bg-|shadow|rounded|ring)/
+            const classes = [card(e), ...card(e).querySelectorAll('*')]
+                .flatMap((el) => [...el.classList])
+                .filter((c) => boxClass.test(c))
+            expect(classes).toEqual(['bg-surface'])
+            expect(
+                document.querySelector('[data-connector]')!.className
+            ).not.toMatch(/russia|west|both/)
+        }
+    )
+
+    it('switches hover states without a transition', () => {
+        const postEntry = { entry: withPost }
+        renderCard(postEntry)
+        expect(card(withPost).className).not.toMatch(/transition|duration/)
     })
 
     it('raises an open card above highlighted ones', async () => {
@@ -450,42 +462,63 @@ describe('EntryCard', () => {
             )!
         }
         function connector(e: Entry) {
-            return wrapper(e).querySelector<HTMLElement>(
-                '[aria-hidden="true"]'
-            )!
+            return wrapper(e).querySelector<HTMLElement>('[data-connector]')!
+        }
+        function titleOf(e: Entry) {
+            return card(e).querySelector<HTMLElement>('.font-serif')!
+        }
+        function dot(e: Entry) {
+            return wrapper(e).querySelector<HTMLElement>('[data-axis-dot]')!
         }
 
-        it('places a level-1 card above the axis', () => {
-            renderCard({ entry: span, x: 123, level: 1, rowHeightPx: 72 })
+        it('places a level-1 card above the axis, its connector reaching down to the axis', () => {
+            const secondRowAbove = {
+                entry: span,
+                x: 123,
+                level: 1,
+                rowHeightPx: 72,
+            }
+            renderCard(secondRowAbove)
+            const offset = CARD_FIRST_ROW_OFFSET_PX + 72
             const w = wrapper(span)
             expect(w).toHaveClass('absolute')
             expect(w.style.left).toBe('123px')
-            expect(w.style.bottom).toBe('72px')
+            expect(w.style.bottom).toBe(`${offset}px`)
             expect(w.style.top).toBe('')
-            expect(connector(span).style.height).toBe(
-                `${72 + CONNECTOR_MIN_PX}px`
-            )
-            expect(connector(span).style.bottom).toBe('-72px')
-            expect(connector(span)).toHaveClass('bg-russia')
-            expect(card(span)).toHaveClass('border-l-russia')
+            expect(connector(span).style.height).toBe(`${offset}px`)
+            expect(connector(span).style.bottom).toBe(`-${offset}px`)
+            expect(connector(span)).toHaveClass('w-px', 'bg-fg/40')
+        })
+
+        it('centres a 7 px dot on the axis line', () => {
+            const firstRow = { entry: span, level: 0 }
+            renderCard(firstRow)
+            const d = dot(span)
+            expect(d.style.width).toBe('7px')
+            expect(d.style.height).toBe('7px')
+            expect(d.style.left).toBe('-3px')
+            // Axis line at [0, 1] below the origin: the dot spans [-3, 4].
+            expect(d.style.bottom).toBe(`-${CARD_FIRST_ROW_OFFSET_PX + 4}px`)
+            expect(d).toHaveClass('rounded-full', 'bg-fg')
         })
 
         it('places a card below the axis from the top', () => {
-            renderCard({
+            const thirdRowBelow = {
                 entry: span,
                 x: 10,
                 side: 'below',
                 level: 2,
                 rowHeightPx: 60,
-            })
+            } as const
+            renderCard(thirdRowBelow)
+            const offset = CARD_FIRST_ROW_OFFSET_PX + 120
             const w = wrapper(span)
             expect(w.style.left).toBe('10px')
-            expect(w.style.top).toBe('120px')
+            expect(w.style.top).toBe(`${offset}px`)
             expect(w.style.bottom).toBe('')
-            expect(connector(span).style.top).toBe('-120px')
-            expect(connector(span).style.height).toBe(
-                `${120 + CONNECTOR_MIN_PX}px`
-            )
+            expect(connector(span).style.top).toBe(`-${offset}px`)
+            expect(connector(span).style.height).toBe(`${offset}px`)
+            expect(dot(span).style.top).toBe(`-${offset + 3}px`)
         })
 
         it('puts the tooltip on the side facing the axis', async () => {
@@ -505,17 +538,36 @@ describe('EntryCard', () => {
             expect(connector(span)).toHaveClass('left-0')
         })
 
-        it('renders inline without absolute positioning or connector', () => {
-            renderCard({ entry: span, inline: true })
+        it('renders inline without absolute positioning, connector or dot', () => {
+            const inStack = { entry: span, inline: true }
+            renderCard(inStack)
             expect(document.querySelector('[data-entry-id]')).not.toHaveClass(
                 'absolute'
             )
             expect(card(span).closest('.absolute')).toBeNull()
+            expect(document.querySelector('[data-connector]')).toBeNull()
+            expect(document.querySelector('[data-axis-dot]')).toBeNull()
         })
 
-        it('marks a highlighted card', () => {
-            renderCard({ entry: span, highlighted: true })
-            expect(card(span)).toHaveClass('ring-2', 'ring-focus')
+        it('marks the open entry by title weight and underline, a 13 px dot and an ink connector', () => {
+            const openEntry = { entry: span, highlighted: true }
+            renderCard(openEntry)
+            expect(titleOf(span)).toHaveClass(
+                'font-medium',
+                'underline',
+                'underline-offset-4'
+            )
+            expect(dot(span).style.width).toBe('13px')
+            expect(dot(span).style.left).toBe('-6px')
+            expect(connector(span)).toHaveClass('bg-fg')
+            expect(connector(span)).not.toHaveClass('bg-fg/40')
+        })
+
+        it('keeps a closed entry at regular weight without underline', () => {
+            const closedEntry = { entry: span }
+            renderCard(closedEntry)
+            expect(titleOf(span)).toHaveClass('font-normal')
+            expect(titleOf(span)).not.toHaveClass('underline')
         })
     })
 
@@ -539,19 +591,17 @@ describe('EntryCard', () => {
 })
 
 describe('wrapperStyle', () => {
-    it('lifts a card above the axis by its level', () => {
+    it('lifts a card above the axis by the first-row offset plus its level', () => {
         expect(wrapperStyle('above', 2, 72, 40)).toEqual({
             left: 40,
-            bottom: 144,
-            paddingBottom: CONNECTOR_MIN_PX,
+            bottom: CARD_FIRST_ROW_OFFSET_PX + 144,
         })
     })
 
-    it('lowers a card below the axis by its level', () => {
+    it('lowers a card below the axis by the first-row offset plus its level', () => {
         expect(wrapperStyle('below', 1, 60, 10)).toEqual({
             left: 10,
-            top: 60,
-            paddingTop: CONNECTOR_MIN_PX,
+            top: CARD_FIRST_ROW_OFFSET_PX + 60,
         })
     })
 })

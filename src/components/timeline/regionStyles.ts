@@ -5,9 +5,3 @@ export const REGION_BG: Record<Region, string> = {
     west: 'bg-west',
     both: 'bg-both',
 }
-
-export const REGION_BORDER_L: Record<Region, string> = {
-    russia: 'border-l-russia',
-    west: 'border-l-west',
-    both: 'border-l-both',
-}

@@ -17,7 +17,7 @@ export type GroupStackProps = {
     entries: Entry[]
     /** Number of cards visible at once: 3 desktop, 1 phone, ≤ 2 when collapsed. */
     visibleCount: number
-    /** Height of one card slot in px, from the card component (the caller passes EntryCard's CARD_HEIGHT_PX + gap). */
+    /** Height of one card slot in px, from the card component (the caller passes the label height + gap). */
     slotHeightPx: number
     /** Renders one card (the caller passes EntryCard with `inline`). */
     renderCard: (entry: Entry, index: number) => ReactNode

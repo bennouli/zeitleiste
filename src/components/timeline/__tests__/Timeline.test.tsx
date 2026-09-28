@@ -22,7 +22,7 @@ import {
     COLLAPSED_HEIGHT,
     FOCUS_VISIBLE_MS,
 } from '../constants'
-import { CARD_WIDTH_PX } from '../EntryCard'
+import { LABEL_MAX_WIDTH_PX } from '../labelMetrics'
 import { PRIVATE_UNDER_TESTS, Timeline } from '../Timeline'
 
 const { dataBounds, useSnapshotPerKey } = PRIVATE_UNDER_TESTS
@@ -31,7 +31,7 @@ const { MAX_VISIBLE_MS } = VIEWPORT_UNDER_TESTS
 const WIDTH = 1000
 const HEIGHT = 800
 /** Room after today, as a fraction of the visible span. */
-const END_ROOM = (CARD_WIDTH_PX + CARD_GAP_PX) / WIDTH
+const END_ROOM = (LABEL_MAX_WIDTH_PX + CARD_GAP_PX) / WIDTH
 const NOW = Date.UTC(2026, 8, 27, 12)
 /** A point in time with a post that stands alone at the widest zoom. */
 const POST_POINT = sampleEntry('fall-der-berliner-mauer')
@@ -168,7 +168,7 @@ describe('Timeline', () => {
         const today = Date.UTC(2026, 8, 27)
         const v = view(region)
         expect(xOf(region, today)).toBeCloseTo(
-            WIDTH - CARD_WIDTH_PX - CARD_GAP_PX,
+            WIDTH - LABEL_MAX_WIDTH_PX - CARD_GAP_PX,
             6
         )
         expect(v.span).toBeCloseTo(
@@ -196,7 +196,7 @@ describe('Timeline', () => {
         )
         // Range now exceeds MAX_VISIBLE_MS: still right-aligned to today's room, but zooming out is limited by MAX.
         expect(xOf(region, today)).toBeCloseTo(
-            WIDTH - CARD_WIDTH_PX - CARD_GAP_PX,
+            WIDTH - LABEL_MAX_WIDTH_PX - CARD_GAP_PX,
             6
         )
         expect(view(region).span).toBeCloseTo(MAX_VISIBLE_MS, -3)
@@ -216,7 +216,7 @@ describe('Timeline', () => {
         for (let i = 0; i < stepsPastTheEnd; i++)
             fireEvent.keyDown(region, panRight)
         expect(xOf(region, today)).toBeCloseTo(
-            WIDTH - CARD_WIDTH_PX - CARD_GAP_PX,
+            WIDTH - LABEL_MAX_WIDTH_PX - CARD_GAP_PX,
             6
         )
     })

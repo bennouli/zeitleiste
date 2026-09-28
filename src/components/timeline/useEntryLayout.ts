@@ -18,8 +18,8 @@ import {
 import { entryAnchor } from '@/lib/time'
 import { useMemo, useState } from 'react'
 import { CLUSTER_MIN_GAP_PX, MAX_GROUP_SPAN_PX } from './constants'
-import { CARD_WIDTH_PX } from './EntryCard'
 import { GROUP_MARKER_SIZE_PX } from './GroupMarker'
+import { estimateLabelWidthPx, LABEL_MAX_WIDTH_PX } from './labelMetrics'
 
 /** One thing to draw on a side of the axis: a single card or a group stack. */
 export type LayoutItem = {
@@ -155,7 +155,10 @@ function placeCut(
 ): CutPlacement {
     const { timeToX, maxLevels, groupLevels, gapPx } = geometry
     const extents = new Map(
-        cut.map((cluster) => [cluster.id, extentOf(timeToX(cluster.t))])
+        cut.map((cluster) => [
+            cluster.id,
+            extentOf(timeToX(cluster.t), widthOf(cluster, byId)),
+        ])
     )
     const toPlaceable = (cluster: Cluster): PlaceableItem => {
         const extent = extents.get(cluster.id)!
@@ -196,8 +199,15 @@ function placeCut(
     }
 }
 
-function extentOf(x: number): CardExtent {
-    return { x0: x, x1: x + CARD_WIDTH_PX }
+function extentOf(x: number, widthPx: number): CardExtent {
+    return { x0: x, x1: x + widthPx }
+}
+
+/** A card is as wide as its label; a group stack as wide as its widest possible label. */
+function widthOf(cluster: Cluster, byId: ReadonlyMap<string, Entry>): number {
+    return isGroup(cluster)
+        ? LABEL_MAX_WIDTH_PX
+        : estimateLabelWidthPx(byId.get(cluster.id)!)
 }
 
 function importanceOf(

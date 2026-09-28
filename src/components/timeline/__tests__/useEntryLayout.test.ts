@@ -9,7 +9,7 @@ import { isSpan, type Entry } from '@/lib/entry'
 import type { Slot } from '@/lib/placement'
 import { entryAnchor, MS_PER_YEAR } from '@/lib/time'
 import { describe, expect, it } from 'vitest'
-import { CARD_WIDTH_PX } from '../EntryCard'
+import { estimateLabelWidthPx, LABEL_MAX_WIDTH_PX } from '../labelMetrics'
 import {
     PRIVATE_UNDER_TESTS,
     type EntryLayout,
@@ -86,7 +86,11 @@ function extent(
     timeToX: (t: number) => number
 ): [number, number] {
     const x = timeToX(item.t)
-    return [x, x + CARD_WIDTH_PX]
+    const width =
+        item.kind === 'card'
+            ? estimateLabelWidthPx(item.entries[0]!)
+            : LABEL_MAX_WIDTH_PX
+    return [x, x + width]
 }
 
 function checkInvariants(

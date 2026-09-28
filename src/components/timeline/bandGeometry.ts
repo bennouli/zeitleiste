@@ -1,17 +1,24 @@
+import { AXIS_LINE_Y_PX } from './Axis'
 import {
     AXIS_HEIGHT_PX,
+    CARD_FIRST_ROW_OFFSET_PX,
     CARD_ROW_HEIGHT_PX,
     SPAN_LANE_HEIGHT_PX,
 } from './constants'
-import { CARD_HEIGHT_PX, CONNECTOR_MIN_PX } from './EntryCard'
 import {
     GROUP_STACK_CONTROLS_HEIGHT_PX,
     groupStackHeightPx,
 } from './GroupStack'
+import { LABEL_HEIGHT_PX } from './labelMetrics'
 
 /** Vertical gap between cards in a group stack. */
 const STACK_GAP_PX = 8
-export const SLOT_HEIGHT_PX = CARD_HEIGHT_PX + STACK_GAP_PX
+export const SLOT_HEIGHT_PX = LABEL_HEIGHT_PX + STACK_GAP_PX
+/** The axis line's distance to the nearer edge of the axis band, where a card band begins. */
+const AXIS_LINE_TO_BAND_PX = Math.min(
+    AXIS_LINE_Y_PX,
+    AXIS_HEIGHT_PX - AXIS_LINE_Y_PX
+)
 /** Below this width the timeline behaves like a phone: one card per group. */
 const PHONE_WIDTH_PX = 640
 /** Room kept free for the "Heute" label and the zoom buttons. */
@@ -39,20 +46,24 @@ export function bandGeometry(
         0,
         (height - AXIS_HEIGHT_PX - spansHeight) / 2
     )
+    const rowsReachPx =
+        cardBandHeight + AXIS_LINE_TO_BAND_PX - CARD_FIRST_ROW_OFFSET_PX
     const maxLevels = Math.max(
         MIN_BAND_LEVELS,
-        Math.floor(cardBandHeight / CARD_ROW_HEIGHT_PX)
+        Math.floor((rowsReachPx - LABEL_HEIGHT_PX) / CARD_ROW_HEIGHT_PX) + 1
     )
     const visibleCount = Math.max(
         1,
         Math.min(
             preferredStackSize(width, collapsed),
-            fittingStackSize(cardBandHeight)
+            fittingStackSize(rowsReachPx)
         )
     )
-    const stackHeight =
-        groupStackHeightPx(visibleCount + 1, visibleCount, SLOT_HEIGHT_PX) +
-        CONNECTOR_MIN_PX
+    const stackHeight = groupStackHeightPx(
+        visibleCount + 1,
+        visibleCount,
+        SLOT_HEIGHT_PX
+    )
     const groupLevels = Math.max(1, Math.ceil(stackHeight / CARD_ROW_HEIGHT_PX))
     return { spansHeight, maxLevels, visibleCount, groupLevels }
 }
@@ -62,9 +73,9 @@ function preferredStackSize(width: number, collapsed: boolean): number {
     return collapsed ? 2 : 3
 }
 
-function fittingStackSize(cardBandHeight: number): number {
+/** Stack slots that fit between the first row and the band's far edge. */
+function fittingStackSize(rowsReachPx: number): number {
     return Math.floor(
-        (cardBandHeight - CONNECTOR_MIN_PX - GROUP_STACK_CONTROLS_HEIGHT_PX) /
-            SLOT_HEIGHT_PX
+        (rowsReachPx - GROUP_STACK_CONTROLS_HEIGHT_PX) / SLOT_HEIGHT_PX
     )
 }

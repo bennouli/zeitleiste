@@ -1,6 +1,13 @@
 import { describe, expect, it } from 'vitest'
+import { AXIS_LINE_Y_PX } from '../Axis'
 import { bandGeometry } from '../bandGeometry'
-import { SPAN_LANE_HEIGHT_PX } from '../constants'
+import {
+    AXIS_HEIGHT_PX,
+    CARD_FIRST_ROW_OFFSET_PX,
+    CARD_ROW_HEIGHT_PX,
+    SPAN_LANE_HEIGHT_PX,
+} from '../constants'
+import { LABEL_HEIGHT_PX } from '../labelMetrics'
 
 const DESKTOP_WIDTH = 1000
 const NARROWEST_DESKTOP_WIDTH = 640
@@ -13,12 +20,12 @@ const TWO_LANES = 2
 const NO_LANES = 0
 
 describe('bandGeometry', () => {
-    it('gives a full desktop timeline three rows and a three-card stack', () => {
+    it('gives a full desktop timeline six rows and a three-card stack', () => {
         expect(
             bandGeometry(FULL_HEIGHT, DESKTOP_WIDTH, EXPANDED, TWO_LANES)
         ).toEqual({
             spansHeight: 2 * SPAN_LANE_HEIGHT_PX,
-            maxLevels: 3,
+            maxLevels: 6,
             visibleCount: 3,
             groupLevels: 3,
         })
@@ -32,7 +39,7 @@ describe('bandGeometry', () => {
             TWO_LANES
         )
         expect(geometry.visibleCount).toBe(2)
-        expect(geometry.groupLevels).toBe(2)
+        expect(geometry.groupLevels).toBe(3)
     })
 
     it('shows one card per stack on a phone', () => {
@@ -75,5 +82,25 @@ describe('bandGeometry', () => {
             visibleCount: 1,
             groupLevels: 2,
         })
+    })
+
+    it('fits the far edge of the outermost row above the axis into its band, and no further row', () => {
+        const heights = [300, 500, 640, 800, 1100]
+        for (const height of heights) {
+            const { maxLevels, spansHeight } = bandGeometry(
+                height,
+                DESKTOP_WIDTH,
+                EXPANDED,
+                TWO_LANES
+            )
+            const aboveReach =
+                (height - AXIS_HEIGHT_PX - spansHeight) / 2 + AXIS_LINE_Y_PX
+            const farEdge = (levels: number) =>
+                CARD_FIRST_ROW_OFFSET_PX +
+                (levels - 1) * CARD_ROW_HEIGHT_PX +
+                LABEL_HEIGHT_PX
+            expect(farEdge(maxLevels)).toBeLessThanOrEqual(aboveReach)
+            expect(farEdge(maxLevels + 1)).toBeGreaterThan(aboveReach)
+        }
     })
 })
