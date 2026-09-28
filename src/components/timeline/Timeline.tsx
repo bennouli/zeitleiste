@@ -203,6 +203,12 @@ export function Timeline({
                         </div>
                     </>
                 )}
+                <p
+                    aria-hidden="true"
+                    className="pointer-events-none absolute top-[22px] left-8 z-20 font-sans text-[11px] font-medium tracking-[0.18em] text-fg uppercase"
+                >
+                    Zeitleiste
+                </p>
                 <ZoomControls
                     canZoomIn={controls.canZoomIn}
                     canZoomOut={controls.canZoomOut}
