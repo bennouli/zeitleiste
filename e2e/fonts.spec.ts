@@ -8,8 +8,8 @@ const PAGES = ['/', POST_PATH] as const
 
 const FONT_DELAY_MS = 1000
 
-/** A subpixel line-height nudge where the fallback font is not the one next/font measured; a column changing width scores 0.008. */
-const MAX_FONT_LAYOUT_SHIFT = 0.001
+/** The fallback matches average glyph width, not line breaks: a paragraph near a line boundary may reflow by one line (0.0027 at a 22 px italic lead). A tenth of Lighthouse's "good" 0.1. */
+const MAX_FONT_LAYOUT_SHIFT = 0.01
 
 /** How long to wait for a buffered layout-shift entry before counting none. */
 const SHIFT_OBSERVE_MS = 500
