@@ -2,7 +2,7 @@
 
 import clsx from 'clsx'
 
-export interface GroupMarkerProps {
+export type GroupMarkerProps = {
     count: number
     /** Accessible label, e.g. "Gruppe mit 7 Einträgen, 1914–1922" (caller builds the date part). */
     label: string

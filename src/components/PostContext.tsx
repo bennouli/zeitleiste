@@ -2,7 +2,7 @@
 
 import { createContext, useContext } from 'react'
 
-export interface PostControls {
+export type PostControls = {
     /** Closes the open post and returns to the full-screen timeline (`/`). */
     close: () => void
 }

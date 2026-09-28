@@ -1,12 +1,14 @@
+import { compareIds } from '@/lib/order'
+
 export type Side = 'above' | 'below'
 
-export interface Slot {
+export type Slot = {
     side: Side
     /** 0 = nearest the axis */
     level: number
 }
 
-export interface PlaceableItem {
+export type PlaceableItem = {
     id: string
     /** Horizontal extent of the card in px (already includes the card's width, i.e. x1 ≥ x0 + cardWidth). */
     x0: number
@@ -17,7 +19,7 @@ export interface PlaceableItem {
     order: number
 }
 
-export interface PlacementOptions {
+export type PlacementOptions = {
     /** Minimum horizontal gap between two cards in the same row, default 8. */
     gapPx?: number
     /** Rows per side, default 2 (so 4 rows total). */
@@ -26,14 +28,14 @@ export interface PlacementOptions {
     blocked?: readonly BlockedInterval[]
 }
 
-export interface BlockedInterval extends Slot {
+export type BlockedInterval = Slot & {
     x0: number
     x1: number
 }
 
-export interface Placement {
+export type Placement = {
     slots: Map<string, Slot>
-    /** Items that fit nowhere; the caller groups them (issue #9). */
+    /** Items that fit nowhere; the caller groups them. */
     overflow: string[]
 }
 
@@ -97,26 +99,48 @@ class Row {
 function compareItems(a: PlaceableItem, b: PlaceableItem): number {
     if (a.importance !== b.importance) return b.importance - a.importance
     if (a.order !== b.order) return a.order - b.order
-    return a.id < b.id ? -1 : a.id > b.id ? 1 : 0
+    return compareIds(a.id, b.id)
 }
 
 /** Try order: above 0, below 0, above 1, below 1, … */
 function candidateSlots(maxLevels: number): Slot[] {
-    const out: Slot[] = []
-    for (let level = 0; level < maxLevels; level++) {
-        out.push({ side: 'above', level }, { side: 'below', level })
-    }
-    return out
+    return Array.from({ length: maxLevels }, (_, level): Slot[] => [
+        { side: 'above', level },
+        { side: 'below', level },
+    ]).flat()
 }
 
 /** Hysteresis: every row on the previous side first (nearest the axis first), then the other side. */
 function candidateSlotsKeepingSide(maxLevels: number, side: Side): Slot[] {
     const other: Side = side === 'above' ? 'below' : 'above'
-    const out: Slot[] = []
-    for (let level = 0; level < maxLevels; level++) out.push({ side, level })
-    for (let level = 0; level < maxLevels; level++)
-        out.push({ side: other, level })
-    return out
+    return [side, other].flatMap((s) =>
+        Array.from({ length: maxLevels }, (_, level): Slot => ({
+            side: s,
+            level,
+        }))
+    )
+}
+
+function buildRows(
+    maxLevels: number,
+    gap: number,
+    blocked: readonly BlockedInterval[]
+): Record<Side, Row[]> {
+    const rows: Record<Side, Row[]> = {
+        above: Array.from({ length: maxLevels }, () => new Row(gap)),
+        below: Array.from({ length: maxLevels }, () => new Row(gap)),
+    }
+    for (const b of blocked) {
+        const x0 = Math.min(b.x0, b.x1)
+        const x1 = Math.max(b.x0, b.x1)
+        if (Number.isFinite(x0) && Number.isFinite(x1))
+            rows[b.side]?.[b.level]?.block(x0, x1)
+    }
+    return rows
+}
+
+function cloneSlot(slot: Slot): Slot {
+    return { side: slot.side, level: slot.level }
 }
 
 /**
@@ -133,18 +157,8 @@ export function placeItems(
         MAX_LEVELS_CAP,
         Math.max(0, Math.floor(options.maxLevels ?? DEFAULT_MAX_LEVELS))
     )
-    const rows: Record<Side, Row[]> = { above: [], below: [] }
-    for (let level = 0; level < maxLevels; level++) {
-        rows.above.push(new Row(gap))
-        rows.below.push(new Row(gap))
-    }
+    const rows = buildRows(maxLevels, gap, options.blocked ?? [])
     const candidates = candidateSlots(maxLevels)
-    for (const b of options.blocked ?? []) {
-        const x0 = Math.min(b.x0, b.x1)
-        const x1 = Math.max(b.x0, b.x1)
-        if (Number.isFinite(x0) && Number.isFinite(x1))
-            rows[b.side]?.[b.level]?.block(x0, x1)
-    }
 
     const slots = new Map<string, Slot>()
     const overflow: string[] = []
@@ -170,7 +184,7 @@ export function placeItems(
                   ? candidateSlotsKeepingSide(maxLevels, prev.side)
                   : candidates
               ).find(fits)
-        const slot = found && { side: found.side, level: found.level }
+        const slot = found && cloneSlot(found)
 
         const row = slot && rows[slot.side][slot.level]
         if (slot && row) {
@@ -185,10 +199,17 @@ export function placeItems(
 }
 
 /** Number of rows actually used per side, for computing the band height. */
-export function usedLevels(p: Placement): { above: number; below: number } {
+function usedLevels(p: Placement): { above: number; below: number } {
     const used = { above: 0, below: 0 }
     for (const slot of p.slots.values()) {
         used[slot.side] = Math.max(used[slot.side], slot.level + 1)
     }
     return used
+}
+
+export const PRIVATE_UNDER_TESTS = {
+    usedLevels,
+    candidateSlots,
+    candidateSlotsKeepingSide,
+    buildRows,
 }

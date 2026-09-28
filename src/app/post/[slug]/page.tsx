@@ -4,7 +4,7 @@ import { findEntry, postSlugs } from '@/lib/posts'
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 
-interface Props {
+type Props = {
     params: Promise<{ slug: string }>
 }
 

@@ -1,19 +1,20 @@
 'use client'
 
-import { CATEGORY_LABEL, type Entry, type Region } from '@/lib/entry'
-import { formatEntryDate } from '@/lib/format'
+import { CATEGORY_LABEL, type Entry } from '@/lib/entry'
+import { entryLabel, formatEntryDate } from '@/lib/format'
 import clsx from 'clsx'
-import type { CSSProperties, FocusEvent, PointerEvent } from 'react'
-import { useEffect, useId, useRef, useState } from 'react'
+import type { CSSProperties } from 'react'
+import { useId, useRef } from 'react'
+import { Connector } from './Connector'
+import { REGION_BORDER_L } from './regionStyles'
 import { Tooltip } from './Tooltip'
+import { useTooltipTrigger } from './useTooltipTrigger'
 
 export const CARD_WIDTH_PX = 176
 export const CARD_HEIGHT_PX = 56
 export const CONNECTOR_MIN_PX = 12
 
-const PRESS_FOCUS_WINDOW_MS = 1000
-
-export interface EntryCardProps {
+export type EntryCardProps = {
     entry: Entry
     /** x of the entry's anchor within the layer, px. The card's left edge is at `x` (or its right edge with `alignEnd`). */
     x: number
@@ -32,18 +33,6 @@ export interface EntryCardProps {
     inline?: boolean
 }
 
-const CARD_BORDER: Record<Region, string> = {
-    russia: 'border-l-russia',
-    west: 'border-l-west',
-    both: 'border-l-both',
-}
-
-const CONNECTOR_BG: Record<Region, string> = {
-    russia: 'bg-russia',
-    west: 'bg-west',
-    both: 'bg-both',
-}
-
 export function EntryCard({
     entry,
     x,
@@ -58,105 +47,26 @@ export function EntryCard({
 }: EntryCardProps) {
     const tooltipId = useId()
     const bodyRef = useRef<HTMLDivElement>(null)
-    const [hovered, setHovered] = useState(false)
-    const [focused, setFocused] = useState(false)
-    const [touchOpen, setTouchOpen] = useState(false)
-    const [dismissed, setDismissed] = useState(false)
-    const open = (hovered || focused || touchOpen) && !dismissed
-    // Pointer type of the last pointerdown, cleared by the click it belongs to.
-    const pointerTypeRef = useRef<string | null>(null)
-    // Time of the last pointerdown: a focus shortly after it was caused by the press, not the keyboard.
-    const pressedAtRef = useRef<number | null>(null)
-
-    // While open: Escape dismisses even without focus; a touch tap elsewhere closes a tapped-open tooltip.
-    useEffect(() => {
-        if (!open) return
-        const onKey = (e: globalThis.KeyboardEvent) => {
-            if (e.key !== 'Escape' || e.defaultPrevented) return
-            const t = e.target
-            if (
-                t instanceof HTMLElement &&
-                (t.isContentEditable ||
-                    ['INPUT', 'TEXTAREA', 'SELECT'].includes(t.tagName))
-            )
-                return
-            setDismissed(true)
-            // This Escape is used up; the shell's window listener must not also close the post.
-            e.preventDefault()
-        }
-        const onDown = (e: globalThis.PointerEvent) => {
-            const target = e.target as Node
-            // The open bubble lives in a portal, outside the body's DOM.
-            if (
-                bodyRef.current?.contains(target) ||
-                document.getElementById(tooltipId)?.contains(target)
-            )
-                return
-            setTouchOpen(false)
-        }
-        document.addEventListener('keydown', onKey)
-        document.addEventListener('pointerdown', onDown)
-        return () => {
-            document.removeEventListener('keydown', onKey)
-            document.removeEventListener('pointerdown', onDown)
-        }
-    }, [open, tooltipId])
-
     const hasPost = entry.post !== undefined
+    const { open, triggerProps, hoverProps, dismiss, toggleTouch } =
+        useTooltipTrigger({
+            tooltipId,
+            anchorRef: bodyRef,
+            touchToggle: !hasPost,
+        })
+
     const shortDate = formatEntryDate(entry, 'short')
-    const label = hasPost
-        ? `${entry.title}, ${shortDate}, Beitrag`
-        : `${entry.title}, ${shortDate}`
+    const label = entryLabel(entry)
 
-    // On the body (card + bubble; React events bubble out of the bubble's portal) so the pointer can move onto the bubble.
-    const hoverHandlers = {
-        onPointerEnter: (e: PointerEvent) => {
-            if (e.pointerType === 'touch') return
-            setHovered(true)
-            setDismissed(false)
-        },
-        onPointerLeave: (e: PointerEvent) => {
-            if (e.pointerType !== 'touch') setHovered(false)
-        },
-    }
-
-    const handlers = {
-        onPointerDown: (e: PointerEvent) => {
-            pointerTypeRef.current = e.pointerType
-            pressedAtRef.current = e.timeStamp
-        },
-        onPointerCancel: () => {
-            pointerTypeRef.current = null
-            pressedAtRef.current = null
-        },
-        onFocus: (e: FocusEvent) => {
-            const pressedAt = pressedAtRef.current
-            pressedAtRef.current = null
-            if (
-                pressedAt !== null &&
-                e.timeStamp - pressedAt < PRESS_FOCUS_WINDOW_MS
-            )
-                return
-            setFocused(true)
-            setDismissed(false)
-        },
-        onBlur: () => {
-            setFocused(false)
-            setTouchOpen(false)
-        },
+    const cardProps = {
+        ...triggerProps,
         onClick: () => {
-            const pointerType = pointerTypeRef.current
-            pointerTypeRef.current = null
-            pressedAtRef.current = null
             if (wasDrag?.()) return
             if (hasPost) {
                 // Otherwise the next Escape would only close this tooltip, not the post.
-                setDismissed(true)
+                dismiss()
                 onOpen(entry.id)
-            } else if (pointerType === 'touch') {
-                setDismissed(false)
-                setTouchOpen(!open)
-            }
+            } else toggleTouch()
         },
     }
 
@@ -171,7 +81,7 @@ export function EntryCard({
             (inline
                 ? 'focus-visible:-outline-offset-4'
                 : 'focus-visible:outline-offset-2'),
-        CARD_BORDER[entry.region],
+        REGION_BORDER_L[entry.region],
         highlighted && 'ring-2 ring-focus',
         highlighted &&
             (side === 'above' ? '-translate-y-0.5' : 'translate-y-0.5')
@@ -207,7 +117,7 @@ export function EntryCard({
             aria-describedby={tooltipId}
             className={cardClass}
             style={cardStyle}
-            {...handlers}
+            {...cardProps}
         >
             {content}
         </button>
@@ -219,14 +129,14 @@ export function EntryCard({
             aria-describedby={tooltipId}
             className={cardClass}
             style={cardStyle}
-            {...handlers}
+            {...cardProps}
         >
             {content}
         </div>
     )
 
     const body = (
-        <div ref={bodyRef} className="relative" {...hoverHandlers}>
+        <div ref={bodyRef} className="relative" {...hoverProps}>
             {card}
             <Tooltip
                 id={tooltipId}
@@ -255,15 +165,8 @@ export function EntryCard({
         )
     }
 
+    const style = wrapperStyle(side, level, rowHeightPx, x)
     const offset = level * rowHeightPx
-    const wrapperStyle: CSSProperties =
-        side === 'above'
-            ? { left: x, bottom: offset, paddingBottom: CONNECTOR_MIN_PX }
-            : { left: x, top: offset, paddingTop: CONNECTOR_MIN_PX }
-    const connectorStyle: CSSProperties = {
-        height: offset + CONNECTOR_MIN_PX,
-        ...(side === 'above' ? { bottom: -offset } : { top: -offset }),
-    }
 
     return (
         <div
@@ -272,18 +175,16 @@ export function EntryCard({
                 alignEnd && '-translate-x-full',
                 open ? 'z-30' : highlighted ? 'z-20' : 'z-0'
             )}
-            style={wrapperStyle}
+            style={style}
             data-entry-id={entry.id}
             data-highlighted={highlighted ? 'true' : undefined}
         >
-            <div
-                aria-hidden="true"
-                className={clsx(
-                    'absolute w-0.5',
-                    alignEnd ? 'right-0' : 'left-0',
-                    CONNECTOR_BG[entry.region]
-                )}
-                style={connectorStyle}
+            <Connector
+                region={entry.region}
+                alignEnd={alignEnd}
+                side={side}
+                heightPx={offset + CONNECTOR_MIN_PX}
+                offsetPx={offset}
             />
             {body}
         </div>
@@ -305,3 +206,17 @@ export function EntryTooltipContent({ entry }: { entry: Entry }) {
         </>
     )
 }
+
+function wrapperStyle(
+    side: EntryCardProps['side'],
+    level: number,
+    rowHeightPx: number,
+    x: number
+): CSSProperties {
+    const offset = level * rowHeightPx
+    return side === 'above'
+        ? { left: x, bottom: offset, paddingBottom: CONNECTOR_MIN_PX }
+        : { left: x, top: offset, paddingTop: CONNECTOR_MIN_PX }
+}
+
+export const PRIVATE_UNDER_TESTS = { wrapperStyle }

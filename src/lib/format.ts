@@ -85,6 +85,12 @@ export function formatEntryDate(
     return `${start} ${EN_DASH} ${end}`
 }
 
+/** Accessible name of an entry's card or bar: 'Oktoberrevolution, 7. Nov. 1917, Beitrag'. */
+export function entryLabel(entry: Entry): string {
+    const label = `${entry.title}, ${formatEntryDate(entry, 'short')}`
+    return entry.post ? `${label}, Beitrag` : label
+}
+
 /** Year label for the axis, e.g. '1917'. */
 export function formatYear(t: number, locale = 'de'): string {
     return plainSpaces(dtf(locale, { year: 'numeric' }).format(t))

@@ -1,7 +1,9 @@
 // Lane layout for time spans (wars, reigns, eras), in px along the x axis.
 // Pure geometry; the timeline component converts dates to px and draws the bars.
 
-export interface SpanInput {
+import { compareIds } from '@/lib/order'
+
+export type SpanInput = {
     id: string
     /** True horizontal extent in px at the current zoom (x1 ≥ x0). */
     x0: number
@@ -12,7 +14,7 @@ export interface SpanInput {
     labelWidthPx?: number
 }
 
-export interface SpanLayoutOptions {
+export type SpanLayoutOptions = {
     /** Minimum drawn width, default 64 (4rem at 16px). */
     minWidthPx?: number
     /** Horizontal gap between bars in one lane, default 4. */
@@ -29,7 +31,7 @@ export interface SpanLayoutOptions {
     maxX?: number
 }
 
-export interface SpanBar {
+export type SpanBar = {
     id: string
     /**
      * Drawn extent, containing [trueX0, trueX1]. A bar shorter than minWidthPx
@@ -50,7 +52,7 @@ export interface SpanBar {
     labelFits: boolean
 }
 
-export interface SpanLayout {
+export type SpanLayout = {
     bars: SpanBar[]
     laneCount: number
 }
@@ -58,10 +60,6 @@ export interface SpanLayout {
 export const DEFAULT_MIN_WIDTH_PX = 64
 export const DEFAULT_GAP_PX = 4
 export const DEFAULT_LABEL_PADDING_PX = 12
-
-function compareIds(a: string, b: string): number {
-    return a < b ? -1 : a > b ? 1 : 0
-}
 
 /**
  * Assigns each span to a lane so that no two bars in one lane overlap.
@@ -98,40 +96,16 @@ export function layoutSpans(
     )
 
     const lanes: SpanBar[][] = []
-    const bars: SpanBar[] = []
-
     for (const span of order) {
         const trueX0 = span.x0
         const trueX1 = Math.max(trueX0, span.x1)
-        const extended = trueX1 - trueX0 < minWidth
-        let x0 = trueX0
-        let x1 = trueX1
-        if (extended) {
-            x1 = trueX0 + minWidth
-            // Epsilon: float noise at the boundary must not shift the bar left.
-            if (x1 > maxX + 1e-6) {
-                x1 = Math.max(maxX, trueX1)
-                x0 = x1 - minWidth
-            }
-        }
-
-        let lane = lanes.findIndex((laneBars) =>
-            laneBars.every(
-                (other) => x0 >= other.x1 + gap || other.x0 >= x1 + gap
-            )
-        )
-        let laneBars = lanes[lane]
-        if (!laneBars) {
-            lane = lanes.length
-            laneBars = []
-            lanes.push(laneBars)
-        }
-
+        const { x0, x1, extended } = drawnExtent(trueX0, trueX1, minWidth, maxX)
+        const lane = firstFreeLane(lanes, x0, x1, gap)
         const labelFits =
             span.labelWidthPx !== undefined &&
             span.labelWidthPx + labelPadding <= x1 - x0
-
-        const bar: SpanBar = {
+        const laneBars = (lanes[lane] ??= [])
+        laneBars.push({
             id: span.id,
             x0,
             x1,
@@ -140,13 +114,45 @@ export function layoutSpans(
             extended,
             lane,
             labelFits,
-        }
-        laneBars.push(bar)
-        bars.push(bar)
+        })
     }
 
-    bars.sort(
-        (a, b) => a.lane - b.lane || a.x0 - b.x0 || compareIds(a.id, b.id)
-    )
+    const bars = lanes
+        .flat()
+        .sort(
+            (a, b) => a.lane - b.lane || a.x0 - b.x0 || compareIds(a.id, b.id)
+        )
     return { bars, laneCount: lanes.length }
 }
+
+type DrawnExtent = { x0: number; x1: number; extended: boolean }
+
+function drawnExtent(
+    trueX0: number,
+    trueX1: number,
+    minWidthPx: number,
+    maxX: number
+): DrawnExtent {
+    const extended = trueX1 - trueX0 < minWidthPx
+    if (!extended) return { x0: trueX0, x1: trueX1, extended }
+    const rightX1 = trueX0 + minWidthPx
+    // Epsilon: float noise at the boundary must not shift the bar left.
+    if (rightX1 <= maxX + 1e-6)
+        return { x0: trueX0, x1: rightX1, extended: true }
+    const x1 = Math.max(maxX, trueX1)
+    return { x0: x1 - minWidthPx, x1, extended: true }
+}
+
+function firstFreeLane(
+    lanes: readonly (readonly SpanBar[])[],
+    x0: number,
+    x1: number,
+    gap: number
+): number {
+    const lane = lanes.findIndex((laneBars) =>
+        laneBars.every((other) => x0 >= other.x1 + gap || other.x0 >= x1 + gap)
+    )
+    return lane === -1 ? lanes.length : lane
+}
+
+export const PRIVATE_UNDER_TESTS = { drawnExtent, firstFreeLane }

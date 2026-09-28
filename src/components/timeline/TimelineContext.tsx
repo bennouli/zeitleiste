@@ -3,7 +3,7 @@
 import type { Bounds, Viewport } from '@/lib/viewport'
 import { createContext, useContext } from 'react'
 
-export interface TimelineContextValue {
+export type TimelineContextValue = {
     /** Visible time range (ms UTC). */
     viewport: Viewport
     /** Measured container width in px; 0 before the first measurement. */
@@ -15,7 +15,6 @@ export interface TimelineContextValue {
     msPerPx: number
     /** x in px relative to the container's left edge. */
     timeToX: (t: number) => number
-    xToTime: (x: number) => number
     /** True while a drag/pinch, momentum or zoom animation runs. */
     isGesturing: boolean
     collapsed: boolean

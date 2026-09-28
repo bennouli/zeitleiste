@@ -1,3 +1,5 @@
+import { formatDay, formatMonth, formatYear } from '@/lib/format'
+import { MS_PER_DAY } from '@/lib/time'
 import {
     utcDay,
     utcMonth,
@@ -20,7 +22,7 @@ export type TickUnit =
     | 'week'
     | 'day'
 
-export interface Tick {
+export type Tick = {
     /** ms UTC */
     t: number
     /** Label to draw, e.g. '1900', '1917', 'Nov. 1917', 'Nov.', '7. Nov.' */
@@ -29,7 +31,7 @@ export interface Tick {
     major: boolean
 }
 
-export interface TicksOptions {
+export type TicksOptions = {
     /**
      * Minimum horizontal distance between adjacent labels (tick positions) in px, default 72.
      * Rule: adjacent tick positions must be at least
@@ -43,7 +45,7 @@ export interface TicksOptions {
     locale?: string
 }
 
-export interface TickResult {
+export type TickResult = {
     unit: TickUnit
     ticks: Tick[]
 }
@@ -51,13 +53,12 @@ export interface TickResult {
 /** Free space kept between the edges of two neighbouring labels, in px. */
 export const LABEL_PADDING_PX = 8
 
-const DAY_MS = 86_400_000
 /** Days of the month that carry a tick at 'week' steps; keeps month starts on the grid. */
 const WEEK_DAYS = new Set([1, 8, 15, 22])
 
 type LabelMode = 'long' | 'short'
 
-interface Candidate {
+type Candidate = {
     unit: TickUnit
     interval: TimeInterval
     /** Lower bound of the distance between two ticks, used to skip hopeless units cheaply. */
@@ -72,7 +73,7 @@ function months(n: number): TimeInterval {
     return (utcMonth as CountableTimeInterval).every(n) as TimeInterval
 }
 
-const YEAR_MS = 365 * DAY_MS
+const YEAR_MS = 365 * MS_PER_DAY
 
 const CENTURY: Candidate = {
     unit: 'century',
@@ -83,42 +84,47 @@ const CENTURY: Candidate = {
 
 /** Finest first; for month-based units the long label form is tried before the short one. */
 const CANDIDATES: Candidate[] = [
-    { unit: 'day', interval: utcDay, minStepMs: DAY_MS, mode: 'long' },
+    { unit: 'day', interval: utcDay, minStepMs: MS_PER_DAY, mode: 'long' },
     {
         unit: 'week',
         interval: utcDay.filter((d) => WEEK_DAYS.has(d.getUTCDate())),
-        minStepMs: 7 * DAY_MS,
+        minStepMs: 7 * MS_PER_DAY,
         mode: 'long',
     },
-    { unit: 'month', interval: utcMonth, minStepMs: 28 * DAY_MS, mode: 'long' },
     {
         unit: 'month',
         interval: utcMonth,
-        minStepMs: 28 * DAY_MS,
+        minStepMs: 28 * MS_PER_DAY,
+        mode: 'long',
+    },
+    {
+        unit: 'month',
+        interval: utcMonth,
+        minStepMs: 28 * MS_PER_DAY,
         mode: 'short',
     },
     {
         unit: 'quarter',
         interval: months(3),
-        minStepMs: 89 * DAY_MS,
+        minStepMs: 89 * MS_PER_DAY,
         mode: 'long',
     },
     {
         unit: 'quarter',
         interval: months(3),
-        minStepMs: 89 * DAY_MS,
+        minStepMs: 89 * MS_PER_DAY,
         mode: 'short',
     },
     {
         unit: 'half-year',
         interval: months(6),
-        minStepMs: 181 * DAY_MS,
+        minStepMs: 181 * MS_PER_DAY,
         mode: 'long',
     },
     {
         unit: 'half-year',
         interval: months(6),
-        minStepMs: 181 * DAY_MS,
+        minStepMs: 181 * MS_PER_DAY,
         mode: 'short',
     },
     { unit: 'year', interval: years(1), minStepMs: YEAR_MS, mode: 'long' },
@@ -155,36 +161,6 @@ const CANDIDATES: Candidate[] = [
     CENTURY,
 ]
 
-const formatterCache = new Map<string, Intl.DateTimeFormat>()
-
-function formatter(
-    locale: string,
-    opts: Intl.DateTimeFormatOptions
-): Intl.DateTimeFormat {
-    const key = locale + JSON.stringify(opts)
-    let f = formatterCache.get(key)
-    if (!f) {
-        f = new Intl.DateTimeFormat(locale, { timeZone: 'UTC', ...opts })
-        formatterCache.set(key, f)
-    }
-    return f
-}
-
-const fmtYear = (l: string, t: number) =>
-    formatter(l, { year: 'numeric' }).format(t)
-const fmtMonthYear = (l: string, t: number) =>
-    formatter(l, { month: 'short', year: 'numeric' }).format(t)
-const fmtDayMonth = (l: string, t: number) =>
-    formatter(l, { day: 'numeric', month: 'short' }).format(t)
-/** Month name in its format (not standalone) form, e.g. 'Nov.' rather than 'Nov'. */
-function fmtMonth(l: string, t: number): string {
-    const parts = formatter(l, {
-        month: 'short',
-        year: 'numeric',
-    }).formatToParts(t)
-    return parts.find((p) => p.type === 'month')?.value ?? fmtMonthYear(l, t)
-}
-
 function isMajor(unit: TickUnit, d: Date): boolean {
     switch (unit) {
         case 'century':
@@ -212,17 +188,17 @@ function labelFor(c: Candidate, d: Date, locale: string): string {
         case 'half-year':
         case 'quarter':
         case 'month':
-            if (c.mode === 'long') return fmtMonthYear(locale, t)
+            if (c.mode === 'long') return formatMonth(t, true, locale)
             return d.getUTCMonth() === 0
-                ? fmtYear(locale, t)
-                : fmtMonth(locale, t)
+                ? formatYear(t, locale)
+                : formatMonth(t, false, locale)
         case 'week':
         case 'day':
             return d.getUTCDate() === 1
-                ? fmtMonthYear(locale, t)
-                : fmtDayMonth(locale, t)
+                ? formatMonth(t, true, locale)
+                : formatDay(t, locale)
         default:
-            return fmtYear(locale, t)
+            return formatYear(t, locale)
     }
 }
 
@@ -251,24 +227,15 @@ function fits(
     minGap: number,
     charWidth: number
 ): boolean {
-    let a: Tick | undefined
-    for (const b of ticks) {
-        if (!a) {
-            a = b
-            continue
-        }
-        const dx =
-            timeToX(start, end, widthPx, b.t) -
-            timeToX(start, end, widthPx, a.t)
-        const needed = Math.max(
+    const toX = (t: number) => timeToX(start, end, widthPx, t)
+    const labelsCollide = (a: Tick, b: Tick) =>
+        toX(b.t) - toX(a.t) <
+        Math.max(
             minGap,
             ((a.label.length + b.label.length) * charWidth) / 2 +
                 LABEL_PADDING_PX
         )
-        if (dx < needed) return false
-        a = b
-    }
-    return true
+    return ticks.every((b, i) => i === 0 || !labelsCollide(ticks[i - 1]!, b))
 }
 
 function positiveOr(v: number | undefined, fallback: number): number {
@@ -307,8 +274,8 @@ export function ticks(
     return { unit: fallback.unit, ticks: build(fallback, start, end, locale) }
 }
 
-/** Map a time to x within [0, widthPx] for the given range (linear). Exported for tests and callers. */
-export function timeToX(
+/** Map a time to x within [0, widthPx] for the given range (linear). */
+function timeToX(
     start: number,
     end: number,
     widthPx: number,
@@ -317,3 +284,5 @@ export function timeToX(
     if (end === start) return 0
     return ((t - start) / (end - start)) * widthPx
 }
+
+export const PRIVATE_UNDER_TESTS = { timeToX }
