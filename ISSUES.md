@@ -22,15 +22,15 @@ A short opening paragraph without a heading: what should become possible, or wha
 
 Then these sections, in this order. Leave out any section that has nothing to say.
 
-| Section                  | Content                                                        | When         |
-| ------------------------ | -------------------------------------------------------------- | ------------ |
-| `## Expected`            | what should happen instead                                     | bugs         |
-| `## Current`             | what happens today, and how to reproduce it                    | bugs         |
-| `## Done`                | what exists once this is finished: the scope                   | always       |
-| `## Not done`            | what is deliberately left out                                  | where needed |
-| `## Touched`             | the screens, routes, files or modules involved, known pitfalls | always       |
+| Section                  | Content                                                        | When           |
+| ------------------------ | -------------------------------------------------------------- | -------------- |
+| `## Expected`            | what should happen instead                                     | bugs           |
+| `## Current`             | what happens today, and how to reproduce it                    | bugs           |
+| `## Done`                | what exists once this is finished: the scope                   | always         |
+| `## Not done`            | what is deliberately left out                                  | where needed   |
+| `## Touched`             | the screens, routes, files or modules involved, known pitfalls | always         |
 | `## Open decisions`      | what has to be answered before work can start                  | until answered |
-| `## Acceptance criteria` | checkboxes, one checkable result each ("works" isn't one)      | always       |
+| `## Acceptance criteria` | checkboxes, one checkable result each ("works" isn't one)      | always         |
 
 - **An issue stands on its own.** Nobody should have to read other issues to understand it.
 - **The issue is the spec.** Work is built directly from it. It is ready when it has `Done`, `Touched` and `Acceptance criteria`, and no

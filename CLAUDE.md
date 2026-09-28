@@ -12,8 +12,8 @@ with, and teardown.
 
 - **`worktree`** — creating, seeding or tearing down an isolated worktree. Required before implementing an issue; a fresh worktree has no
   `.env` and no `node_modules`, and both must be provided before anything is run.
-- **`issues`** — writing, retitling, grouping, triaging or judging a GitHub issue. Rules live in `./ISSUES.md`.
-  `## Touched` and `## Acceptance criteria` are what gets built and tested.
+- **`issues`** — writing, retitling, grouping, triaging or judging a GitHub issue. Rules live in `./ISSUES.md`. `## Touched` and
+  `## Acceptance criteria` are what gets built and tested.
 - **`pr`** — opening a pull request or rewriting its description: the checks before it, the description's shape, and the Definition of Done.
   Ends by running `pr-self-review`; the owner's review follows.
 - **`pr-self-review`** — reviewing a pull request or a branch before merge, including one you just wrote yourself. The standard: a deviation

@@ -41,8 +41,8 @@ The main checkout's dev server owns port 3000. Next refuses a second `next dev` 
 server on another port: `pnpm build && pnpm start -p 3100`. `pnpm e2e` does exactly that through its `webServer`; a dev server on 3100 is
 not the fallback, because it collides with `pnpm e2e` reusing that port.
 
-The database is shared with the main checkout unless `.env.local` points at another Neon branch. A migration run from a worktree changes
-the owner's database too — say so before running one.
+The database is shared with the main checkout unless `.env.local` points at another Neon branch. A migration run from a worktree changes the
+owner's database too — say so before running one.
 
 ## Subagents
 

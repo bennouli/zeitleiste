@@ -68,11 +68,11 @@ first.
 
 `staging` is the trunk (AGENTS.md § Branches). Beyond that:
 
-| Artifact                                | Branch                                         |
-| --------------------------------------- | ---------------------------------------------- |
-| Code                                    | a branch off `staging`, PR against `staging`   |
-| Docs only (`AGENTS.md`, `ISSUES.md`, skills) | directly to `staging`, no PR              |
-| A hotfix                                | `main`, and only when the owner says it is one |
+| Artifact                                     | Branch                                         |
+| -------------------------------------------- | ---------------------------------------------- |
+| Code                                         | a branch off `staging`, PR against `staging`   |
+| Docs only (`AGENTS.md`, `ISSUES.md`, skills) | directly to `staging`, no PR                   |
+| A hotfix                                     | `main`, and only when the owner says it is one |
 
 Committing onto a branch the working tree is not on is legitimate and sometimes necessary. Do it with a temporary index and
 `commit-tree`/`update-ref` rather than switching branches — a `git checkout` in a shared checkout yanks files out from under the owner and

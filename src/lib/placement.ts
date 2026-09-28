@@ -1,40 +1,40 @@
 export type Side = 'above' | 'below'
 
 export interface Slot {
-  side: Side
-  /** 0 = nearest the axis */
-  level: number
+    side: Side
+    /** 0 = nearest the axis */
+    level: number
 }
 
 export interface PlaceableItem {
-  id: string
-  /** Horizontal extent of the card in px (already includes the card's width, i.e. x1 ≥ x0 + cardWidth). */
-  x0: number
-  x1: number
-  /** Higher gets placed first and therefore its preferred slot. */
-  importance: number
-  /** Ordering tiebreak, e.g. the anchor time; lower first. */
-  order: number
+    id: string
+    /** Horizontal extent of the card in px (already includes the card's width, i.e. x1 ≥ x0 + cardWidth). */
+    x0: number
+    x1: number
+    /** Higher gets placed first and therefore its preferred slot. */
+    importance: number
+    /** Ordering tiebreak, e.g. the anchor time; lower first. */
+    order: number
 }
 
 export interface PlacementOptions {
-  /** Minimum horizontal gap between two cards in the same row, default 8. */
-  gapPx?: number
-  /** Rows per side, default 2 (so 4 rows total). */
-  maxLevels?: number
-  /** Intervals already taken before any item is placed, e.g. the rows a group stack covers. */
-  blocked?: readonly BlockedInterval[]
+    /** Minimum horizontal gap between two cards in the same row, default 8. */
+    gapPx?: number
+    /** Rows per side, default 2 (so 4 rows total). */
+    maxLevels?: number
+    /** Intervals already taken before any item is placed, e.g. the rows a group stack covers. */
+    blocked?: readonly BlockedInterval[]
 }
 
 export interface BlockedInterval extends Slot {
-  x0: number
-  x1: number
+    x0: number
+    x1: number
 }
 
 export interface Placement {
-  slots: Map<string, Slot>
-  /** Items that fit nowhere; the caller groups them (issue #9). */
-  overflow: string[]
+    slots: Map<string, Slot>
+    /** Items that fit nowhere; the caller groups them (issue #9). */
+    overflow: string[]
 }
 
 export const DEFAULT_GAP_PX = 8
@@ -46,76 +46,77 @@ const MAX_LEVELS_CAP = 64
  * they are sorted by x1 as well, which makes the binary search valid.
  */
 class Row {
-  private readonly starts: number[] = []
-  private readonly ends: number[] = []
-  private readonly gap: number
+    private readonly starts: number[] = []
+    private readonly ends: number[] = []
+    private readonly gap: number
 
-  constructor(gap: number) {
-    this.gap = gap
-  }
-
-  /** Index of the first interval whose end + gap > x0. */
-  private firstReaching(x0: number): number {
-    let lo = 0
-    let hi = this.ends.length
-    while (lo < hi) {
-      const mid = (lo + hi) >>> 1
-      if (this.ends[mid]! + this.gap > x0) hi = mid
-      else lo = mid + 1
+    constructor(gap: number) {
+        this.gap = gap
     }
-    return lo
-  }
 
-  /** Free when every interval is at least `gap` away; touching at exactly `gap` is allowed. */
-  isFree(x0: number, x1: number): boolean {
-    const i = this.firstReaching(x0)
-    const start = this.starts[i]
-    return start === undefined || start >= x1 + this.gap
-  }
-
-  /** Caller must have checked isFree. */
-  insert(x0: number, x1: number): void {
-    const i = this.firstReaching(x0)
-    this.starts.splice(i, 0, x0)
-    this.ends.splice(i, 0, x1)
-  }
-
-  /** Reserve [x0, x1], merging with anything it touches so the row stays disjoint. */
-  block(x0: number, x1: number): void {
-    const i = this.firstReaching(x0)
-    let j = i
-    while (j < this.starts.length && this.starts[j]! < x1 + this.gap) {
-      x0 = Math.min(x0, this.starts[j]!)
-      x1 = Math.max(x1, this.ends[j]!)
-      j++
+    /** Index of the first interval whose end + gap > x0. */
+    private firstReaching(x0: number): number {
+        let lo = 0
+        let hi = this.ends.length
+        while (lo < hi) {
+            const mid = (lo + hi) >>> 1
+            if (this.ends[mid]! + this.gap > x0) hi = mid
+            else lo = mid + 1
+        }
+        return lo
     }
-    this.starts.splice(i, j - i, x0)
-    this.ends.splice(i, j - i, x1)
-  }
+
+    /** Free when every interval is at least `gap` away; touching at exactly `gap` is allowed. */
+    isFree(x0: number, x1: number): boolean {
+        const i = this.firstReaching(x0)
+        const start = this.starts[i]
+        return start === undefined || start >= x1 + this.gap
+    }
+
+    /** Caller must have checked isFree. */
+    insert(x0: number, x1: number): void {
+        const i = this.firstReaching(x0)
+        this.starts.splice(i, 0, x0)
+        this.ends.splice(i, 0, x1)
+    }
+
+    /** Reserve [x0, x1], merging with anything it touches so the row stays disjoint. */
+    block(x0: number, x1: number): void {
+        const i = this.firstReaching(x0)
+        let j = i
+        while (j < this.starts.length && this.starts[j]! < x1 + this.gap) {
+            x0 = Math.min(x0, this.starts[j]!)
+            x1 = Math.max(x1, this.ends[j]!)
+            j++
+        }
+        this.starts.splice(i, j - i, x0)
+        this.ends.splice(i, j - i, x1)
+    }
 }
 
 function compareItems(a: PlaceableItem, b: PlaceableItem): number {
-  if (a.importance !== b.importance) return b.importance - a.importance
-  if (a.order !== b.order) return a.order - b.order
-  return a.id < b.id ? -1 : a.id > b.id ? 1 : 0
+    if (a.importance !== b.importance) return b.importance - a.importance
+    if (a.order !== b.order) return a.order - b.order
+    return a.id < b.id ? -1 : a.id > b.id ? 1 : 0
 }
 
 /** Try order: above 0, below 0, above 1, below 1, … */
 function candidateSlots(maxLevels: number): Slot[] {
-  const out: Slot[] = []
-  for (let level = 0; level < maxLevels; level++) {
-    out.push({ side: 'above', level }, { side: 'below', level })
-  }
-  return out
+    const out: Slot[] = []
+    for (let level = 0; level < maxLevels; level++) {
+        out.push({ side: 'above', level }, { side: 'below', level })
+    }
+    return out
 }
 
 /** Hysteresis: every row on the previous side first (nearest the axis first), then the other side. */
 function candidateSlotsKeepingSide(maxLevels: number, side: Side): Slot[] {
-  const other: Side = side === 'above' ? 'below' : 'above'
-  const out: Slot[] = []
-  for (let level = 0; level < maxLevels; level++) out.push({ side, level })
-  for (let level = 0; level < maxLevels; level++) out.push({ side: other, level })
-  return out
+    const other: Side = side === 'above' ? 'below' : 'above'
+    const out: Slot[] = []
+    for (let level = 0; level < maxLevels; level++) out.push({ side, level })
+    for (let level = 0; level < maxLevels; level++)
+        out.push({ side: other, level })
+    return out
 }
 
 /**
@@ -123,63 +124,71 @@ function candidateSlotsKeepingSide(maxLevels: number, side: Side): Slot[] {
  * first tries the other rows on its previous side before changing sides.
  */
 export function placeItems(
-  items: readonly PlaceableItem[],
-  previous: ReadonlyMap<string, Slot> | null,
-  options: PlacementOptions = {},
+    items: readonly PlaceableItem[],
+    previous: ReadonlyMap<string, Slot> | null,
+    options: PlacementOptions = {}
 ): Placement {
-  const gap = Math.max(0, options.gapPx ?? DEFAULT_GAP_PX)
-  const maxLevels = Math.min(MAX_LEVELS_CAP, Math.max(0, Math.floor(options.maxLevels ?? DEFAULT_MAX_LEVELS)))
-  const rows: Record<Side, Row[]> = { above: [], below: [] }
-  for (let level = 0; level < maxLevels; level++) {
-    rows.above.push(new Row(gap))
-    rows.below.push(new Row(gap))
-  }
-  const candidates = candidateSlots(maxLevels)
-  for (const b of options.blocked ?? []) {
-    const x0 = Math.min(b.x0, b.x1)
-    const x1 = Math.max(b.x0, b.x1)
-    if (Number.isFinite(x0) && Number.isFinite(x1)) rows[b.side]?.[b.level]?.block(x0, x1)
-  }
-
-  const slots = new Map<string, Slot>()
-  const overflow: string[] = []
-  const seen = new Set<string>()
-
-  for (const item of [...items].sort(compareItems)) {
-    const x0 = Math.min(item.x0, item.x1)
-    const x1 = Math.max(item.x0, item.x1)
-    // Duplicate ids and non-finite extents cannot be placed safely.
-    if (seen.has(item.id) || !Number.isFinite(x0) || !Number.isFinite(x1)) {
-      overflow.push(item.id)
-      continue
+    const gap = Math.max(0, options.gapPx ?? DEFAULT_GAP_PX)
+    const maxLevels = Math.min(
+        MAX_LEVELS_CAP,
+        Math.max(0, Math.floor(options.maxLevels ?? DEFAULT_MAX_LEVELS))
+    )
+    const rows: Record<Side, Row[]> = { above: [], below: [] }
+    for (let level = 0; level < maxLevels; level++) {
+        rows.above.push(new Row(gap))
+        rows.below.push(new Row(gap))
     }
-    seen.add(item.id)
-
-    const fits = (slot: Slot) => rows[slot.side]?.[slot.level]?.isFree(x0, x1) ?? false
-    const prev = previous?.get(item.id)
-    const keepPrev = prev !== undefined && fits(prev)
-    const found = keepPrev
-      ? prev
-      : (prev && rows[prev.side] ? candidateSlotsKeepingSide(maxLevels, prev.side) : candidates).find(fits)
-    const slot = found && { side: found.side, level: found.level }
-
-    const row = slot && rows[slot.side][slot.level]
-    if (slot && row) {
-      row.insert(x0, x1)
-      slots.set(item.id, slot)
-    } else {
-      overflow.push(item.id)
+    const candidates = candidateSlots(maxLevels)
+    for (const b of options.blocked ?? []) {
+        const x0 = Math.min(b.x0, b.x1)
+        const x1 = Math.max(b.x0, b.x1)
+        if (Number.isFinite(x0) && Number.isFinite(x1))
+            rows[b.side]?.[b.level]?.block(x0, x1)
     }
-  }
 
-  return { slots, overflow }
+    const slots = new Map<string, Slot>()
+    const overflow: string[] = []
+    const seen = new Set<string>()
+
+    for (const item of [...items].sort(compareItems)) {
+        const x0 = Math.min(item.x0, item.x1)
+        const x1 = Math.max(item.x0, item.x1)
+        // Duplicate ids and non-finite extents cannot be placed safely.
+        if (seen.has(item.id) || !Number.isFinite(x0) || !Number.isFinite(x1)) {
+            overflow.push(item.id)
+            continue
+        }
+        seen.add(item.id)
+
+        const fits = (slot: Slot) =>
+            rows[slot.side]?.[slot.level]?.isFree(x0, x1) ?? false
+        const prev = previous?.get(item.id)
+        const keepPrev = prev !== undefined && fits(prev)
+        const found = keepPrev
+            ? prev
+            : (prev && rows[prev.side]
+                  ? candidateSlotsKeepingSide(maxLevels, prev.side)
+                  : candidates
+              ).find(fits)
+        const slot = found && { side: found.side, level: found.level }
+
+        const row = slot && rows[slot.side][slot.level]
+        if (slot && row) {
+            row.insert(x0, x1)
+            slots.set(item.id, slot)
+        } else {
+            overflow.push(item.id)
+        }
+    }
+
+    return { slots, overflow }
 }
 
 /** Number of rows actually used per side, for computing the band height. */
 export function usedLevels(p: Placement): { above: number; below: number } {
-  const used = { above: 0, below: 0 }
-  for (const slot of p.slots.values()) {
-    used[slot.side] = Math.max(used[slot.side], slot.level + 1)
-  }
-  return used
+    const used = { above: 0, below: 0 }
+    for (const slot of p.slots.values()) {
+        used[slot.side] = Math.max(used[slot.side], slot.level + 1)
+    }
+    return used
 }

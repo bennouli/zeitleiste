@@ -15,8 +15,8 @@ description:
 - Anything with visual impact was looked at in a real browser: headless Chromium (`~/.cache/ms-playwright`) at 1920 px and a phone width,
   screenshots kept. A green suite is never evidence for layout, colour, motion or gesture.
 - Each of the issue's `## Acceptance criteria` holds, or the description says why not.
-- Nothing in the diff uses a raw colour, a primitive token or Tailwind's default palette — `pnpm check:tokens` is the gate, the review is the
-  backstop.
+- Nothing in the diff uses a raw colour, a primitive token or Tailwind's default palette — `pnpm check:tokens` is the gate, the review is
+  the backstop.
 
 ## Open it
 

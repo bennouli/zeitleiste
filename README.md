@@ -15,5 +15,5 @@ Next.js with Payload CMS, Postgres, Tailwind CSS, hosted on Vercel. Email goes o
 
 The code is licensed under the [MIT License](LICENSE.md).
 
-The texts of the timeline entries and posts (titles, summaries, articles and the sample data in this repository) are
-© 2026 Benno Selig, all rights reserved. They are not covered by the MIT License.
+The texts of the timeline entries and posts (titles, summaries, articles and the sample data in this repository) are © 2026 Benno Selig, all
+rights reserved. They are not covered by the MIT License.

@@ -49,8 +49,8 @@ git subtree pull --prefix=repos/effect https://github.com/Effect-TS/effect.git m
 
 # Code Style
 
-`@/` aliases `src/`. Pure logic lives in `src/lib` with its test next to it (`x.test.ts`); components in `src/components` with
-`X.test.tsx` beside them.
+`@/` aliases `src/`. Pure logic lives in `src/lib` with its test next to it (`x.test.ts`); components in `src/components` with `X.test.tsx`
+beside them.
 
 - Declarative style generally preferred.
 - Run prettier after any coding task (the `commit` skill covers the pre-commit run).
@@ -76,8 +76,9 @@ git subtree pull --prefix=repos/effect https://github.com/Effect-TS/effect.git m
 
 ## Tests
 
-- Test your code against the library, never the library itself. Assert on what your code hands over and decides; if only changing the dependency
-  can fail the test, it tests them. Library health diagnostics (`divergences`, `R-hat`, `ESS`) are recorded and acted on, never asserted.
+- Test your code against the library, never the library itself. Assert on what your code hands over and decides; if only changing the
+  dependency can fail the test, it tests them. Library health diagnostics (`divergences`, `R-hat`, `ESS`) are recorded and acted on, never
+  asserted.
 - A test that can never become red, is useless
 - Every fixture, config, stub and builder call fed to the call under test gets its own named `const` first; the call under test reads as the
   call and its arguments. Data changes and interface changes then land in separate diff hunks.
@@ -94,7 +95,7 @@ Rules of thumb, none binding.
 **Schematize where a value leaves TypeScript's reach.** A value needs a Zod schema and a real `parse` at the crossing when it arrives from a
 caller this code does not control, crosses an injection seam, leaves the language (argv, filesystem, wire, WebAssembly, native), or comes
 back from a parse that cannot fail loudly (`Number('')` is `0`). String interpolation is the usual tell: `` `seed=${value}` `` turns
-`undefined` into `seed=undefined`. A value produced and consumed inside this codebase needs no schema; the sample entries, a CMS
-response and a route param do.
+`undefined` into `seed=undefined`. A value produced and consumed inside this codebase needs no schema; the sample entries, a CMS response
+and a route param do.
 
 Derive the type from the schema; use `z.input` for what a caller supplies — `z.infer` has already applied every `.default()`.

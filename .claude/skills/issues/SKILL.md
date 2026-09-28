@@ -34,8 +34,8 @@ drei oder vier.
 passenden Abschnitt, die Frage verschwindet.
 
 **Die Gruppe.** Zusammengehörige Issues sind Sub-Issues eines Parents, dessen Titel das gemeinsame Ergebnis nennt. Ein Parent trägt keine
-eigene Arbeit; er schließt, wenn seine Sub-Issues geschlossen sind. Sub-Issues verknüpft man über die GraphQL-Mutation `addSubIssue`
-(Header `GraphQL-Features: sub_issues`), nicht über einen Verweis im Text.
+eigene Arbeit; er schließt, wenn seine Sub-Issues geschlossen sind. Sub-Issues verknüpft man über die GraphQL-Mutation `addSubIssue` (Header
+`GraphQL-Features: sub_issues`), nicht über einen Verweis im Text.
 
 ## Beim Lesen
 

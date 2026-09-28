@@ -51,8 +51,8 @@ Working only from what the diff actually contains:
     Use `merge-base`, not `staging...`, on a PR whose branch is behind — otherwise unrelated commits land in your diff.
 
 3. **Read the PR description first.** It is the only place a deviation can be justified, so a thin description on a large change is itself a
-   smell. `## Verification` is what the author claims to have run (Dimension 6); open questions the author routed to a human go into your
-   ❓ section verbatim.
+   smell. `## Verification` is what the author claims to have run (Dimension 6); open questions the author routed to a human go into your ❓
+   section verbatim.
 4. Read the changed **files**, not just the hunks — a hunk hides that the helper you're about to say is missing already exists twenty lines
    up.
 5. Run the detections below, **scoped to the diff**, never the whole tree. Every one judges _added_ lines (`^\+`); the standing debt is not
@@ -64,9 +64,8 @@ Working only from what the diff actually contains:
 ## Dimension 1 — Design tokens (CRITICAL)
 
 `src/app/globals.css` holds two layers: primitives (`--gray-*`, `--red-*`, `--blue-*`, `--violet-*`, spacing, radii) and semantic tokens
-(`surface`, `surface-raised`, `fg`, `fg-muted`, `border`, `accent`, `accent-fg`, `russia`, `west`, `both`, `focus`). Components use
-semantic tokens only; Tailwind's default palette is disabled. `pnpm check:tokens` is the gate; this review is the backstop for what it
-cannot see.
+(`surface`, `surface-raised`, `fg`, `fg-muted`, `border`, `accent`, `accent-fg`, `russia`, `west`, `both`, `focus`). Components use semantic
+tokens only; Tailwind's default palette is disabled. `pnpm check:tokens` is the gate; this review is the backstop for what it cannot see.
 
 ```bash
 git diff $R -- 'src' ':!src/app/globals.css' ':!*.test.*' \
@@ -149,11 +148,11 @@ git diff $R -- 'src' ':!*.test.*' ':!src/lib/format.ts' | grep -nE "^\+.*(title|
 
 Vitest runs unit tests (`pnpm test`); Playwright runs the browser checks (`pnpm e2e`: axe on `/` and a post page, the keyboard walk).
 
-| What changed                       | Where it belongs                                |
-| ---------------------------------- | ----------------------------------------------- |
-| Pure logic, geometry, formatting   | `x.test.ts` next to it in `src/lib`             |
-| A component's behaviour            | `X.test.tsx` beside it (Testing Library, axe)   |
-| Keyboard flow, focus, page routing | `e2e/*.spec.ts`                                 |
+| What changed                       | Where it belongs                              |
+| ---------------------------------- | --------------------------------------------- |
+| Pure logic, geometry, formatting   | `x.test.ts` next to it in `src/lib`           |
+| A component's behaviour            | `X.test.tsx` beside it (Testing Library, axe) |
+| Keyboard flow, focus, page routing | `e2e/*.spec.ts`                               |
 
 Because nothing runs the suite for you, the PR's `## Verification` section is the only evidence there is. A PR that claims a result is
 **awaiting confirmation**, not verified — say which commands were claimed and which are missing; never upgrade a claim to a pass.
@@ -190,7 +189,7 @@ Check these **after** forming your findings:
 - Prettier ran over every touched file.
 
 ```bash
-git diff $R -- 'src' ':!*.test.*' | grep -nE '^\+\s*//' 
+git diff $R -- 'src' ':!*.test.*' | grep -nE '^\+\s*//'
 ```
 
 Read each added comment and ask whether a name would replace it.
@@ -203,18 +202,23 @@ Read each added comment and ask whether a name would replace it.
 ## Verdict: <blocks merge | needs owner decisions | ready for owner review>
 
 ### 🛑 Blocking
+
 - <dimension> — `file:line` — <what, and the rule>
 
 ### ⚠️ Major
+
 - …
 
 ### ❓ Needs a human decision
+
 - <every open question the author routed, verbatim, plus every deviation without owner confirmation>
 
 ### Verification claimed
+
 - `<command>` — claimed <result> — not confirmed by this review
 
 ### Noted, not findings
+
 - <ambient debt the PR touched but did not add to>
 ```
 
