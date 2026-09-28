@@ -13,18 +13,16 @@ const LABEL_TOP_PX = AXIS_LINE_Y_PX + 14
 const TODAY_MARK_HEIGHT_PX = 16
 const TICK_OPTIONS = { minYearWidthForMonthsPx: 420, charWidthPx: 7.5 }
 
-/** Hairline axis up to today, short ticks with small-caps labels, and the "Heute" mark. */
+/** Hairline axis across the full width, short ticks with small-caps labels, and the "Heute" mark. */
 export function Axis() {
     const { viewport, width, today, timeToX } = useTimeline()
     const result = useMemo(
         () => ticks(viewport.start, viewport.end, width, TICK_OPTIONS),
         [viewport.start, viewport.end, width]
     )
-    const pastTicks = result.ticks.filter((tick) => tick.t <= today)
     const todayX = timeToX(today)
     const todayVisible = todayX >= -1 && todayX <= width + 1
     const todayAlign = todayAlignment(todayX, width)
-    const lineWidth = Math.min(Math.max(todayX, 0), width)
     const labelHidden = (tick: Tick) =>
         todayVisible &&
         overlapsTodayLabel(
@@ -45,11 +43,11 @@ export function Axis() {
                 className="absolute left-0 bg-fg"
                 style={{
                     top: AXIS_LINE_Y_PX,
-                    width: lineWidth,
+                    width,
                     height: AXIS_LINE_THICKNESS_PX,
                 }}
             />
-            {pastTicks.map((tick) => (
+            {result.ticks.map((tick) => (
                 <div
                     key={tick.t}
                     data-tick={tick.major ? 'major' : 'minor'}
