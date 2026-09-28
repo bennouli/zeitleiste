@@ -104,21 +104,43 @@ function compareItems(a: PlaceableItem, b: PlaceableItem): number {
 
 /** Try order: above 0, below 0, above 1, below 1, … */
 function candidateSlots(maxLevels: number): Slot[] {
-    const out: Slot[] = []
-    for (let level = 0; level < maxLevels; level++) {
-        out.push({ side: 'above', level }, { side: 'below', level })
-    }
-    return out
+    return Array.from({ length: maxLevels }, (_, level): Slot[] => [
+        { side: 'above', level },
+        { side: 'below', level },
+    ]).flat()
 }
 
 /** Hysteresis: every row on the previous side first (nearest the axis first), then the other side. */
 function candidateSlotsKeepingSide(maxLevels: number, side: Side): Slot[] {
     const other: Side = side === 'above' ? 'below' : 'above'
-    const out: Slot[] = []
-    for (let level = 0; level < maxLevels; level++) out.push({ side, level })
-    for (let level = 0; level < maxLevels; level++)
-        out.push({ side: other, level })
-    return out
+    return [side, other].flatMap((s) =>
+        Array.from({ length: maxLevels }, (_, level): Slot => ({
+            side: s,
+            level,
+        }))
+    )
+}
+
+function buildRows(
+    maxLevels: number,
+    gap: number,
+    blocked: readonly BlockedInterval[]
+): Record<Side, Row[]> {
+    const rows: Record<Side, Row[]> = {
+        above: Array.from({ length: maxLevels }, () => new Row(gap)),
+        below: Array.from({ length: maxLevels }, () => new Row(gap)),
+    }
+    for (const b of blocked) {
+        const x0 = Math.min(b.x0, b.x1)
+        const x1 = Math.max(b.x0, b.x1)
+        if (Number.isFinite(x0) && Number.isFinite(x1))
+            rows[b.side]?.[b.level]?.block(x0, x1)
+    }
+    return rows
+}
+
+function cloneSlot(slot: Slot): Slot {
+    return { side: slot.side, level: slot.level }
 }
 
 /**
@@ -135,18 +157,8 @@ export function placeItems(
         MAX_LEVELS_CAP,
         Math.max(0, Math.floor(options.maxLevels ?? DEFAULT_MAX_LEVELS))
     )
-    const rows: Record<Side, Row[]> = { above: [], below: [] }
-    for (let level = 0; level < maxLevels; level++) {
-        rows.above.push(new Row(gap))
-        rows.below.push(new Row(gap))
-    }
+    const rows = buildRows(maxLevels, gap, options.blocked ?? [])
     const candidates = candidateSlots(maxLevels)
-    for (const b of options.blocked ?? []) {
-        const x0 = Math.min(b.x0, b.x1)
-        const x1 = Math.max(b.x0, b.x1)
-        if (Number.isFinite(x0) && Number.isFinite(x1))
-            rows[b.side]?.[b.level]?.block(x0, x1)
-    }
 
     const slots = new Map<string, Slot>()
     const overflow: string[] = []
@@ -172,7 +184,7 @@ export function placeItems(
                   ? candidateSlotsKeepingSide(maxLevels, prev.side)
                   : candidates
               ).find(fits)
-        const slot = found && { side: found.side, level: found.level }
+        const slot = found && cloneSlot(found)
 
         const row = slot && rows[slot.side][slot.level]
         if (slot && row) {
@@ -195,4 +207,9 @@ function usedLevels(p: Placement): { above: number; below: number } {
     return used
 }
 
-export const PRIVATE_UNDER_TESTS = { usedLevels }
+export const PRIVATE_UNDER_TESTS = {
+    usedLevels,
+    candidateSlots,
+    candidateSlotsKeepingSide,
+    buildRows,
+}

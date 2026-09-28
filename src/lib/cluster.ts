@@ -58,19 +58,7 @@ export function isGroup(c: Cluster): c is ClusterNode {
 export function buildClusterTree(
     points: readonly ClusterPoint[]
 ): Cluster | null {
-    const seen = new Set<string>()
-    for (const p of points) {
-        if (seen.has(p.id))
-            throw new Error(`buildClusterTree: duplicate id "${p.id}"`)
-        // Node ids are `${first}..${last}`; a leaf id containing '..' could collide with one.
-        if (p.id.includes('..'))
-            throw new Error(
-                `buildClusterTree: id "${p.id}" must not contain ".."`
-            )
-        if (!Number.isFinite(p.t))
-            throw new Error(`buildClusterTree: non-finite t for "${p.id}"`)
-        seen.add(p.id)
-    }
+    assertValidPoints(points)
     if (points.length === 0) return null
 
     // Sort by time, then id, so the tree does not depend on input order.
@@ -118,6 +106,22 @@ export function buildClusterTree(
         startOf[re] = ls
     }
     return at(byStart, 0)
+}
+
+function assertValidPoints(points: readonly ClusterPoint[]): void {
+    const seen = new Set<string>()
+    for (const p of points) {
+        if (seen.has(p.id))
+            throw new Error(`buildClusterTree: duplicate id "${p.id}"`)
+        // Node ids are `${first}..${last}`; a leaf id containing '..' could collide with one.
+        if (p.id.includes('..'))
+            throw new Error(
+                `buildClusterTree: id "${p.id}" must not contain ".."`
+            )
+        if (!Number.isFinite(p.t))
+            throw new Error(`buildClusterTree: non-finite t for "${p.id}"`)
+        seen.add(p.id)
+    }
 }
 
 function at<T>(arr: readonly T[], i: number): T {

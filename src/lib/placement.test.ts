@@ -3,12 +3,14 @@ import { describe, expect, it } from 'vitest'
 import {
     PRIVATE_UNDER_TESTS,
     placeItems,
+    type BlockedInterval,
     type PlaceableItem,
     type Placement,
     type Slot,
 } from './placement'
 
-const { usedLevels } = PRIVATE_UNDER_TESTS
+const { usedLevels, candidateSlots, candidateSlotsKeepingSide, buildRows } =
+    PRIVATE_UNDER_TESTS
 
 function item(
     id: string,
@@ -69,27 +71,6 @@ function sorted(items: readonly PlaceableItem[]): PlaceableItem[] {
     )
 }
 
-function tryOrder(maxLevels: number): Slot[] {
-    return Array.from({ length: maxLevels }, (_, level): Slot[] => [
-        { side: 'above', level },
-        { side: 'below', level },
-    ]).flat()
-}
-
-function sideFirstOrder(maxLevels: number, side: Slot['side']): Slot[] {
-    const other = side === 'above' ? 'below' : 'above'
-    return [
-        ...Array.from({ length: maxLevels }, (_, level): Slot => ({
-            side,
-            level,
-        })),
-        ...Array.from({ length: maxLevels }, (_, level): Slot => ({
-            side: other,
-            level,
-        })),
-    ]
-}
-
 /**
  * Naive O(n²) oracle: each item keeps its previous slot if that row was free when it was placed,
  * otherwise it takes the first free row on its previous side, then the first free slot in try order.
@@ -101,7 +82,7 @@ function checkOracle(
     maxLevels = 2,
     previous: ReadonlyMap<string, Slot> | null = null
 ) {
-    const order = tryOrder(maxLevels)
+    const order = candidateSlots(maxLevels)
     const placed: { item: PlaceableItem; slot: Slot }[] = []
     for (const it of sorted(items)) {
         const free = (s: Slot) =>
@@ -113,9 +94,10 @@ function checkOracle(
         const expected =
             prev && free(prev)
                 ? prev
-                : (prev ? sideFirstOrder(maxLevels, prev.side) : order).find(
-                      free
-                  )
+                : (prev
+                      ? candidateSlotsKeepingSide(maxLevels, prev.side)
+                      : order
+                  ).find(free)
         const actual = p.slots.get(it.id)
         if (expected === undefined) {
             expect(actual).toBeUndefined()
@@ -505,5 +487,67 @@ describe('usedLevels', () => {
             })
             expect(p.slots.get('a')).toEqual({ side: 'below', level: 1 })
         })
+    })
+})
+
+describe('candidateSlots', () => {
+    it('alternates sides level by level', () => {
+        expect(candidateSlots(2)).toEqual([
+            { side: 'above', level: 0 },
+            { side: 'below', level: 0 },
+            { side: 'above', level: 1 },
+            { side: 'below', level: 1 },
+        ])
+    })
+
+    it('is empty for zero levels', () => {
+        expect(candidateSlots(0)).toEqual([])
+    })
+})
+
+describe('candidateSlotsKeepingSide', () => {
+    it('lists every row on the given side before the other side', () => {
+        expect(candidateSlotsKeepingSide(2, 'below')).toEqual([
+            { side: 'below', level: 0 },
+            { side: 'below', level: 1 },
+            { side: 'above', level: 0 },
+            { side: 'above', level: 1 },
+        ])
+    })
+
+    it('is empty for zero levels', () => {
+        expect(candidateSlotsKeepingSide(0, 'above')).toEqual([])
+    })
+})
+
+describe('buildRows', () => {
+    it('builds maxLevels empty rows per side', () => {
+        const noBlocked: BlockedInterval[] = []
+        const rows = buildRows(3, 8, noBlocked)
+        expect(rows.above).toHaveLength(3)
+        expect(rows.below).toHaveLength(3)
+        expect(rows.above[0]!.isFree(0, 100)).toBe(true)
+    })
+
+    it('blocks an interval given in either direction, keeping the gap', () => {
+        const blocked: BlockedInterval[] = [
+            { side: 'below', level: 1, x0: 200, x1: 100 },
+        ]
+        const rows = buildRows(2, 8, blocked)
+        expect(rows.below[1]!.isFree(150, 160)).toBe(false)
+        expect(rows.below[1]!.isFree(208, 300)).toBe(true)
+        expect(rows.below[1]!.isFree(201, 300)).toBe(false)
+        expect(rows.below[0]!.isFree(150, 160)).toBe(true)
+        expect(rows.above[1]!.isFree(150, 160)).toBe(true)
+    })
+
+    it('ignores non-finite and out-of-range blocked intervals', () => {
+        const blocked: BlockedInterval[] = [
+            { side: 'above', level: 0, x0: 0, x1: Infinity },
+            { side: 'above', level: 0, x0: NaN, x1: 10 },
+            { side: 'above', level: 5, x0: 0, x1: 10 },
+        ]
+        const rows = buildRows(1, 8, blocked)
+        expect(rows.above[0]!.isFree(0, 10)).toBe(true)
     })
 })

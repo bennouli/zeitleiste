@@ -1,7 +1,14 @@
 import { entries } from '@/data/entries'
 import { describe, expect, it } from 'vitest'
 import { isSpan, type HDate } from './entry'
-import { layoutSpans, type SpanBar, type SpanInput } from './spans'
+import {
+    layoutSpans,
+    PRIVATE_UNDER_TESTS,
+    type SpanBar,
+    type SpanInput,
+} from './spans'
+
+const { drawnExtent, firstFreeLane } = PRIVATE_UNDER_TESTS
 
 function span(
     id: string,
@@ -463,5 +470,115 @@ describe('layoutSpans: sample data', () => {
         expect(bar.x1).toBe(maxX)
         expect(bar.x1 - bar.x0).toBeCloseTo(64, 9)
         for (const b of bars) expect(b.x1).toBeLessThanOrEqual(maxX)
+    })
+})
+
+describe('drawnExtent', () => {
+    it('keeps an extent at or above the minimum width', () => {
+        expect(drawnExtent(0, 64, 64, Infinity)).toEqual({
+            x0: 0,
+            x1: 64,
+            extended: false,
+        })
+        expect(drawnExtent(900, 1100, 64, 1000)).toEqual({
+            x0: 900,
+            x1: 1100,
+            extended: false,
+        })
+    })
+
+    it('extends a short extent to the right', () => {
+        expect(drawnExtent(500, 502, 64, 1000)).toEqual({
+            x0: 500,
+            x1: 564,
+            extended: true,
+        })
+    })
+
+    it('extends exactly up to maxX without moving x0', () => {
+        expect(drawnExtent(936, 940, 64, 1000)).toEqual({
+            x0: 936,
+            x1: 1000,
+            extended: true,
+        })
+    })
+
+    it('ends at maxX and extends to the left when the right would cross it', () => {
+        expect(drawnExtent(973, 1000, 64, 1000)).toEqual({
+            x0: 936,
+            x1: 1000,
+            extended: true,
+        })
+        expect(drawnExtent(960, 970, 64, 1000)).toEqual({
+            x0: 936,
+            x1: 1000,
+            extended: true,
+        })
+    })
+
+    it('ends at the true end when it lies past maxX', () => {
+        expect(drawnExtent(990, 1010, 64, 1000)).toEqual({
+            x0: 946,
+            x1: 1010,
+            extended: true,
+        })
+        expect(drawnExtent(1020, 1030, 64, 1000)).toEqual({
+            x0: 966,
+            x1: 1030,
+            extended: true,
+        })
+    })
+
+    it('ignores float noise at the maxX boundary', () => {
+        const trueX0 = 1000 - 64 + 1e-12
+        expect(drawnExtent(trueX0, 940, 64, 1000).x0).toBe(trueX0)
+    })
+
+    it('leaves the extent unchanged for a NaN minimum width', () => {
+        expect(drawnExtent(0, 10, NaN, Infinity)).toEqual({
+            x0: 0,
+            x1: 10,
+            extended: false,
+        })
+    })
+
+    it('stretches a zero-length extent', () => {
+        expect(drawnExtent(10, 10, 64, Infinity)).toEqual({
+            x0: 10,
+            x1: 74,
+            extended: true,
+        })
+    })
+})
+
+describe('firstFreeLane', () => {
+    const bar = (x0: number, x1: number): SpanBar => ({
+        id: `${x0}-${x1}`,
+        x0,
+        x1,
+        trueX0: x0,
+        trueX1: x1,
+        extended: false,
+        lane: 0,
+        labelFits: false,
+    })
+
+    it('opens lane 0 when there are no lanes', () => {
+        expect(firstFreeLane([], 0, 10, 4)).toBe(0)
+    })
+
+    it('allows a bar exactly `gap` away on either side', () => {
+        const lanes = [[bar(0, 10), bar(30, 40)]]
+        expect(firstFreeLane(lanes, 14, 26, 4)).toBe(0)
+    })
+
+    it('takes the lowest lane with room', () => {
+        const lanes = [[bar(0, 10)], [bar(100, 110)], [bar(0, 10)]]
+        expect(firstFreeLane(lanes, 5, 20, 4)).toBe(1)
+    })
+
+    it('opens a new lane when every lane is taken', () => {
+        const lanes = [[bar(0, 10)], [bar(5, 15)]]
+        expect(firstFreeLane(lanes, 12, 20, 4)).toBe(2)
     })
 })

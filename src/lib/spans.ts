@@ -96,40 +96,16 @@ export function layoutSpans(
     )
 
     const lanes: SpanBar[][] = []
-    const bars: SpanBar[] = []
-
     for (const span of order) {
         const trueX0 = span.x0
         const trueX1 = Math.max(trueX0, span.x1)
-        const extended = trueX1 - trueX0 < minWidth
-        let x0 = trueX0
-        let x1 = trueX1
-        if (extended) {
-            x1 = trueX0 + minWidth
-            // Epsilon: float noise at the boundary must not shift the bar left.
-            if (x1 > maxX + 1e-6) {
-                x1 = Math.max(maxX, trueX1)
-                x0 = x1 - minWidth
-            }
-        }
-
-        let lane = lanes.findIndex((laneBars) =>
-            laneBars.every(
-                (other) => x0 >= other.x1 + gap || other.x0 >= x1 + gap
-            )
-        )
-        let laneBars = lanes[lane]
-        if (!laneBars) {
-            lane = lanes.length
-            laneBars = []
-            lanes.push(laneBars)
-        }
-
+        const { x0, x1, extended } = drawnExtent(trueX0, trueX1, minWidth, maxX)
+        const lane = firstFreeLane(lanes, x0, x1, gap)
         const labelFits =
             span.labelWidthPx !== undefined &&
             span.labelWidthPx + labelPadding <= x1 - x0
-
-        const bar: SpanBar = {
+        const laneBars = (lanes[lane] ??= [])
+        laneBars.push({
             id: span.id,
             x0,
             x1,
@@ -138,13 +114,45 @@ export function layoutSpans(
             extended,
             lane,
             labelFits,
-        }
-        laneBars.push(bar)
-        bars.push(bar)
+        })
     }
 
-    bars.sort(
-        (a, b) => a.lane - b.lane || a.x0 - b.x0 || compareIds(a.id, b.id)
-    )
+    const bars = lanes
+        .flat()
+        .sort(
+            (a, b) => a.lane - b.lane || a.x0 - b.x0 || compareIds(a.id, b.id)
+        )
     return { bars, laneCount: lanes.length }
 }
+
+type DrawnExtent = { x0: number; x1: number; extended: boolean }
+
+function drawnExtent(
+    trueX0: number,
+    trueX1: number,
+    minWidthPx: number,
+    maxX: number
+): DrawnExtent {
+    const extended = trueX1 - trueX0 < minWidthPx
+    if (!extended) return { x0: trueX0, x1: trueX1, extended }
+    const rightX1 = trueX0 + minWidthPx
+    // Epsilon: float noise at the boundary must not shift the bar left.
+    if (rightX1 <= maxX + 1e-6)
+        return { x0: trueX0, x1: rightX1, extended: true }
+    const x1 = Math.max(maxX, trueX1)
+    return { x0: x1 - minWidthPx, x1, extended: true }
+}
+
+function firstFreeLane(
+    lanes: readonly (readonly SpanBar[])[],
+    x0: number,
+    x1: number,
+    gap: number
+): number {
+    const lane = lanes.findIndex((laneBars) =>
+        laneBars.every((other) => x0 >= other.x1 + gap || other.x0 >= x1 + gap)
+    )
+    return lane === -1 ? lanes.length : lane
+}
+
+export const PRIVATE_UNDER_TESTS = { drawnExtent, firstFreeLane }

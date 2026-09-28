@@ -147,4 +147,49 @@ describe('validateEntry', () => {
         expect(validateEntry({ ...valid, importance: 4 })).not.toEqual([])
         expect(validateEntry({ ...valid, post: { body: '' } })).not.toEqual([])
     })
+
+    it('lists every problem in field order', () => {
+        const broken = {
+            id: 'Groß',
+            title: '',
+            start: { year: 1900, month: 0, day: 1.5 },
+            end: { year: 1900, month: 2, day: 30 },
+            region: 'asia',
+            category: 'culture',
+            importance: 4,
+            post: {},
+        }
+        expect(validateEntry(broken)).toEqual([
+            'title: must be a non-empty string',
+            'summary: must be a non-empty string',
+            'id: must be lowercase a-z0-9 separated by single hyphens',
+            'start.month: must be an integer 1–12',
+            'start.day: must be an integer 1–31',
+            'end: 1900-2-30 does not exist',
+            'region: must be one of russia, west, both',
+            'category: must be one of war, revolution, power, event',
+            'importance: must be one of 1, 2, 3',
+            'post.body: must be a non-empty string',
+        ])
+    })
+
+    it('reports an end before the start only when both dates are valid', () => {
+        const endsEarly = { ...valid, end: { year: 1900, month: 1 } }
+        const bothBroken = {
+            ...valid,
+            start: { year: 1900.5 },
+            end: { year: 1800 },
+        }
+        const notAnObject = { ...valid, start: 'x', end: 'y' }
+        expect(validateEntry(endsEarly)).toEqual([
+            'end: must not be before start',
+        ])
+        expect(validateEntry(bothBroken)).toEqual([
+            'start.year: must be an integer',
+        ])
+        expect(validateEntry(notAnObject)).toEqual([
+            'start: must be an object',
+            'end: must be an object',
+        ])
+    })
 })
