@@ -2,37 +2,44 @@
 
 import { hasNoLayout } from '@/lib/dom'
 import clsx from 'clsx'
-import type { ReactNode, RefObject, SyntheticEvent } from 'react'
-import { useLayoutEffect, useRef } from 'react'
+import type {
+    ComponentProps,
+    ReactNode,
+    RefObject,
+    SyntheticEvent,
+} from 'react'
+import { useEffect, useLayoutEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
 
 export type TooltipProps = {
     /** Referenced by the anchor's `aria-describedby`. */
     id: string
     open: boolean
-    /** Side of the anchor the bubble appears on. */
+    /** Side of the anchor the note appears on while it is anchored. */
     placement: 'top' | 'bottom'
     /**
-     * The element the bubble belongs to. When given, the open bubble renders in
-     * a portal on `document.body` with fixed coordinates taken from the anchor,
-     * so no `overflow` ancestor clips it. Without it the bubble is positioned by
-     * CSS relative to the nearest positioned ancestor.
+     * The element the note belongs to. When given, the open note sits beside
+     * the cursor while a mouse is over the anchor, beside the anchor otherwise.
      */
     anchorRef?: RefObject<HTMLElement | null>
+    /** `TooltipMeta`, `TooltipTitle` and `TooltipBody` lines, in that order. */
     children: ReactNode
 }
 
-/** Minimum distance of a portalled bubble from the viewport's left and right edges. */
+/** Minimum distance of a portalled note from the viewport's edges. */
 const VIEWPORT_MARGIN_PX = 8
 
-const bubbleClass =
-    'rounded-md border border-border bg-surface-raised p-3 text-left text-sm text-fg shadow-md'
-// The gap is padding, not margin, so the pointer can move from the anchor onto the bubble.
-const fadeClass =
-    'w-72 transition-opacity duration-150 starting:opacity-0 motion-reduce:transition-none'
+/** Distance of an anchored note from its anchor. */
+const ANCHOR_GAP_PX = 8
+
+/** Offset of a mouse-following note right of and below the cursor. */
+const CURSOR_OFFSET_PX = 14
+
+const noteClass =
+    'flex w-62.5 flex-col gap-1.5 border-l border-fg bg-surface py-2 pr-0 pl-2.5 text-left text-fg'
 
 /**
- * Controlled tooltip bubble. Always rendered so that the `aria-describedby`
+ * Controlled hover note. Always rendered so that the `aria-describedby`
  * reference resolves; `hidden` while closed.
  */
 export function Tooltip({
@@ -43,10 +50,9 @@ export function Tooltip({
     children,
 }: TooltipProps) {
     const portalRef = useRef<HTMLDivElement>(null)
+    const cursorRef = useMouseOverAnchor(anchorRef)
 
-    useFollowAnchor(open, anchorRef, portalRef, placement)
-
-    const bubble = <div className={bubbleClass}>{children}</div>
+    useFollowAnchor(open, anchorRef, cursorRef, portalRef, placement)
 
     if (anchorRef && open && typeof document !== 'undefined') {
         return createPortal(
@@ -55,20 +61,16 @@ export function Tooltip({
                 id={id}
                 role="tooltip"
                 data-placement={placement}
-                className={clsx(
-                    'fixed z-50',
-                    fadeClass,
-                    placement === 'top' ? 'pb-2' : 'pt-2'
-                )}
+                className={clsx('fixed z-50', noteClass)}
                 // React events bubble out of a portal along the component tree; keep
-                // presses and drags on the bubble away from the stack's and timeline's gestures.
+                // presses and drags on the note away from the stack's and timeline's gestures.
                 onPointerDown={stop}
                 onPointerMove={stop}
                 onClick={stop}
             >
-                {bubble}
+                {children}
             </div>,
-            document.body
+            portalHost()
         )
     }
 
@@ -80,13 +82,37 @@ export function Tooltip({
             data-placement={placement}
             className={clsx(
                 'absolute left-0 z-30',
-                fadeClass,
-                placement === 'top' ? 'bottom-full pb-2' : 'top-full pt-2'
+                noteClass,
+                placement === 'top' ? 'bottom-full mb-2' : 'top-full mt-2'
             )}
         >
-            {bubble}
+            {children}
         </div>
     )
+}
+
+type NoteLineProps = Omit<ComponentProps<'p'>, 'className'>
+
+/** First line of a note, in small caps: what, when, where. */
+export function TooltipMeta(props: NoteLineProps) {
+    return (
+        <p
+            {...props}
+            className="small-caps text-label font-medium tracking-label text-fg"
+        />
+    )
+}
+
+export function TooltipTitle(props: NoteLineProps) {
+    return <p {...props} className="font-serif text-note-title" />
+}
+
+export function TooltipBody(props: NoteLineProps) {
+    return <p {...props} className="font-serif text-note text-fg-soft" />
+}
+
+function portalHost(): Element {
+    return document.querySelector('main') ?? document.body
 }
 
 function stop(e: SyntheticEvent) {
@@ -100,12 +126,44 @@ type Box = {
     bottom: number
 }
 
+type Point = { x: number; y: number }
+
+type Size = { width: number; height: number }
+
 type Placement = TooltipProps['placement']
+
+/** Where a mouse over the anchor is, in client coordinates; null while none is. */
+function useMouseOverAnchor(
+    anchorRef: RefObject<HTMLElement | null> | undefined
+): RefObject<Point | null> {
+    const cursorRef = useRef<Point | null>(null)
+    useEffect(() => {
+        const anchor = anchorRef?.current
+        if (!anchor) return
+        const track = (e: PointerEvent) => {
+            if (e.pointerType === 'touch') return
+            cursorRef.current = { x: e.clientX, y: e.clientY }
+        }
+        const forget = () => {
+            cursorRef.current = null
+        }
+        anchor.addEventListener('pointerover', track)
+        anchor.addEventListener('pointermove', track)
+        anchor.addEventListener('pointerleave', forget)
+        return () => {
+            anchor.removeEventListener('pointerover', track)
+            anchor.removeEventListener('pointermove', track)
+            anchor.removeEventListener('pointerleave', forget)
+        }
+    }, [anchorRef])
+    return cursorRef
+}
 
 function useFollowAnchor(
     open: boolean,
     anchorRef: RefObject<HTMLElement | null> | undefined,
-    bubbleRef: RefObject<HTMLDivElement | null>,
+    cursorRef: RefObject<Point | null>,
+    noteRef: RefObject<HTMLDivElement | null>,
     placement: Placement
 ) {
     useLayoutEffect(() => {
@@ -115,58 +173,91 @@ function useFollowAnchor(
         let clippers: HTMLElement[] | null = null
         const update = () => {
             const anchor = anchorRef.current
-            const bubbleEl = bubbleRef.current
-            if (anchor && bubbleEl) {
+            const noteEl = noteRef.current
+            if (anchor && noteEl) {
                 const rect = anchor.getBoundingClientRect()
-                const viewportWidth = document.documentElement.clientWidth
-                const maxWidth = Math.max(
-                    0,
-                    viewportWidth - 2 * VIEWPORT_MARGIN_PX
-                )
-                bubbleEl.style.maxWidth = `${maxWidth}px`
-                const bubbleSize = {
-                    width: bubbleEl.offsetWidth,
-                    height: bubbleEl.offsetHeight,
+                const root = document.documentElement
+                const viewport = {
+                    width: root.clientWidth,
+                    height: root.clientHeight,
                 }
-                const { left, top } = bubblePosition(
-                    rect,
-                    bubbleSize,
-                    viewportWidth,
-                    placement
-                )
+                noteEl.style.maxWidth = `${Math.max(0, viewport.width - 2 * VIEWPORT_MARGIN_PX)}px`
+                const noteSize = {
+                    width: noteEl.offsetWidth,
+                    height: noteEl.offsetHeight,
+                }
+                const cursor = cursorRef.current
+                const { left, top } = cursor
+                    ? cursorNotePosition(cursor, noteSize, viewport)
+                    : anchoredNotePosition(
+                          rect,
+                          noteSize,
+                          viewport.width,
+                          placement
+                      )
                 clippers ??= clippingAncestors(anchor)
                 const isHidden = anchorHidden(anchor, rect, clippers)
-                const positionKey = `${left}|${top}|${isHidden}`
+                const positionKey = `${left}|${top}|${isHidden}|${cursor !== null}`
                 if (positionKey !== appliedKey) {
                     appliedKey = positionKey
-                    bubbleEl.style.left = `${left}px`
-                    bubbleEl.style.top = `${top}px`
-                    bubbleEl.style.visibility = isHidden ? 'hidden' : ''
+                    noteEl.style.left = `${left}px`
+                    noteEl.style.top = `${top}px`
+                    noteEl.style.visibility = isHidden ? 'hidden' : ''
+                    // Clamped at an edge, a following note can slide under the cursor; it must not take the hover.
+                    noteEl.style.pointerEvents = cursor ? 'none' : ''
                 }
             }
             frame = requestAnimationFrame(update)
         }
         update()
         return () => cancelAnimationFrame(frame)
-    }, [open, anchorRef, bubbleRef, placement])
+    }, [open, anchorRef, cursorRef, noteRef, placement])
 }
 
-function bubblePosition(
+function anchoredNotePosition(
     anchor: Box,
-    bubble: { width: number; height: number },
+    note: Size,
     viewportWidth: number,
     placement: Placement
 ): { left: number; top: number } {
-    const left = Math.max(
-        VIEWPORT_MARGIN_PX,
-        Math.min(anchor.left, viewportWidth - bubble.width - VIEWPORT_MARGIN_PX)
-    )
-    const top = placement === 'top' ? anchor.top - bubble.height : anchor.bottom
+    const left = clampToViewport(anchor.left, note.width, viewportWidth)
+    const top =
+        placement === 'top'
+            ? anchor.top - ANCHOR_GAP_PX - note.height
+            : anchor.bottom + ANCHOR_GAP_PX
     return { left, top }
 }
 
+/** Right of and below the cursor, pushed back inside the viewport at its edges. */
+function cursorNotePosition(
+    cursor: Point,
+    note: Size,
+    viewport: Size
+): { left: number; top: number } {
+    return {
+        left: clampToViewport(
+            cursor.x + CURSOR_OFFSET_PX,
+            note.width,
+            viewport.width
+        ),
+        top: clampToViewport(
+            cursor.y + CURSOR_OFFSET_PX,
+            note.height,
+            viewport.height
+        ),
+    }
+}
+
+/** A start that keeps `length` within the margins of `extent`; the start margin wins when it doesn't fit. */
+function clampToViewport(start: number, length: number, extent: number) {
+    return Math.max(
+        VIEWPORT_MARGIN_PX,
+        Math.min(start, extent - length - VIEWPORT_MARGIN_PX)
+    )
+}
+
 /**
- * The bubble escapes every clipping ancestor, so hide it with an anchor that
+ * The note escapes every clipping ancestor, so hide it with an anchor that
  * left the visible area (stepped out of a stack, panned away).
  */
 function anchorHidden(
@@ -180,7 +271,7 @@ function anchorHidden(
     )
 }
 
-/** Ancestors of `el` that clip overflow (the layout they belong to doesn't change while a bubble is open). */
+/** Ancestors of `el` that clip overflow (the layout they belong to doesn't change while a note is open). */
 function clippingAncestors(el: HTMLElement): HTMLElement[] {
     const out: HTMLElement[] = []
     for (
@@ -226,4 +317,10 @@ function visibleIn(rect: Box, clip: Box): boolean {
     )
 }
 
-export const PRIVATE_UNDER_TESTS = { bubblePosition, anchorHidden }
+export const PRIVATE_UNDER_TESTS = {
+    anchoredNotePosition,
+    cursorNotePosition,
+    anchorHidden,
+    CURSOR_OFFSET_PX,
+    VIEWPORT_MARGIN_PX,
+}

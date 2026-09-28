@@ -62,7 +62,7 @@ export function Axis() {
                     {!labelHidden(tick) && (
                         <span
                             className={clsx(
-                                'absolute -translate-x-1/2 small-caps leading-none tracking-label whitespace-nowrap',
+                                'absolute -translate-x-1/2 small-caps text-label leading-none tracking-label whitespace-nowrap',
                                 tick.major
                                     ? 'font-medium text-fg'
                                     : 'font-normal text-fg-muted'
@@ -90,7 +90,7 @@ export function Axis() {
                     <span
                         data-today-align={todayAlign}
                         className={clsx(
-                            'absolute small-caps leading-none font-medium tracking-label whitespace-nowrap text-fg',
+                            'absolute small-caps text-label leading-none font-medium tracking-label whitespace-nowrap text-fg',
                             todayAlign === 'right' &&
                                 '-translate-x-full pr-1.5',
                             todayAlign === 'center' && '-translate-x-1/2',

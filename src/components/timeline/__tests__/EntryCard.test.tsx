@@ -70,15 +70,18 @@ describe('EntryCard', () => {
         expect(el).toHaveTextContent(date)
     })
 
-    it('shows the summary, long date and category on hover and hides it on leave', async () => {
+    it('shows meta line, title and summary in that order on hover and hides it on leave', async () => {
         const user = userEvent.setup()
         renderCard({ entry: span })
         expect(screen.queryByRole('tooltip')).toBeNull()
         await user.hover(card(span))
         const tip = screen.getByRole('tooltip')
-        expect(tip).toHaveTextContent(span.summary)
-        expect(tip).toHaveTextContent('1700 – 10. September 1721')
-        expect(tip).toHaveTextContent('Krieg')
+        const lines = [...tip.children].map((line) => line.textContent)
+        expect(lines).toEqual([
+            '1700 – 10. September 1721 · Krieg · Russland/Sowjetunion',
+            span.title,
+            span.summary,
+        ])
         await user.unhover(card(span))
         expect(screen.queryByRole('tooltip')).toBeNull()
     })
@@ -335,7 +338,7 @@ describe('EntryCard', () => {
                 vi.spyOn(root, 'clientHeight', 'get').mockReturnValue(800),
                 vi
                     .spyOn(HTMLElement.prototype, 'offsetWidth', 'get')
-                    .mockReturnValue(288),
+                    .mockReturnValue(250),
                 vi
                     .spyOn(HTMLElement.prototype, 'offsetHeight', 'get')
                     .mockReturnValue(100),
@@ -346,34 +349,112 @@ describe('EntryCard', () => {
             return () => spies.forEach((s) => s.mockRestore())
         }
 
+        const nextFrame = () =>
+            act(
+                () =>
+                    new Promise<void>((resolve) =>
+                        requestAnimationFrame(() => resolve())
+                    )
+            )
+        const mouseAt = (clientX: number, clientY: number) => ({
+            pointerType: 'mouse',
+            clientX,
+            clientY,
+        })
+        const midViewportEntry = rect(100, 400, 176, 56)
+        const mouseLeaving = { pointerType: 'mouse' }
+
         it.each([
-            ['above', 'above', rect(100, 400, 176, 56), '100px', '456px'],
-            ['below', 'below', rect(500, 400, 176, 56), '500px', '300px'],
+            ['above', 'above', rect(100, 400, 176, 56), '100px', '464px'],
+            ['below', 'below', rect(500, 400, 176, 56), '500px', '292px'],
             [
                 'clamped right',
                 'above',
                 rect(900, 400, 176, 56),
-                '704px',
-                '456px',
+                '742px',
+                '464px',
             ],
-            ['clamped left', 'above', rect(-100, 400, 176, 56), '8px', '456px'],
+            ['clamped left', 'above', rect(-100, 400, 176, 56), '8px', '464px'],
         ] as const)(
-            'places it from the anchor (%s)',
+            'anchors a keyboard-opened note to the entry (%s)',
             async (_, side, anchor, left, top) => {
                 const restore = mockLayout(anchor)
                 try {
                     const user = userEvent.setup()
                     renderCard({ entry: span, side })
-                    await user.hover(card(span))
+                    await user.tab()
                     const tip = screen.getByRole('tooltip')
                     expect(tip.style.left).toBe(left)
                     expect(tip.style.top).toBe(top)
                     expect(tip.style.visibility).toBe('')
+                    expect(tip.style.pointerEvents).toBe('')
                 } finally {
                     restore()
                 }
             }
         )
+
+        it('anchors a touch-opened note to the entry', async () => {
+            const restore = mockLayout(midViewportEntry)
+            try {
+                const user = userEvent.setup()
+                renderCard({ entry: point })
+                await user.pointer({ keys: '[TouchA]', target: card(point) })
+                const tip = screen.getByRole('tooltip')
+                expect(tip.style.left).toBe('100px')
+                expect(tip.style.top).toBe('464px')
+            } finally {
+                restore()
+            }
+        })
+
+        it('follows the mouse 14 px right and below, inside the viewport', async () => {
+            const enter = mouseAt(300, 200)
+            const move = mouseAt(400, 250)
+            const nearCorner = mouseAt(990, 790)
+            const restore = mockLayout(midViewportEntry)
+            try {
+                renderCard({ entry: span })
+                fireEvent.pointerOver(card(span), enter)
+                const tip = screen.getByRole('tooltip')
+                expect(tip.style.left).toBe('314px')
+                expect(tip.style.top).toBe('214px')
+                expect(tip.style.pointerEvents).toBe('none')
+                fireEvent.pointerMove(card(span), move)
+                await nextFrame()
+                expect(tip.style.left).toBe('414px')
+                expect(tip.style.top).toBe('264px')
+                fireEvent.pointerMove(card(span), nearCorner)
+                await nextFrame()
+                expect(tip.style.left).toBe('742px')
+                expect(tip.style.top).toBe('692px')
+            } finally {
+                restore()
+            }
+        })
+
+        it('returns a keyboard-opened note to the entry once the mouse leaves', async () => {
+            const enter = mouseAt(300, 200)
+            const restore = mockLayout(midViewportEntry)
+            try {
+                const user = userEvent.setup()
+                renderCard({ entry: span })
+                await user.tab()
+                const tip = screen.getByRole('tooltip')
+                fireEvent.pointerOver(card(span), enter)
+                await nextFrame()
+                expect(tip.style.left).toBe('314px')
+                const anchor = card(span).parentElement!
+                fireEvent.pointerLeave(anchor, mouseLeaving)
+                await nextFrame()
+                expect(screen.getByRole('tooltip')).toBe(tip)
+                expect(tip.style.left).toBe('100px')
+                expect(tip.style.top).toBe('464px')
+                expect(tip.style.pointerEvents).toBe('')
+            } finally {
+                restore()
+            }
+        })
 
         it('hides it while the anchor is inert or outside the visible area', () => {
             const restore = mockLayout(rect(100, 400, 176, 56))

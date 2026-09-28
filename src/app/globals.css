@@ -158,6 +158,5 @@
 /* Small caps: the label style for dates, tick labels and meta lines. */
 @utility small-caps {
     font-family: var(--font-sans);
-    font-size: var(--text-label);
     text-transform: uppercase;
 }

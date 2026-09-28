@@ -19,7 +19,8 @@ beyond ink.
 - Widths of text columns are set in `rem` (`max-w-reading`, 41.25 rem = 660 px): a `ch` width changes when the web font replaces its
   fallback.
 - **Small caps** = uppercase, letter-spacing 0.06–0.18 em, 10–11 px, IBM Plex Sans. It is the label style for dates, tick labels and meta
-  lines. The `small-caps` utility in `globals.css` sets the font, `text-label` and uppercase; each use adds its tracking token.
+  lines. The `small-caps` utility in `globals.css` sets the font and uppercase; each use adds its size (`text-label`, `text-label-lg`,
+  `text-meta`) and its tracking token.
 
 ## Type scale
 
@@ -90,11 +91,11 @@ The other ink steps are Tailwind opacity modifiers on `fg`, so they follow the t
 
 ## Motion
 
-| Motion                          | Duration                                                               | Easing                                    | Constant                |
-| ------------------------------- | ---------------------------------------------------------------------- | ----------------------------------------- | ----------------------- |
-| Post collapse (timeline height) | 500 ms                                                                 | `ease-in-out` = `cubic-bezier(.4,0,.2,1)` | `COLLAPSE_ANIMATION_MS` |
-| Zoom and pan                    | 300 ms                                                                 | ease-out (cubic)                          | `ZOOM_ANIMATION_MS`     |
-| Hover states                    | none (target; the hover note's 150 ms fade-in is still there, for #37) | —                                         | —                       |
+| Motion                          | Duration | Easing                                    | Constant                |
+| ------------------------------- | -------- | ----------------------------------------- | ----------------------- |
+| Post collapse (timeline height) | 500 ms   | `ease-in-out` = `cubic-bezier(.4,0,.2,1)` | `COLLAPSE_ANIMATION_MS` |
+| Zoom and pan                    | 300 ms   | ease-out (cubic)                          | `ZOOM_ANIMATION_MS`     |
+| Hover states                    | none     | —                                         | —                       |
 
 Tailwind's defaults nearest the prototype, so the classes stay plain (`duration-500 ease-in-out`). `prefers-reduced-motion` turns all of
 them off.

@@ -6,6 +6,7 @@ import {
     entryLabel,
     formatDay,
     formatEntryDate,
+    formatEntryMeta,
     formatMonth,
     formatYear,
     PRIVATE_UNDER_TESTS,
@@ -234,6 +235,22 @@ describe('entryLabel', () => {
         const withPost = sampleEntry('oktoberrevolution')
         expect(entryLabel(withPost)).toBe(
             'Oktoberrevolution, 7. Nov. 1917, Beitrag'
+        )
+    })
+})
+
+describe('formatEntryMeta', () => {
+    it('joins long date, category and region', () => {
+        const point = sampleEntry('oktoberrevolution')
+        expect(formatEntryMeta(point)).toBe(
+            '7. November 1917 · Revolution · Russland/Sowjetunion'
+        )
+    })
+
+    it('gives a span its date range', () => {
+        const range = sampleEntry('grosser-nordischer-krieg')
+        expect(formatEntryMeta(range)).toBe(
+            '1700 – 10. September 1721 · Krieg · Russland/Sowjetunion'
         )
     })
 })
