@@ -1,0 +1,221 @@
+---
+name: pr-self-review
+description:
+    Use when reviewing a pull request in this repo — a PR you or another agent just wrote, a PR number or link handed over for review, or a
+    "look over this branch before I merge" request. Supplies the Zeitleiste review dimensions, their detections and the sign-off rule.
+---
+
+# PR self-review
+
+A cold review of a pull request against this project's own rules, performed as if you had no idea why the change was made. If you wrote the
+PR, **discard your reasoning before you start** — self-review fails exactly where you still remember why something was fine.
+
+**You review. You do not fix.** Fixing is a separate, explicitly requested step.
+
+---
+
+## The meta-principle
+
+The project's rules are not style preferences; they are the bar. **The bar for bailing out of one is very high.** A deviation is acceptable
+only when all three hold:
+
+1. There is sound, specific reasoning — _not_ "it was simpler", _not_ "the surrounding code already does it this way".
+2. That reasoning is **written into the PR description**.
+3. **The human owner has confirmed it.** You never grant this yourself.
+
+A deviation that is not justified-in-description _and_ confirmed is a **finding**, however reasonable it looks. Where a rule genuinely seems
+to need bending, neither accept it silently nor invent a workaround: flag it and route the decision to a human.
+
+"The existing code does it this way" is the rationalisation this project will produce most often, because several rules are ahead of the
+codebase. Standing debt is not a licence to add more.
+
+---
+
+## Running the review
+
+Working only from what the diff actually contains:
+
+1. Read the metadata: `gh pr view <PR> --json title,body,files,commits`.
+2. **Get local refs, then set `R`.** Every detection below is a `git diff` with pathspec exclusions, and those exclusions do not exist in a
+   saved `gh pr diff` file. Always diff against real refs:
+
+    ```bash
+    # a PR
+    git fetch origin pull/<PR>/head
+    R="$(git merge-base origin/staging FETCH_HEAD)...FETCH_HEAD"
+
+    # a local branch
+    R="origin/staging...HEAD"
+    ```
+
+    Use `merge-base`, not `staging...`, on a PR whose branch is behind — otherwise unrelated commits land in your diff.
+
+3. **Read the PR description first.** It is the only place a deviation can be justified, so a thin description on a large change is itself a
+   smell. `## Verification` is what the author claims to have run (Dimension 6); open questions the author routed to a human go into your
+   ❓ section verbatim.
+4. Read the changed **files**, not just the hunks — a hunk hides that the helper you're about to say is missing already exists twenty lines
+   up.
+5. Run the detections below, **scoped to the diff**, never the whole tree. Every one judges _added_ lines (`^\+`); the standing debt is not
+   this PR's.
+6. Emit the severity-grouped report.
+
+---
+
+## Dimension 1 — Design tokens (CRITICAL)
+
+`src/app/globals.css` holds two layers: primitives (`--gray-*`, `--red-*`, `--blue-*`, `--violet-*`, spacing, radii) and semantic tokens
+(`surface`, `surface-raised`, `fg`, `fg-muted`, `border`, `accent`, `accent-fg`, `russia`, `west`, `both`, `focus`). Components use
+semantic tokens only; Tailwind's default palette is disabled. `pnpm check:tokens` is the gate; this review is the backstop for what it
+cannot see.
+
+```bash
+git diff $R -- 'src' ':!src/app/globals.css' ':!*.test.*' \
+  | grep -nE '^\+.*(#[0-9a-fA-F]{3,8}\b|rgba?\(|hsla?\(|oklch\(|var\(--(gray|red|blue|violet|space|radius)-)'
+git diff $R -- 'src' ':!src/app/globals.css' \
+  | grep -nE '^\+.*\b(bg|text|border|ring|from|to)-(red|blue|green|gray|zinc|slate|amber|white|black)-?[0-9]*\b'
+```
+
+If no token fits the need, that is a **needs-human-decision**, not a licence to inline a colour. Minting a token is a theme change with its
+own review. A change to `globals.css` in a feature PR is a finding unless the PR says why.
+
+## Dimension 2 — Types, names, shape (MAJOR)
+
+AGENTS.md § Code Style, the rules a diff actually breaks:
+
+- **Types, not interfaces.** `interface` only for declaration merging or a class `implements` clause.
+- **Names stand without their initialiser.** No bare adjectives (`stored`, `next`), no role nouns (`deps`, `data`, `result`); canonical
+  short names (`e`, `i`, `acc`, `t`, `_`) are fine.
+- **Declarative where it reads better.** A `let` accumulator with a loop where `map`/`filter`/`flatMap` reads as well is a finding; a
+  `for...of` with an early exit is not.
+- **Extract a thing, not a sequence.** A helper named for a location (`loadFooInput`, `setUpBar`) hides nothing.
+- **DRY at three**, not two.
+- **A private helper with its own tests** goes in a `PRIVATE_UNDER_TESTS` object, never a bare `export`.
+
+```bash
+git diff $R -- 'src' | grep -nE '^\+\s*(export )?interface '
+git diff $R -- 'src' ':!*.test.*' | grep -nE '^\+\s*(export )?(const|let|function) (data|result|deps|opts|info|obj|tmp|next|stored|out)\b'
+git diff $R -- 'src' ':!*.test.*' | grep -nE '^\+\s*let '
+git diff $R -- 'src' | grep -nE '^\+.*// (Exported|exported) for test'
+```
+
+The `let` grep over-matches; read each hit and ask whether an expression reads better.
+
+## Dimension 3 — Logic out of components (MAJOR)
+
+Pure logic lives in `src/lib` as plain functions with a unit test next to them; a component only draws. The recurring finding: geometry,
+date maths or a state machine buried inside a component or hook, untested because it was never **extracted into an importable module**.
+`src/lib/placement.ts`, `cluster.ts`, `spans.ts` and `viewport.ts` are the shape to follow.
+
+```bash
+# new logic in components without a matching test
+git diff $R --name-only --diff-filter=A -- 'src/components' | grep -vE '\.test\.tsx?$'
+git diff $R --name-only --diff-filter=A -- 'src/lib' | grep -vE '\.test\.ts$'
+```
+
+Every added module in the second list needs its test in the same diff. For the first list, read the file: a `useMemo` with more than three
+computations, or a callback that computes before it renders, is the candidate.
+
+## Dimension 4 — Interaction rules (CRITICAL)
+
+Product decisions from the timeline issues, each broken silently by one line:
+
+- **No wheel listener on the timeline, ever.** The wheel scrolls the page; Ctrl+wheel and trackpad pinch are browser page zoom.
+- **No scroll container inside the timeline** (`overflow-auto`/`overflow-scroll`); the section clips.
+- **Layout is recomputed at gesture end, not per frame.** A new dependency on `viewport` in the layout memo is a finding.
+- **Reduced motion means no animation** — a new transition or rAF loop needs its `motion-reduce:`/`prefersReducedMotion` path.
+- **Dark mode remaps only the semantic layer** — a `dark:` variant in a component is a finding.
+
+```bash
+git diff $R -- 'src' | grep -nE '^\+.*(onWheel|addEventListener\((.)wheel|overflow-(auto|scroll)|dark:)'
+git diff $R -- 'src' | grep -nE '^\+.*(transition-|requestAnimationFrame|animate)' | grep -vE 'motion-reduce|reducedMotion|ReducedMotion'
+```
+
+The second over-matches; each hit needs the reduced-motion path confirmed by eye.
+
+## Dimension 5 — Accessibility and text (MAJOR)
+
+- Every interactive element is a real `<button>` or focusable with a visible `focus-visible` outline and an accessible name in German.
+- Tab order through entries stays chronological.
+- User-facing strings are German; no text assembled from parts (`title + ', ' + date`) outside `src/lib/format.ts`.
+- Icons are drawn or come from an icon set, never a glyph in a text node (`×`, `›`, `→`).
+
+```bash
+git diff $R -- 'src' ':!*.test.*' | grep -nE '^\+.*<(div|span)[^>]*onClick'
+git diff $R -- 'src' ':!*.test.*' | grep -nE '^\+.*>[^<]*[×✕✓✗›‹»«→←↑↓−•][^<]*<'
+git diff $R -- 'src' ':!*.test.*' ':!src/lib/format.ts' | grep -nE "^\+.*(title|label|summary)\s*\+\s*['\`]"
+```
+
+## Dimension 6 — Testing at the right altitude (MAJOR)
+
+Vitest runs unit tests (`pnpm test`); Playwright runs the browser checks (`pnpm e2e`: axe on `/` and a post page, the keyboard walk).
+
+| What changed                       | Where it belongs                                |
+| ---------------------------------- | ----------------------------------------------- |
+| Pure logic, geometry, formatting   | `x.test.ts` next to it in `src/lib`             |
+| A component's behaviour            | `X.test.tsx` beside it (Testing Library, axe)   |
+| Keyboard flow, focus, page routing | `e2e/*.spec.ts`                                 |
+
+Because nothing runs the suite for you, the PR's `## Verification` section is the only evidence there is. A PR that claims a result is
+**awaiting confirmation**, not verified — say which commands were claimed and which are missing; never upgrade a claim to a pass.
+
+- Fixtures fed to the call under test get their own named `const` first. Flag a call under test with an object literal or a builder call
+  inline.
+- A test must be about this repo's code. If only changing the dependency could fail the assertion, flag it.
+- A bug-fix PR carries one test that speaks about the bug: red before, green after. No reproducing test is a finding.
+
+```bash
+git diff $R -- '*.test.*' | grep -nE '^\+\s*(expect|render|fireEvent)[^;]*\{\s*[a-z]+:'
+```
+
+## Dimension 7 — Values that leave TypeScript (MAJOR)
+
+AGENTS.md § Heuristics: a value arriving from a caller this code does not control (a CMS response, a route param, the sample data file, a
+stored blob) needs a schema and a real `parse` at the crossing. A value produced and consumed inside this codebase needs none.
+
+```bash
+git diff $R -- 'src' ':!*.test.*' | grep -nE '^\+.*(JSON\.parse|\.map\(Number\)|params\.|searchParams| as [A-Z][A-Za-z]*(\[\])?\s*$)'
+```
+
+On every hit, ask: after this line, does anything check the value is what the type claims?
+
+## Dimension 8 — Issue fit and comments (MAJOR)
+
+Check these **after** forming your findings:
+
+- The diff against the issue's `## Done`, `## Not done` and `## Acceptance criteria`: a criterion silently dropped, or scope from
+  `## Not done` built anyway, is a finding.
+- The PR's `## Definition of Done` (see the `pr` skill): a missing section, a bare "ja", or an answer the diff contradicts.
+- Comments: none that explain a library idiom, an implementation decision or the project structure (AGENTS.md § Comments). A comment that
+  names a footgun stays.
+- Prettier ran over every touched file.
+
+```bash
+git diff $R -- 'src' ':!*.test.*' | grep -nE '^\+\s*//' 
+```
+
+Read each added comment and ask whether a name would replace it.
+
+---
+
+## The report
+
+```markdown
+## Verdict: <blocks merge | needs owner decisions | ready for owner review>
+
+### 🛑 Blocking
+- <dimension> — `file:line` — <what, and the rule>
+
+### ⚠️ Major
+- …
+
+### ❓ Needs a human decision
+- <every open question the author routed, verbatim, plus every deviation without owner confirmation>
+
+### Verification claimed
+- `<command>` — claimed <result> — not confirmed by this review
+
+### Noted, not findings
+- <ambient debt the PR touched but did not add to>
+```
+
+No praise, no restating the PR. A finding names the rule; the fix is the author's.

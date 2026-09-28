@@ -7,18 +7,19 @@
 
 # Repository
 
-`repos/` is not part of the monorepo — no workspace glob matches it. It holds read-only vendored upstream sources; see § Libraries.
+One Next.js app (App Router) with Payload CMS inside it, `src/lib` for pure logic, `src/components` for React, `e2e/` for Playwright.
+`repos/` holds read-only vendored upstream sources; see § Libraries.
 
-### Branches
+## Branches
 
 `staging` is the trunk: **branch off `staging`, open pull requests against `staging`.** `main` holds released code; only a promotion PR from
 `staging` or a hotfix the owner has called one goes there. `main` remains the repo's default branch, so a PR opened without a base lands on
 the wrong one — set it.
 
-For implementation, the issue is the spec (`docs/ISSUES.md`).
+For implementation, the issue is the spec (`ISSUES.md`).
 
 Every commit invokes the `commit` skill; every merge invokes the `merge` skill. `main` being the default branch means GitHub's `Closes #N`
-does nothing on a merge into `staging` — the skill closes issues, moves board status and removes the worktree and branch; `gh pr merge`
+does nothing on a merge into `staging` — the skill closes issues, updates parent issues and removes the worktree and branch; `gh pr merge`
 alone leaves all three undone.
 
 # Libraries
@@ -33,12 +34,12 @@ alone leaves all three undone.
 
 ## Vendored sources (`repos/`)
 
-`repos/` holds upstream trees vendored with `git subtree`. Currently `repos/effect` — Effect at the version `apps/backend` depends on.
+`repos/` holds upstream trees vendored with `git subtree`. Currently `repos/effect` — Effect at the version this app depends on.
 
 - **Never import from `repos/`, never edit it.** Effect is imported from the npm dependency; a local change is lost on the next
   `git subtree pull`.
 - **`repos/effect/LLMS.md` and `repos/effect/ai-docs/` are documentation** in the sense § Libraries means. Effect work starts there.
-- **The rest is examples and diagnosis.** Tests and `ai-docs` fixtures may be copied from; `packages/*/src/**` is read only to diagnose a
+- **The rest is examples and diagnosis.** Tests and `ai-docs` fixtures may be copied from; the package sources are read only to diagnose a
   concrete failure.
 - **The vendored commit and the installed version move together**, in one change.
 
@@ -48,10 +49,11 @@ git subtree pull --prefix=repos/effect https://github.com/Effect-TS/effect.git m
 
 # Code Style
 
-Workspace aliases, file naming and test locations are in each workspace's `AGENTS.md`.
+`@/` aliases `src/`. Pure logic lives in `src/lib` with its test next to it (`x.test.ts`); components in `src/components` with
+`X.test.tsx` beside them.
 
 - Declarative style generally preferred.
-- Run prettier after any coding task (the `commit` skill covers the pre-commit run and the drizzle glob).
+- Run prettier after any coding task (the `commit` skill covers the pre-commit run).
 - DRY: extract when a pattern appears (or is planned to appear) three times.
 - SOLID: single responsibility strictly; open/closed for anything likely to be extended.
 - Types, not interfaces. `interface` only for declaration merging or a class `implements` clause.
@@ -92,7 +94,7 @@ Rules of thumb, none binding.
 **Schematize where a value leaves TypeScript's reach.** A value needs a Zod schema and a real `parse` at the crossing when it arrives from a
 caller this code does not control, crosses an injection seam, leaves the language (argv, filesystem, wire, WebAssembly, native), or comes
 back from a parse that cannot fail loudly (`Number('')` is `0`). String interpolation is the usual tell: `` `seed=${value}` `` turns
-`undefined` into `seed=undefined`. A value produced and consumed inside one package needs no schema (`Posterior` in
-`packages/analysis-engine`; `SamplerRequest` and `Draws` cross into C++ and are schematized on both sides).
+`undefined` into `seed=undefined`. A value produced and consumed inside this codebase needs no schema; the sample entries, a CMS
+response and a route param do.
 
 Derive the type from the schema; use `z.input` for what a caller supplies — `z.infer` has already applied every `.default()`.
