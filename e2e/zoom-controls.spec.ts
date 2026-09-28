@@ -67,7 +67,11 @@ test('zoom buttons invert on hover and keyboard focus, never while disabled', as
 
     await page.mouse.move(0, 0)
     await region.focus()
-    await tabUntil(page, (f) => f.name === 'Hineinzoomen')
+    await tabUntil(page, (f) => f.name === 'Herauszoomen')
+    await expect(zoomOut).toBeFocused()
+    expect((await paint(zoomOut)).background).toBe(TRANSPARENT)
+
+    await page.keyboard.press('Tab')
     await expect(zoomIn).toBeFocused()
     expect(await paint(zoomIn)).toMatchObject({
         background: ink,
