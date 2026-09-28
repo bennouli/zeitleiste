@@ -96,3 +96,39 @@ test('hovering a span darkens it and shows its hover note; clicking it opens no 
     await expect(page.locator('article')).toHaveCount(0)
     expect(page.url()).toBe(urlBefore)
 })
+
+test('bars paint behind the dots and connectors that cross them', async ({
+    page,
+}) => {
+    await openTimeline(page)
+    const paintOrder = await page.evaluate(() => {
+        const marks = [
+            ...document.querySelectorAll<HTMLElement>(
+                '[data-axis-dot], [data-connector]'
+            ),
+        ]
+        const bars = [
+            ...document.querySelectorAll<HTMLElement>('[data-span-id]'),
+        ]
+        return marks.flatMap((mark) => {
+            const m = mark.getBoundingClientRect()
+            return bars.flatMap((bar) => {
+                const b = bar.getBoundingClientRect()
+                const left = Math.max(m.left, b.left)
+                const right = Math.min(m.right, b.right)
+                const top = Math.max(m.top, b.top)
+                const bottom = Math.min(m.bottom, b.bottom)
+                if (right - left < 1 || bottom - top < 1) return []
+                mark.style.pointerEvents = 'auto'
+                const stack = document.elementsFromPoint(
+                    (left + right) / 2,
+                    (top + bottom) / 2
+                )
+                mark.style.pointerEvents = ''
+                return [stack.indexOf(mark) < stack.indexOf(bar)]
+            })
+        })
+    })
+    expect(paintOrder.length).toBeGreaterThan(0)
+    expect(paintOrder.every(Boolean)).toBe(true)
+})
