@@ -247,7 +247,7 @@ function useWheelGesture(
             e.preventDefault()
             if (settleTimer === null) actions.beginGesture()
             else clearTimeout(settleTimer)
-            if (intent.type === 'pan') actions.panBy(-intent.deltaPx)
+            if (intent.type === 'pan') actions.panBy(intent.contentShiftPx)
             else
                 actions.wheelZoom(
                     e.clientX - container.getBoundingClientRect().left,

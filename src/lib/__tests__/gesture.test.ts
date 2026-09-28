@@ -437,27 +437,33 @@ describe('wheelIntent', () => {
         expect(wheelIntent(scroll, PAGE_PX)).toEqual({ type: 'browser' })
     })
 
-    it('pans by deltaY on Shift + wheel reported vertically', () => {
-        const scroll = wheel({ deltaY: 100, shiftKey: true })
-        expect(wheelIntent(scroll, PAGE_PX)).toEqual({
-            type: 'pan',
-            deltaPx: 100,
-        })
-    })
+    it.each([
+        ['later', 'up', -100, -100],
+        ['earlier', 'down', 100, 100],
+    ])(
+        'pans towards %s dates on Shift + wheel %s reported vertically',
+        (_dates, _direction, deltaY, contentShiftPx) => {
+            const scroll = wheel({ deltaY, shiftKey: true })
+            expect(wheelIntent(scroll, PAGE_PX)).toEqual({
+                type: 'pan',
+                contentShiftPx,
+            })
+        }
+    )
 
-    it('pans by deltaX on Shift + wheel reported horizontally', () => {
+    it('pans towards later dates on Shift + wheel up reported horizontally', () => {
         const scroll = wheel({ deltaX: -100, shiftKey: true })
         expect(wheelIntent(scroll, PAGE_PX)).toEqual({
             type: 'pan',
-            deltaPx: -100,
+            contentShiftPx: -100,
         })
     })
 
-    it('pans by deltaX when the horizontal delta dominates', () => {
-        const swipe = wheel({ deltaX: 40, deltaY: 10 })
+    it('pans towards later dates on a leftward swipe', () => {
+        const swipe = wheel({ deltaX: 100, deltaY: 10 })
         expect(wheelIntent(swipe, PAGE_PX)).toEqual({
             type: 'pan',
-            deltaPx: 40,
+            contentShiftPx: -100,
         })
     })
 
@@ -481,7 +487,7 @@ describe('wheelIntent', () => {
         const page = wheel({ deltaX: 1, deltaMode: WheelEvent.DOM_DELTA_PAGE })
         expect(wheelIntent(page, PAGE_PX)).toEqual({
             type: 'pan',
-            deltaPx: PAGE_PX,
+            contentShiftPx: -PAGE_PX,
         })
     })
 

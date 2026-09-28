@@ -288,25 +288,31 @@ describe('Timeline', () => {
             expect(xOf(region, timeUnderPointer)).toBeCloseTo(pointerX, 3)
         })
 
-        it('pans on Shift + wheel without changing the span', () => {
-            const { region } = renderTimeline()
-            fireEvent.click(
-                screen.getByRole('button', { name: 'Hineinzoomen' })
-            )
-            flush()
-            const before = view(region)
-            const shiftScroll = wheel({ deltaY: -100, shiftKey: true })
-            act(() => {
-                region.dispatchEvent(shiftScroll)
-            })
-            flush()
-            expect(shiftScroll.defaultPrevented).toBe(true)
-            expect(view(region).start).toBeCloseTo(
-                before.start - (before.span / WIDTH) * 100,
-                -3
-            )
-            expect(view(region).span).toBeCloseTo(before.span, -3)
-        })
+        it.each([
+            ['Shift + wheel up', { deltaY: -100, shiftKey: true }],
+            ['a leftward swipe', { deltaX: 100 }],
+        ])(
+            'pans towards later dates on %s without changing the span',
+            (_, init) => {
+                const { region } = renderTimeline()
+                fireEvent.click(
+                    screen.getByRole('button', { name: 'Hineinzoomen' })
+                )
+                flush()
+                const before = view(region)
+                const panScroll = wheel(init)
+                act(() => {
+                    region.dispatchEvent(panScroll)
+                })
+                flush()
+                expect(panScroll.defaultPrevented).toBe(true)
+                expect(view(region).start).toBeCloseTo(
+                    before.start + (before.span / WIDTH) * 100,
+                    -3
+                )
+                expect(view(region).span).toBeCloseTo(before.span, -3)
+            }
+        )
 
         it('leaves Ctrl + wheel to the browser', () => {
             const { region } = renderTimeline()
