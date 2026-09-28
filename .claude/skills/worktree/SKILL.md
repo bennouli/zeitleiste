@@ -46,8 +46,18 @@ owner's database too — say so before running one.
 
 ## Subagents
 
-A subagent that navigates git needs `isolation: "worktree"` of its own. Without it, it races the controller's git operations in the shared
-worktree. A dispatch must verify `git rev-parse --show-toplevel` before it does anything.
+A subagent that navigates git needs a worktree of its own. Without it, it races the controller's git operations in the shared worktree. A
+dispatch must verify `git rev-parse --show-toplevel` before it does anything.
+
+`EnterWorktree` refuses to run inside a subagent, and the harness's `isolation: "worktree"` names the directory `agent-<id>` and cuts it
+from `main`. Neither is wanted: **the directory is named after the branch** (owner decision), so a subagent creates its own:
+
+```bash
+git fetch origin
+git worktree add .claude/worktrees/<branch> -b <branch> origin/staging
+```
+
+Then seed the env files and install as above. The orchestrator removes the worktree and branch in the `merge` skill.
 
 ## Finishing
 
