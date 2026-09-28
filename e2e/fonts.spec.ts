@@ -28,14 +28,14 @@ for (const path of PAGES) {
                 .first()
                 .evaluate((el) => {
                     const style = getComputedStyle(el)
-                    const loaded = [...document.fonts].filter(
+                    const loadedFaces = [...document.fonts].filter(
                         (f) =>
                             f.status === 'loaded' &&
                             style.fontFamily.includes(
                                 f.family.replace(/['"]/g, '')
                             )
                     )
-                    return loaded.map((f) => f.family)
+                    return loadedFaces.map((f) => f.family)
                 })
             expect(renderedFamilies.some((f) => family.test(f))).toBe(true)
         }
