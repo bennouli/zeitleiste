@@ -77,8 +77,10 @@ test('an ongoing span fades towards today; a finished one is solid', async ({
     )
     expect(await backgroundImage(FINISHED_SPAN)).toBe('none')
     const ongoing = await bar(page, ONGOING_SPAN).boundingBox()
-    const axis = await axisLineBox(page)
-    expect(ongoing!.x + ongoing!.width).toBeCloseTo(axis.x + axis.width, 0)
+    const todayX = await page
+        .locator('[data-today]')
+        .evaluate((el) => el.getBoundingClientRect().x)
+    expect(ongoing!.x + ongoing!.width).toBeCloseTo(todayX, 0)
 })
 
 test('hovering a span darkens it and shows its hover note; clicking it opens no post', async ({
