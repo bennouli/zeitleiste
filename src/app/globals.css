@@ -63,7 +63,7 @@
  * the `font-sans` / `font-serif` utilities without a self-referencing
  * `var(--font-sans)` cycle. */
 @theme static {
-    --container-reading: 40.625rem;
+    --container-reading: 41.25rem;
     --font-sans:
         var(--font-ibm-plex-sans), ui-sans-serif, system-ui, -apple-system,
         'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
