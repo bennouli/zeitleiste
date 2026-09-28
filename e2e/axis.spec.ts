@@ -8,18 +8,23 @@ const ZOOM_STEPS = 4
 const viewEnd = async (region: Locator) =>
     Number(await region.getAttribute('data-view-end'))
 
-/** Zooms in by keyboard, then pans right until the view stops at its bound. */
 async function zoomInAndPanToEnd(page: Page) {
     const region = timelineRegion(page)
     await region.focus()
     for (let i = 0; i < ZOOM_STEPS; i++) await page.keyboard.press('+')
-    let previousEnd = Number.NaN
-    while (previousEnd !== (await viewEnd(region))) {
-        previousEnd = await viewEnd(region)
+    await expect(async () => {
+        const endBeforePan = await viewEnd(region)
         await page.keyboard.press('ArrowRight')
-        await page.waitForTimeout(50)
-    }
+        expect(await viewEnd(region)).toBe(endBeforePan)
+    }).toPass({ intervals: [0] })
+    const regionBox = (await region.boundingBox())!
+    expect(await todayMarkX(page)).toBeGreaterThan(
+        regionBox.x + regionBox.width / 2
+    )
 }
+
+const todayMarkX = (page: Page) =>
+    page.locator('[data-today]').evaluate((el) => el.getBoundingClientRect().x)
 
 async function expectAxisSpansRegion(page: Page) {
     const region = (await timelineRegion(page).boundingBox())!
@@ -53,9 +58,7 @@ test('the axis line reaches the right edge and "Heute" stays inside', async ({
 test('ticks after today look like ticks before it', async ({ page }) => {
     await openTimeline(page)
     await zoomInAndPanToEnd(page)
-    const todayX = await page
-        .locator('[data-today]')
-        .evaluate((el) => el.getBoundingClientRect().x)
+    const todayX = await todayMarkX(page)
     const ticks = await page.locator('[data-tick]').evaluateAll((els) =>
         els.map((el) => ({
             x: el.getBoundingClientRect().x,

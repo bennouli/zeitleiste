@@ -32,6 +32,10 @@ function renderAxis(todayX: number, yearWidthPx: number) {
     )
 }
 
+function tickAt(container: HTMLElement, t: number): Element | null {
+    return container.querySelector(`[data-t="${t}"]`)
+}
+
 function tickLabel(tick: Element): HTMLElement | null {
     return tick.querySelector('span')
 }
@@ -117,19 +121,19 @@ describe('Axis', () => {
 
     it('draws a year tick after today like one before it', () => {
         const { container } = renderAxis(500, 200)
-        const tickAt = (year: number) =>
-            container.querySelector(`[data-t="${Date.UTC(year, 0, 1)}"]`)!
-        const before = tickAt(2026)
-        const after = tickAt(2028)
-        expect(after).not.toBeNull()
-        expect(after.getAttribute('data-tick')).toBe(
-            before.getAttribute('data-tick')
+        const tickBeforeToday = tickAt(container, Date.UTC(2026, 0, 1))!
+        const tickAfterToday = tickAt(container, Date.UTC(2028, 0, 1))!
+        expect(tickAfterToday).not.toBeNull()
+        expect(tickAfterToday.getAttribute('data-tick')).toBe(
+            tickBeforeToday.getAttribute('data-tick')
         )
-        expect(after.firstElementChild!.className).toBe(
-            before.firstElementChild!.className
+        expect(tickAfterToday.firstElementChild!.className).toBe(
+            tickBeforeToday.firstElementChild!.className
         )
-        expect(tickLabel(after)).toHaveTextContent('2028')
-        expect(tickLabel(after)!.className).toBe(tickLabel(before)!.className)
+        expect(tickLabel(tickAfterToday)).toHaveTextContent('2028')
+        expect(tickLabel(tickAfterToday)!.className).toBe(
+            tickLabel(tickBeforeToday)!.className
+        )
     })
 
     it.each([
@@ -139,24 +143,19 @@ describe('Axis', () => {
         'drops a tick label just %s "Heute" and keeps the tick',
         (_, yearWidthPx, hiddenT, shownT) => {
             const { container } = renderAxis(500, yearWidthPx)
-            const tickAt = (t: number) =>
-                container.querySelector(`[data-t="${t}"]`)!
-            expect(tickAt(hiddenT)).not.toBeNull()
-            expect(tickLabel(tickAt(hiddenT))).toBeNull()
-            expect(tickLabel(tickAt(shownT))).not.toBeNull()
+            const hiddenTick = tickAt(container, hiddenT)!
+            expect(hiddenTick).not.toBeNull()
+            expect(tickLabel(hiddenTick)).toBeNull()
+            expect(tickLabel(tickAt(container, shownT)!)).not.toBeNull()
         }
     )
 
     it('drops a tick label that would run into "Heute" and keeps the tick', () => {
         const { container } = renderAxis(900, 50)
-        const tick2026 = container.querySelector(
-            `[data-t="${Date.UTC(2026, 0, 1)}"]`
-        )!
+        const tick2026 = tickAt(container, Date.UTC(2026, 0, 1))!
         expect(tick2026).not.toBeNull()
         expect(tickLabel(tick2026)).toBeNull()
-        const tick2024 = container.querySelector(
-            `[data-t="${Date.UTC(2024, 0, 1)}"]`
-        )!
+        const tick2024 = tickAt(container, Date.UTC(2024, 0, 1))!
         expect(tickLabel(tick2024)).toHaveTextContent('2024')
     })
 })
