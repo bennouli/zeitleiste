@@ -1,17 +1,18 @@
 import { readdirSync, readFileSync, statSync } from 'node:fs'
-import { dirname, join, resolve } from 'node:path'
+import { dirname, join, resolve, sep } from 'node:path'
 
 const SOURCE_EXTENSIONS = ['.ts', '.tsx']
+const COMMENT_PATTERN = /\/\*[\s\S]*?\*\/|(^|[^:'"`])\/\/.*$/gm
 const IMPORT_PATTERN =
-    /(?:import|export)\s+(?:type\s+)?(?:(\w+)\s*,?\s*)?(?:\{([^}]*)\}|\*\s+as\s+\w+|\*)?\s*from\s*['"]([^'"]+)['"]|import\(\s*['"]([^'"]+)['"]\s*\)/g
+    /(?:import|export)\s+(?:type\s+)?(?:(\w+)\s*,?\s*)?(?:\{([^}]*)\}|(\*\s+as\s+\w+|\*))?\s*from\s*['"]([^'"]+)['"]|import\(\s*['"]([^'"]+)['"]\s*\)/g
 const EVERYTHING = Symbol('every export')
 
-/** Files that consume exports: production sources only, never the tests. */
-function* sourceFiles(dir) {
+/** Production sources: never the tests, never the test support. */
+function* sourceFiles(dir, skip) {
     for (const name of readdirSync(dir)) {
         const path = join(dir, name)
-        if (name === '__tests__' || name === 'node_modules') continue
-        if (statSync(path).isDirectory()) yield* sourceFiles(path)
+        if (name === '__tests__' || skip.has(path)) continue
+        if (statSync(path).isDirectory()) yield* sourceFiles(path, skip)
         else if (
             SOURCE_EXTENSIONS.some((ext) => name.endsWith(ext)) &&
             !/\.test\.tsx?$/.test(name)
@@ -41,7 +42,7 @@ function importedNames(braces) {
 }
 
 /** module key → set of imported names, or EVERYTHING for namespace imports and re-exports. */
-function buildUsageIndex(root) {
+function buildUsageIndex(root, testSupport) {
     const usage = new Map()
     const record = (key, name) => {
         const names = usage.get(key)
@@ -50,16 +51,16 @@ function buildUsageIndex(root) {
         else if (names) names.add(name)
         else usage.set(key, new Set([name]))
     }
-    for (const file of sourceFiles(join(root, 'src'))) {
-        const text = readFileSync(file, 'utf8')
+    const skip = new Set(testSupport.map((dir) => resolve(root, dir)))
+    for (const file of sourceFiles(join(root, 'src'), skip)) {
+        const text = readFileSync(file, 'utf8').replace(COMMENT_PATTERN, '$1')
         for (const match of text.matchAll(IMPORT_PATTERN)) {
-            const [, defaultName, braces, source, dynamicSource] = match
+            const [, defaultName, braces, namespace, source, dynamicSource] =
+                match
             const key = resolveSource(source ?? dynamicSource, file, root)
             if (!key) continue
-            if (dynamicSource || (!defaultName && !braces)) {
+            if (dynamicSource || namespace || (!defaultName && !braces))
                 record(key, EVERYTHING)
-                continue
-            }
             if (defaultName) record(key, 'default')
             for (const name of importedNames(braces ?? '')) record(key, name)
         }
@@ -68,20 +69,37 @@ function buildUsageIndex(root) {
 }
 
 const indexes = new Map()
-function usageIndex(root) {
-    if (!indexes.has(root)) indexes.set(root, buildUsageIndex(root))
+function usageIndex(root, testSupport) {
+    if (!indexes.has(root))
+        indexes.set(root, buildUsageIndex(root, testSupport))
     return indexes.get(root)
+}
+
+function patternNames(pattern) {
+    switch (pattern.type) {
+        case 'Identifier':
+            return [pattern.name]
+        case 'ObjectPattern':
+            return pattern.properties.flatMap((p) =>
+                patternNames(p.type === 'RestElement' ? p.argument : p.value)
+            )
+        case 'ArrayPattern':
+            return pattern.elements.flatMap((e) =>
+                e ? patternNames(e.type === 'RestElement' ? e.argument : e) : []
+            )
+        case 'AssignmentPattern':
+            return patternNames(pattern.left)
+        default:
+            return []
+    }
 }
 
 function exportedNames(node) {
     if (node.declaration) {
         const declaration = node.declaration
         if (declaration.id) return [declaration.id.name]
-        if (declaration.declarations) {
-            return declaration.declarations.flatMap((d) =>
-                d.id.type === 'Identifier' ? [d.id.name] : []
-            )
-        }
+        if (declaration.declarations)
+            return declaration.declarations.flatMap((d) => patternNames(d.id))
         return []
     }
     return node.specifiers
@@ -93,9 +111,14 @@ function exportedNames(node) {
         )
 }
 
+function isUnder(filename, dir) {
+    return filename === dir || filename.startsWith(dir + sep)
+}
+
 /**
- * AGENTS.md § Code Style: a helper that only the tests read is not a bare export. It goes in
- * PRIVATE_UNDER_TESTS; everything else a module exports is imported by production code.
+ * Reports an export that no production module imports. Imports are read from the source text
+ * with comments stripped; `export * from` counts as using everything of its target, and a
+ * long-running lint server keeps the index of its first run.
  */
 const noTestOnlyExports = {
     meta: {
@@ -108,8 +131,11 @@ const noTestOnlyExports = {
             {
                 type: 'object',
                 properties: {
-                    exempt: { type: 'array', items: { type: 'string' } },
+                    root: { type: 'string' },
+                    entryPoints: { type: 'array', items: { type: 'string' } },
+                    testSupport: { type: 'array', items: { type: 'string' } },
                 },
+                required: ['root'],
                 additionalProperties: false,
             },
         ],
@@ -119,25 +145,25 @@ const noTestOnlyExports = {
         },
     },
     create(context) {
-        const root = context.cwd
+        const { root, entryPoints = [], testSupport = [] } = context.options[0]
         const filename = context.filename
-        const exempt = context.options[0]?.exempt ?? []
-        if (exempt.some((prefix) => filename.startsWith(resolve(root, prefix))))
-            return {}
-        const used = usageIndex(root).get(moduleKey(filename))
+        const exempt = [...entryPoints, ...testSupport].map((dir) =>
+            resolve(root, dir)
+        )
+        if (exempt.some((dir) => isUnder(filename, dir))) return {}
+        const used = usageIndex(root, testSupport).get(moduleKey(filename))
         if (used === EVERYTHING) return {}
+        const report = (node, name) => {
+            if (name === 'PRIVATE_UNDER_TESTS' || used?.has(name)) return
+            context.report({ node, messageId: 'testOnly', data: { name } })
+        }
         return {
             ExportNamedDeclaration(node) {
                 if (node.exportKind === 'type' || node.source) return
-                for (const name of exportedNames(node)) {
-                    if (name === 'PRIVATE_UNDER_TESTS' || used?.has(name))
-                        continue
-                    context.report({
-                        node,
-                        messageId: 'testOnly',
-                        data: { name },
-                    })
-                }
+                for (const name of exportedNames(node)) report(node, name)
+            },
+            ExportDefaultDeclaration(node) {
+                report(node, 'default')
             },
         }
     },
