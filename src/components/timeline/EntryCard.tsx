@@ -91,7 +91,7 @@ export function EntryCard({
 
     const content = (
         <>
-            <span className="block truncate text-sm font-medium leading-5">
+            <span className="block truncate font-serif text-sm font-medium leading-5">
                 {entry.title}
             </span>
             <span className="flex items-center justify-between gap-2 text-xs leading-4 text-fg-muted">

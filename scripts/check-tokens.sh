@@ -13,7 +13,7 @@ cd "$(dirname "$0")/.."
 #    disabled in globals.css, so these would silently render nothing)
 pattern='(^|[^[:alnum:]_&/])#[0-9a-fA-F]{3}([0-9a-fA-F]{1,5})?\b'
 pattern+='|\b(rgba?|hsla?|oklch|oklab|lab|lch|hwb|color-mix)\('
-pattern+='|--(gray|red|blue|violet)-[0-9]|--(space|radius)-[0-9]'
+pattern+='|--(paper|ink|focus-blue)\b|--(space|radius)-[0-9]'
 pattern+='|\b(bg|text|border|fill|stroke|ring|outline|from|via|to|shadow|decoration|accent|caret|divide|placeholder)-(black|white|slate|gray|zinc|neutral|stone|red|orange|amber|yellow|lime|green|emerald|teal|cyan|sky|blue|indigo|violet|purple|fuchsia|pink|rose)\b'
 
 for dir in src/app src/components; do
