@@ -93,10 +93,12 @@ decisions, or project structure. A footgun may warrant a comment — flag that c
 
 Rules of thumb, none binding.
 
-**Schematize where a value leaves TypeScript's reach.** A value needs a Zod schema and a real `parse` at the crossing when it arrives from a
-caller this code does not control, crosses an injection seam, leaves the language (argv, filesystem, wire, WebAssembly, native), or comes
-back from a parse that cannot fail loudly (`Number('')` is `0`). String interpolation is the usual tell: `` `seed=${value}` `` turns
-`undefined` into `seed=undefined`. A value produced and consumed inside this codebase needs no schema; the sample entries, a CMS response
-and a route param do.
+**Schematize where a value leaves TypeScript's reach.** A value needs an Effect Schema and a real decode at the crossing
+(`Schema.decodeUnknownSync` where invalid input is a bug, `decodeUnknownResult` where the code branches on failure, `decodeUnknownEffect`
+inside Effect code) when it arrives from a caller this code does not control, crosses an injection seam, leaves the language (argv,
+filesystem, wire, WebAssembly, native), or comes back from a parse that cannot fail loudly (`Number('')` is `0`). String interpolation is
+the usual tell: `` `seed=${value}` `` turns `undefined` into `seed=undefined`. A value produced and consumed inside this codebase needs no
+schema; the sample entries, a CMS response and a route param do. The idioms are in `agent-patterns/effect-schema.md`.
 
-Derive the type from the schema; use `z.input` for what a caller supplies — `z.infer` has already applied every `.default()`.
+Derive the type from the schema; `typeof S.Encoded` is what a caller supplies, `typeof S.Type` is what the code holds after decoding — the
+decoded side has already applied every default and transformation.
