@@ -22,8 +22,8 @@ export function Post({ entry }: { entry: Entry }) {
             aria-labelledby={titleId}
             className="relative mx-8 border-t border-border bg-surface text-fg"
         >
-            <div className="mx-auto flex max-w-reading flex-col gap-[18px] pt-9 pb-16 font-serif">
-                <p className="pr-8 font-sans text-[10.5px] font-medium tracking-[0.12em] text-fg-muted uppercase">
+            <div className="mx-auto flex max-w-reading flex-col gap-4.5 pt-9 pb-16 font-serif">
+                <p className="pr-8 font-sans text-meta font-medium tracking-meta text-fg-muted uppercase">
                     <span>{formatEntryDate(entry, 'long')}</span>
                     <span aria-hidden="true"> · </span>
                     <span className="sr-only">, </span>
@@ -37,19 +37,14 @@ export function Post({ entry }: { entry: Entry }) {
                     id={titleId}
                     tabIndex={-1}
                     data-post-heading
-                    className="text-[44px] leading-[1.05] font-normal focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-focus"
+                    className="text-post-title font-normal focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-focus"
                 >
                     {entry.title}
                 </h2>
-                <p className="text-[20px] leading-[1.35] italic">
-                    {entry.summary}
-                </p>
+                <p className="text-lead italic">{entry.summary}</p>
                 {entry.post &&
                     paragraphs(entry.post.body).map((p, i) => (
-                        <p
-                            key={i}
-                            className="text-[16.5px] leading-[1.5] text-pretty"
-                        >
+                        <p key={i} className="text-body text-pretty">
                             {p}
                         </p>
                     ))}
@@ -59,9 +54,20 @@ export function Post({ entry }: { entry: Entry }) {
                 onClick={close}
                 aria-label="Beitrag schließen"
                 title="Schließen"
-                className="absolute top-[22px] right-0 font-sans text-[28px] leading-none font-normal text-fg-muted hover:text-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
+                className="absolute top-5.5 right-0 size-7 text-fg-muted hover:text-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
             >
-                <span aria-hidden="true">×</span>
+                <svg
+                    aria-hidden="true"
+                    width="28"
+                    height="28"
+                    viewBox="0 0 28 28"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.25"
+                    strokeLinecap="round"
+                >
+                    <path d="M8 8l12 12M20 8L8 20" />
+                </svg>
             </button>
         </article>
     )
