@@ -181,7 +181,27 @@ git diff $R -- 'src' ':!*.test.*' | grep -nE '^\+.*(JSON\.parse|\.map\(Number\)|
 
 On every hit, ask: after this line, does anything check the value is what the type claims?
 
-## Dimension 8 — Issue fit and comments (MAJOR)
+## Dimension 8 — Effect at the boundaries (MAJOR)
+
+AGENTS.md § Architecture: fallible or async work is an `Effect` with typed errors; pure logic and React stay plain; the server boundary runs
+the program once. The diff breaks it in three ways: a thrown or swallowed error where an `Effect` belongs, hand-rolled retry or timeout
+code, and Effect leaking into a client component.
+
+```bash
+# server-side code handling failure by hand
+git diff $R -- 'src' ':!*__tests__*' ':!src/components' \
+  | grep -nE '^\+.*(try \{|catch \(|throw new|\.then\(|await fetch|setTimeout\(.*retry|process\.env\.)'
+# Effect in the browser bundle
+git diff $R -- 'src/components' 'src/app' | grep -lE "^\+.*from 'effect'" | xargs -r grep -l "'use client'"
+# errors that are not tagged
+git diff $R -- 'src' ':!*__tests__*' | grep -nE '^\+.*(class \w+Error extends Error|new Error\()'
+```
+
+Not findings: a `try`/`catch` inside a React event handler; the single `Effect.runPromise` (or `runPromiseExit`) at a route, server
+component or action; a schema decode that returns `Result`. Ask of every other hit: what does the caller learn when this fails, and is it a
+value it can match on?
+
+## Dimension 9 — Issue fit and comments (MAJOR)
 
 Check these **after** forming your findings:
 

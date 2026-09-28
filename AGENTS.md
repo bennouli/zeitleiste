@@ -47,6 +47,18 @@ alone leaves all three undone.
 git subtree pull --prefix=repos/effect https://github.com/Effect-TS/effect.git main --squash
 ```
 
+# Architecture
+
+- **Fallible or async work is an `Effect`.** Loading from Payload, revalidating, sending mail, reading env, anything that touches the
+  network, the filesystem or a process boundary. Errors are typed values in the error channel (`Data.TaggedError`), never thrown past the
+  boundary and never caught and dropped. Retries, timeouts and resource cleanup come from Effect, not from hand-rolled loops or
+  `try`/`catch`.
+- **Pure logic stays plain.** Geometry, dates, formatting, layout, React hooks and rendering: a function that cannot fail takes no `Effect`.
+  Wrapping it is ceremony.
+- **The seam is the server boundary.** A route, server component or server action runs the program once at the edge (`Effect.runPromise`),
+  the client receives plain data. Effect never reaches the browser bundle.
+- **Schemas at every crossing** — § Heuristics.
+
 # Code Style
 
 `@/` aliases `src/`. `src/lib` holds logic shared by more than one module; components live in `src/components`. Tests sit in a `__tests__/`
