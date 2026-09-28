@@ -3,9 +3,9 @@ import { MS_PER_YEAR } from '@/lib/time'
 /** Height of the axis band (line, ticks, labels, "Heute" mark). */
 export const AXIS_HEIGHT_PX = 56
 /** Distance from the axis line to the nearest edge of the first card row. */
-export const CARD_FIRST_ROW_OFFSET_PX = 30
+export const CARD_FIRST_ROW_OFFSET_PX = 32
 /** Vertical pitch of one card row above/below the axis. */
-export const CARD_ROW_HEIGHT_PX = 54
+export const CARD_ROW_HEIGHT_PX = 57
 /** Visible time span when a post opens (the entry is centered). */
 export const FOCUS_VISIBLE_MS = 40 * MS_PER_YEAR
 /** Height of the timeline while a post is open. */

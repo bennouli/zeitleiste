@@ -17,9 +17,9 @@ const EXPANDED = false
 const COLLAPSED = true
 
 describe('bandGeometry', () => {
-    it('gives a full desktop timeline seven rows and a three-card stack', () => {
+    it('gives a full desktop timeline six rows and a three-card stack', () => {
         expect(bandGeometry(FULL_HEIGHT, DESKTOP_WIDTH, EXPANDED)).toEqual({
-            maxLevels: 7,
+            maxLevels: 6,
             visibleCount: 3,
             groupLevels: 3,
         })

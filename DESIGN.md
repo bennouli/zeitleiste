@@ -12,7 +12,7 @@ beyond ink.
 | Font          | Weights / styles     | Variable                                          | Used for                                                                | Why                                                                                          |
 | ------------- | -------------------- | ------------------------------------------------- | ----------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
 | EB Garamond   | 400, 500, italic 400 | `--font-eb-garamond`, `--font-eb-garamond-italic` | `font-serif`: entry titles, post title, body; `font-serif-italic`: lead | A book face for long reading and for titles that should read as history, not as a dashboard. |
-| IBM Plex Sans | 400, 500             | `--font-ibm-plex-sans`                            | `font-sans`: tick labels, dates, meta lines, buttons, wordmark          | Neutral and legible at 10–11 px; separates data from prose.                                  |
+| IBM Plex Sans | 400, 500             | `--font-ibm-plex-sans`                            | `font-sans`: tick labels, dates, meta lines, buttons, wordmark          | Neutral and legible at 12–13 px; separates data from prose.                                  |
 
 - Served from the repository: static woff2 files in `src/fonts/<family>/`, latin and latin-ext subsets, each family with its OFL `LICENSE`.
   Copied from `@fontsource/eb-garamond` 5.3.0 and `@fontsource/ibm-plex-sans` 5.3.0 (`files/<family>-<subset>-<weight>-<style>.woff2`); the
@@ -31,7 +31,7 @@ beyond ink.
   after reordering.
 - Widths of text columns are set in `rem` (`max-w-reading`, 41.25 rem = 660 px): a `ch` width changes when the web font replaces its
   fallback.
-- **Small caps** = uppercase, letter-spacing 0.06–0.18 em, 10–11 px, IBM Plex Sans. It is the label style for dates, tick labels and meta
+- **Small caps** = uppercase, letter-spacing 0.06–0.18 em, 12–13 px, IBM Plex Sans. It is the label style for dates, tick labels and meta
   lines. The `small-caps` utility in `globals.css` sets the font and uppercase; each use adds its size (`text-label`, `text-label-lg`,
   `text-meta`) and its tracking token.
 
@@ -44,17 +44,17 @@ Theme lengths are rem, so type follows the browser's font-size setting; the px v
 unitless and letter spacing is in em, so both scale with the size. The timeline's layout constants (row offsets, label height and width cap)
 are px measured at the 16 px default.
 
-| Token             | Size / line height          | Role                                                                 |
-| ----------------- | --------------------------- | -------------------------------------------------------------------- |
-| `text-label`      | 0.625 rem (10 px)           | Small caps: tick labels, "Heute", date lines, counter, position line |
-| `text-label-lg`   | 0.6875 rem (11 px)          | Wordmark                                                             |
-| `text-meta`       | 0.65625 rem (10.5 px)       | Post meta line                                                       |
-| `text-entry`      | 1.0625 rem (17 px) / 1.1    | Entry title on the timeline                                          |
-| `text-note-title` | 0.9375 rem (15 px) / 1.2    | Hover note title                                                     |
-| `text-note`       | 0.8125 rem (13 px) / 1.4    | Hover note text                                                      |
-| `text-post-title` | 2.75 rem (44 px) / 1.05     | Post title                                                           |
-| `text-lead`       | 1.25 rem (20 px) / 1.35     | Post lead                                                            |
-| `text-body`       | 1.03125 rem (16.5 px) / 1.5 | Post body                                                            |
+| Token             | Size / line height       | Role                                                                 |
+| ----------------- | ------------------------ | -------------------------------------------------------------------- |
+| `text-label`      | 0.75 rem (12 px)         | Small caps: tick labels, "Heute", date lines, counter, position line |
+| `text-label-lg`   | 0.8125 rem (13 px)       | Wordmark                                                             |
+| `text-meta`       | 0.75 rem (12 px)         | Post meta line                                                       |
+| `text-entry`      | 1.25 rem (20 px) / 1.1   | Entry title on the timeline                                          |
+| `text-note-title` | 1.0625 rem (17 px) / 1.2 | Hover note title                                                     |
+| `text-note`       | 0.9375 rem (15 px) / 1.4 | Hover note text                                                      |
+| `text-post-title` | 2.75 rem (44 px) / 1.05  | Post title                                                           |
+| `text-lead`       | 1.375 rem (22 px) / 1.35 | Post lead                                                            |
+| `text-body`       | 1.125 rem (18 px) / 1.5  | Post body                                                            |
 
 | Token               | Letter spacing | Role                 |
 | ------------------- | -------------- | -------------------- |
