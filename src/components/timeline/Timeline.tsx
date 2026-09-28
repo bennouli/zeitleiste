@@ -52,6 +52,7 @@ export function Timeline({
         [entries, today, width]
     )
     const height = useSettled(liveHeight, HEIGHT_SETTLE_MS)
+    const isMeasured = width > 0 && height > 0
     const helpId = useId()
     const controls = useViewport({ bounds, width })
     const { viewport, actions } = controls
@@ -137,7 +138,6 @@ export function Timeline({
                 aria-describedby={helpId}
                 data-view-start={width > 0 ? viewport.start : undefined}
                 data-view-end={width > 0 ? viewport.end : undefined}
-                data-settled-height={height}
                 className={clsx(
                     // clip, not hidden: a clipped box is no scroll container, so focusing an off-screen card can't scroll it.
                     'relative flex w-full touch-pan-y flex-col overflow-clip bg-surface text-fg select-none',
@@ -155,7 +155,7 @@ export function Timeline({
                     Mit Plus und Minus zoomen, mit den Pfeiltasten links und
                     rechts in der Zeit verschieben.
                 </p>
-                {width > 0 && (
+                {isMeasured && (
                     <>
                         <div data-layer="above" className="min-h-0 flex-1" />
                         <div
@@ -234,9 +234,15 @@ function useElementSize() {
     return { ...size, ref, elRef }
 }
 
-/** The last value that stayed unchanged for `delayMs`; ignores the frames of a height transition. */
+/**
+ * The last value that stayed unchanged for `delayMs`; ignores the frames of a height transition.
+ * The first change away from the initial (unmeasured) value applies at once, so the first layout is the final one.
+ */
 function useSettled<T>(value: T, delayMs: number): T {
+    const [unmeasured] = useState(value)
     const [settled, setSettled] = useState(value)
+    if (Object.is(settled, unmeasured) && !Object.is(value, settled))
+        setSettled(value)
     useEffect(() => {
         if (Object.is(value, settled)) return
         const id = window.setTimeout(() => setSettled(value), delayMs)

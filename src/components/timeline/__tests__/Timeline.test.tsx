@@ -153,11 +153,29 @@ describe('Timeline', () => {
         )
     })
 
-    it('exposes the height the layout was computed for once it has settled', () => {
-        const { region } = renderTimeline()
-        expect(region.dataset.settledHeight).toBe('0')
+    it('lays out the entries for the measured height from the first render on', () => {
+        const itemPositions = (container: HTMLElement) =>
+            [
+                ...container.querySelectorAll<HTMLElement>(
+                    '[data-layer="cards"] [data-entry-id]'
+                ),
+            ].map((el) => `${el.dataset.entryId} ${el.getAttribute('style')}`)
+        const { container } = renderTimeline()
+        const firstLayout = itemPositions(container)
+
         flush()
-        expect(region.dataset.settledHeight).toBe(String(HEIGHT))
+
+        expect(firstLayout.length).toBeGreaterThan(0)
+        expect(itemPositions(container)).toEqual(firstLayout)
+    })
+
+    it('draws no entries before the timeline has a height', () => {
+        vi.spyOn(HTMLElement.prototype, 'clientHeight', 'get').mockReturnValue(
+            0
+        )
+        const { container } = renderTimeline()
+        expect(container.querySelector('[data-layer="cards"]')).toBeNull()
+        expect(container.querySelector('[data-layer="spans"]')).toBeNull()
     })
 
     it('keeps ticking past today up to the end of the view', () => {
