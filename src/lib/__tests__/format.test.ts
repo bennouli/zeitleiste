@@ -8,14 +8,14 @@ import {
     formatEntryDate,
     formatEntryMeta,
     formatGroupMeta,
-    formatGroupYears,
+    formatGroupName,
     formatMonth,
     formatPosition,
     formatYear,
     PRIVATE_UNDER_TESTS,
 } from '../format'
 
-const { formatHDate } = PRIVATE_UNDER_TESTS
+const { formatHDate, formatGroupYears } = PRIVATE_UNDER_TESTS
 
 const DASH = '–'
 
@@ -267,6 +267,20 @@ describe('group lines', () => {
         expect(formatGroupYears([revolution, civilWar, nep])).toBe(
             `1917${DASH}1922`
         )
+    })
+
+    it('formatGroupName names the count and the years', () => {
+        expect(formatGroupName([revolution, civilWar, nep])).toBe(
+            `Gruppe mit 3 Einträgen, 1917${DASH}1922`
+        )
+        expect(formatGroupName([revolution, revolution])).toBe(
+            'Gruppe mit 2 Einträgen, 1917'
+        )
+        expect(formatGroupName([revolution])).toBe('Gruppe mit 1 Eintrag, 1917')
+    })
+
+    it('formatGroupName falls back to a bare name for no entries', () => {
+        expect(formatGroupName([])).toBe('Gruppe')
     })
 
     it('formatGroupYears names a single year once and nothing for no entries', () => {

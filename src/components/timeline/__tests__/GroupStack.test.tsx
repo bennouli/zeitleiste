@@ -189,8 +189,8 @@ describe('GroupStack', () => {
 
     it('fills the dots of the entries in view and follows keyboard steps', async () => {
         const user = userEvent.setup()
-        const sixEntries = makeEntries(6)
-        const { group } = setup({ entries: sixEntries, visibleCount: 2 })
+        const sixInTwoSlots = { entries: makeEntries(6), visibleCount: 2 }
+        const { group } = setup(sixInTwoSlots)
         expect(inViewDots(group)).toEqual([
             true,
             true,
@@ -233,12 +233,14 @@ describe('GroupStack', () => {
     })
 
     it('puts the strip after the cards when anchored at the end', () => {
-        setup({ anchoredAt: 'end' })
+        const anchoredAtEnd = { anchoredAt: 'end' } as const
+        setup(anchoredAtEnd)
         expect(up().parentElement).toHaveClass('left-full')
     })
 
     it('lines the strip up with the bottom of a stack above the axis', () => {
-        setup({ side: 'above' })
+        const aboveTheAxis = { side: 'above' } as const
+        setup(aboveTheAxis)
         expect(up().parentElement).toHaveClass('bottom-0')
     })
 
@@ -246,11 +248,18 @@ describe('GroupStack', () => {
         const { STRIP_BUTTON_PX, STRIP_DOT_PX, STRIP_GAP_PX } =
             PRIVATE_UNDER_TESTS
         const tinySlot = 1
+        const oneVisible = 1
+        const sixMembers = 6
+        const sevenMembers = 7
         const stripOfSix =
             2 * STRIP_BUTTON_PX + 6 * STRIP_DOT_PX + 7 * STRIP_GAP_PX
         const stripWithoutDots = 2 * STRIP_BUTTON_PX + STRIP_GAP_PX
-        expect(groupStackHeightPx(6, 1, tinySlot)).toBe(stripOfSix)
-        expect(groupStackHeightPx(7, 1, tinySlot)).toBe(stripWithoutDots)
+        expect(groupStackHeightPx(sixMembers, oneVisible, tinySlot)).toBe(
+            stripOfSix
+        )
+        expect(groupStackHeightPx(sevenMembers, oneVisible, tinySlot)).toBe(
+            stripWithoutDots
+        )
     })
 
     it('sizes the viewport to the entry count when fewer than visibleCount', () => {
@@ -617,39 +626,23 @@ describe('stepForKey', () => {
 })
 
 describe('GroupMarker', () => {
-    const sevenEntries = makeEntries(7)
     const fourEntries = makeEntries(4)
+    const fourLabel = 'Hineinzoomen: Gruppe mit 4 Einträgen, 1914–1917'
+    const noop = () => {}
 
-    it('shows the count as an image with the label when not interactive', () => {
-        render(
-            <GroupMarker
-                entries={sevenEntries}
-                label="Gruppe mit 7 Einträgen, 1914–1920"
-                side="above"
-            />
-        )
-        const marker = screen.getByRole('img', {
-            name: 'Gruppe mit 7 Einträgen, 1914–1920',
-        })
-        expect(marker).toHaveTextContent('7')
-        expect(screen.queryByRole('button')).toBeNull()
-    })
-
-    it('is a button calling onActivate when given', async () => {
+    it('is a zoom-in button showing the count and calling onActivate', async () => {
         const user = userEvent.setup()
         const onActivate = vi.fn()
         render(
             <GroupMarker
                 entries={fourEntries}
-                label="Gruppe mit 4 Einträgen, 1914–1917"
+                label={fourLabel}
                 side="below"
                 onActivate={onActivate}
                 highlighted
             />
         )
-        const button = screen.getByRole('button', {
-            name: 'Gruppe mit 4 Einträgen, 1914–1917',
-        })
+        const button = screen.getByRole('button', { name: fourLabel })
         expect(button).toHaveTextContent('4')
         expect(button).toHaveClass('cursor-zoom-in')
         await user.click(button)
@@ -663,9 +656,9 @@ describe('GroupMarker', () => {
         render(
             <GroupMarker
                 entries={fourEntries}
-                label="Gruppe mit 4 Einträgen, 1914–1917"
+                label={fourLabel}
                 side="above"
-                onActivate={() => {}}
+                onActivate={noop}
             />
         )
         await user.tab()
@@ -687,19 +680,12 @@ describe('GroupMarker', () => {
 
     it('has no detectable accessibility violations', async () => {
         const { container } = render(
-            <div>
-                <GroupMarker
-                    entries={sevenEntries}
-                    label="Gruppe mit 7 Einträgen, 1914–1920"
-                    side="above"
-                />
-                <GroupMarker
-                    entries={fourEntries}
-                    label="Gruppe mit 4 Einträgen, 1914–1917"
-                    side="below"
-                    onActivate={() => {}}
-                />
-            </div>
+            <GroupMarker
+                entries={fourEntries}
+                label={fourLabel}
+                side="below"
+                onActivate={noop}
+            />
         )
         await expectNoAxeViolations(container)
     })

@@ -1,7 +1,7 @@
 'use client'
 
 import type { Entry } from '@/lib/entry'
-import { formatGroupYears } from '@/lib/format'
+import { formatGroupName } from '@/lib/format'
 import { compareIds } from '@/lib/order'
 import type { CSSProperties, ReactNode } from 'react'
 import { AXIS_LINE_Y_PX } from './Axis'
@@ -176,7 +176,7 @@ function GroupItem({
                 slotHeightPx={slotHeightPx}
                 // Without a highlighted member the window stays put (closing a post must not hide its card).
                 initialIndex={focusIndex >= 0 ? focusIndex : undefined}
-                label={groupLabel(item.entries)}
+                label={formatGroupName(item.entries)}
                 side={side}
                 renderCard={(entry) => (
                     <EntryCard
@@ -230,14 +230,9 @@ function MarkerItem({ item, highlighted, onZoomIntoGroup }: MarkerItemProps) {
     )
 }
 
-function groupLabel(entries: Entry[]): string {
-    if (entries.length === 0) return 'Gruppe'
-    return `Gruppe mit ${entries.length} Einträgen, ${formatGroupYears(entries)}`
-}
-
 /** Name of a group's axis marker; differs from the stack's name so the two tab stops are distinguishable. */
 function markerLabel(entries: Entry[]): string {
-    return `Hineinzoomen: ${groupLabel(entries)}`
+    return `Hineinzoomen: ${formatGroupName(entries)}`
 }
 
-export const PRIVATE_UNDER_TESTS = { groupLabel, markerLabel }
+export const PRIVATE_UNDER_TESTS = { markerLabel }

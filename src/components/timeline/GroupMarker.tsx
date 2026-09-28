@@ -11,14 +11,14 @@ import { useTooltipTrigger } from './useTooltipTrigger'
 export type GroupMarkerProps = {
     /** The group's members, chronological. */
     entries: Entry[]
-    /** Accessible label, e.g. "Gruppe mit 7 Einträgen, 1914–1922" (caller builds the date part). */
+    /** Accessible label, e.g. "Hineinzoomen: Gruppe mit 7 Einträgen, 1914–1922". */
     label: string
     /** The side of the axis the group's stack is on; the hover note opens on the other. */
     side: Side
     /** Visual only; put anything screen readers need into `label`. */
     highlighted?: boolean
-    /** Optional click → the timeline zooms into the group. */
-    onActivate?: () => void
+    /** Click → the timeline zooms into the group. */
+    onActivate: () => void
 }
 
 /** Diameter of the marker's counter circle in px, for centering it on the axis. */
@@ -38,48 +38,32 @@ export function GroupMarker({
         tooltipId,
         anchorRef,
     })
-    const className = clsx(
-        'flex items-center justify-center rounded-full border border-fg bg-surface text-label font-medium tabular-nums text-fg',
-        highlighted && 'outline-2 outline-offset-2 outline-accent'
-    )
-    const style = { width: GROUP_MARKER_SIZE_PX, height: GROUP_MARKER_SIZE_PX }
-    const content = <span aria-hidden="true">{entries.length}</span>
-
-    const counter = onActivate ? (
-        <button
-            type="button"
-            aria-label={label}
-            aria-describedby={tooltipId}
-            {...triggerProps}
-            onClick={() => {
-                // Otherwise the next Escape would only close this note.
-                dismiss()
-                onActivate()
-            }}
-            className={clsx(
-                className,
-                'cursor-zoom-in hover:bg-accent hover:text-accent-fg',
-                'focus-visible:bg-accent focus-visible:text-accent-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus'
-            )}
-            style={style}
-        >
-            {content}
-        </button>
-    ) : (
-        <span
-            role="img"
-            aria-label={label}
-            aria-describedby={tooltipId}
-            className={className}
-            style={style}
-        >
-            {content}
-        </span>
-    )
 
     return (
         <div ref={anchorRef} className="relative" {...hoverProps}>
-            {counter}
+            <button
+                type="button"
+                aria-label={label}
+                aria-describedby={tooltipId}
+                {...triggerProps}
+                onClick={() => {
+                    // Otherwise the next Escape would only close this note.
+                    dismiss()
+                    onActivate()
+                }}
+                className={clsx(
+                    'flex cursor-zoom-in items-center justify-center rounded-full border border-fg bg-surface text-label font-medium tabular-nums text-fg',
+                    'hover:bg-accent hover:text-accent-fg focus-visible:bg-accent focus-visible:text-accent-fg',
+                    'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus',
+                    highlighted && 'outline-2 outline-offset-2 outline-accent'
+                )}
+                style={{
+                    width: GROUP_MARKER_SIZE_PX,
+                    height: GROUP_MARKER_SIZE_PX,
+                }}
+            >
+                <span aria-hidden="true">{entries.length}</span>
+            </button>
             <Tooltip
                 id={tooltipId}
                 open={open}

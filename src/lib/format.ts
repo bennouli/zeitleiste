@@ -107,7 +107,7 @@ export function formatEntryMeta(entry: Entry): string {
 }
 
 /** Years a chronological group covers, from its first to its last entry's start: '1917–1922', or '1917' once. Empty for no entries. */
-export function formatGroupYears(entries: readonly Entry[]): string {
+function formatGroupYears(entries: readonly Entry[]): string {
     const first = entries[0]
     const last = entries[entries.length - 1]
     if (!first || !last) return ''
@@ -121,6 +121,14 @@ export function formatGroupMeta(entries: readonly Entry[]): string {
     const count = entries.length
     const noun = count === 1 ? 'Eintrag' : 'Einträge'
     return `${count} ${noun} · ${formatGroupYears(entries)}`
+}
+
+/** Accessible name of a group: 'Gruppe mit 6 Einträgen, 1917–1922'; 'Gruppe' for no entries. */
+export function formatGroupName(entries: readonly Entry[]): string {
+    const count = entries.length
+    if (count === 0) return 'Gruppe'
+    const noun = count === 1 ? 'Eintrag' : 'Einträgen'
+    return `Gruppe mit ${count} ${noun}, ${formatGroupYears(entries)}`
 }
 
 /** Position of a stack's window: zero-based `index` of `count` → '1 von 6'. */
@@ -157,4 +165,4 @@ export function formatDay(t: number, locale = 'de'): string {
     )
 }
 
-export const PRIVATE_UNDER_TESTS = { formatHDate }
+export const PRIVATE_UNDER_TESTS = { formatHDate, formatGroupYears }

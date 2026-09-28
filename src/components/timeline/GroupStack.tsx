@@ -92,6 +92,10 @@ function clamp(i: number, max: number): number {
     return Math.min(Math.max(0, Math.round(i)), max)
 }
 
+function isInWindow(i: number, topIndex: number, slotCount: number): boolean {
+    return i >= topIndex && i < topIndex + slotCount
+}
+
 type StepDirection = 1 | -1
 
 /**
@@ -149,7 +153,7 @@ export function GroupStack({
         const slotIndex = focusedSlotIndex(group)
         if (
             slotIndex !== null &&
-            (slotIndex < clampedIndex || slotIndex >= clampedIndex + slotCount)
+            !isInWindow(slotIndex, clampedIndex, slotCount)
         )
             group.focus()
     }
@@ -207,8 +211,7 @@ export function GroupStack({
                     }}
                 >
                     {entries.map((entry, i) => {
-                        const inWindow =
-                            i >= topIndex && i < topIndex + slotCount
+                        const inWindow = isInWindow(i, topIndex, slotCount)
                         return (
                             <li
                                 key={entry.id}
@@ -401,7 +404,7 @@ function IndicatorStrip({
             style={{ gap: STRIP_GAP_PX }}
         >
             {Array.from({ length: entryCount }, (_, i) => {
-                const inView = i >= topIndex && i < topIndex + slotCount
+                const inView = isInWindow(i, topIndex, slotCount)
                 return (
                     <span
                         key={i}
@@ -458,7 +461,6 @@ type StepButtonProps = {
     onStep: (direction: StepDirection) => void
 }
 
-/** aria-disabled (not disabled) keeps keyboard focus on the button at either end. */
 function StepButton({ direction, canStep, onStep }: StepButtonProps) {
     const Icon = direction === -1 ? ArrowUp : ArrowDown
     return (
