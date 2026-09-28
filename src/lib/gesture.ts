@@ -1,5 +1,7 @@
-import { DRAG_THRESHOLD_PX } from '@/components/timeline/constants'
 import { estimateVelocity } from './viewport'
+
+/** A press that moves less than this is a click, not a drag. */
+const DRAG_THRESHOLD_PX = 6
 
 export type PointerSample = {
     id: number

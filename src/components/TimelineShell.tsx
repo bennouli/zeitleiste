@@ -1,100 +1,63 @@
 'use client'
 
 import { PostContext } from '@/components/PostContext'
-import { findFocusTarget } from '@/components/timeline/focusTarget'
+import { findFocusTarget } from '@/components/timeline/entryFocus'
 import { Timeline } from '@/components/timeline/Timeline'
 import { isTypingTarget, prefersReducedMotion } from '@/lib/dom'
-import { easeInOut } from '@/lib/easing'
 import type { Entry } from '@/lib/entry'
 import { findEntry, postHref, slugFromPathname } from '@/lib/posts'
+import { animateScroll } from '@/lib/scroll'
 import { usePathname, useRouter } from 'next/navigation'
 import { useCallback, useEffect, useMemo, useRef, type ReactNode } from 'react'
 
-/** Where the start of the post should sit, as a fraction of the viewport height from the top. */
-const POST_TOP_RATIO = 0.4
+const POST_TOP_VIEWPORT_FRACTION = 0.4
+const FOLD_VIEWPORT_FRACTION = 0.9
 const SCROLL_MS = 500
-/** Keep following layout changes (the timeline's height transition) at most this long. */
-const SCROLL_MAX_MS = 1500
+const FOLLOW_LAYOUT_MAX_MS = 1500
 
-/**
- * Scrolls the window so the top of `el` sits at POST_TOP_RATIO of the viewport.
- * The target is re-measured every frame, so the scroll runs together with the
- * timeline's height transition and still lands on the final layout.
- * Stops as soon as the user scrolls or touches. Returns a cancel function.
- */
+type Opener = { el: HTMLElement; id: string }
+
 function scrollToPost(
-    el: HTMLElement,
+    post: HTMLElement,
     animate: boolean,
     onlyIfBelowFold = false
 ): () => void {
-    const target = () =>
+    const postScrollTop = () =>
         Math.max(
             0,
-            el.getBoundingClientRect().top +
+            post.getBoundingClientRect().top +
                 window.scrollY -
-                window.innerHeight * POST_TOP_RATIO
+                window.innerHeight * POST_TOP_VIEWPORT_FRACTION
         )
-
-    if (!animate || typeof window.requestAnimationFrame !== 'function') {
-        // Measure after the layout has settled for this frame.
-        const id = window.requestAnimationFrame?.(() => {
-            if (
-                onlyIfBelowFold &&
-                el.getBoundingClientRect().top <= window.innerHeight * 0.9
-            )
-                return
-            window.scrollTo({ top: target(), behavior: 'auto' })
+    if (animate && typeof window.requestAnimationFrame === 'function')
+        return animateScroll(postScrollTop, {
+            durationMs: SCROLL_MS,
+            maxMs: FOLLOW_LAYOUT_MAX_MS,
         })
-        return () => {
-            if (id !== undefined) window.cancelAnimationFrame(id)
-        }
-    }
-
-    const from = window.scrollY
-    let t0: number | null = null
-    let last = NaN
-    let stable = 0
-    let frame = 0
-    const stop = () => {
-        window.cancelAnimationFrame(frame)
-        for (const type of [
-            'wheel',
-            'touchstart',
-            'pointerdown',
-            'keydown',
-        ] as const) {
-            window.removeEventListener(type, stop)
-        }
-    }
-    const step = (now: number) => {
-        t0 ??= now
-        const elapsed = now - t0
-        const to = target()
-        const p = Math.min(1, elapsed / SCROLL_MS)
-        window.scrollTo({
-            top: from + (to - from) * easeInOut(p),
-            behavior: 'auto',
-        })
-        stable = p === 1 && Math.abs(to - last) < 0.5 ? stable + 1 : 0
-        last = to
-        if (stable >= 3 || elapsed >= SCROLL_MAX_MS) stop()
-        else frame = window.requestAnimationFrame(step)
-    }
-    for (const type of [
-        'wheel',
-        'touchstart',
-        'pointerdown',
-        'keydown',
-    ] as const) {
-        window.addEventListener(type, stop, { passive: true })
-    }
-    frame = window.requestAnimationFrame(step)
-    return stop
+    return jumpAfterLayout(() =>
+        onlyIfBelowFold && !startsBelowFold(post) ? null : postScrollTop()
+    )
 }
 
-/** Focuses the heading of the page below the timeline (the post's title); false if there is none yet. */
-function focusPostHeading(container: HTMLElement): boolean {
-    const heading = container.querySelector<HTMLElement>(
+function jumpAfterLayout(scrollTop: () => number | null): () => void {
+    const frame = window.requestAnimationFrame?.(() => {
+        const top = scrollTop()
+        if (top !== null) window.scrollTo({ top, behavior: 'auto' })
+    })
+    return () => {
+        if (frame !== undefined) window.cancelAnimationFrame(frame)
+    }
+}
+
+function startsBelowFold(el: HTMLElement): boolean {
+    return (
+        el.getBoundingClientRect().top >
+        window.innerHeight * FOLD_VIEWPORT_FRACTION
+    )
+}
+
+function focusPostHeading(post: HTMLElement): boolean {
+    const heading = post.querySelector<HTMLElement>(
         '[data-post-heading], h1, h2'
     )
     if (!heading) return false
@@ -103,10 +66,35 @@ function focusPostHeading(container: HTMLElement): boolean {
     return true
 }
 
-/**
- * The persistent app frame: the timeline (kept mounted across post routes, so it
- * keeps its state) followed by the page content, i.e. the open post.
- */
+function focusPost(post: HTMLElement): () => void {
+    if (focusPostHeading(post)) return () => {}
+    const frame = window.requestAnimationFrame(() => focusPostHeading(post))
+    return () => window.cancelAnimationFrame(frame)
+}
+
+function focusedTimelineElement(): HTMLElement | null {
+    const active = document.activeElement
+    return active instanceof HTMLElement && active.closest('[role="region"]')
+        ? active
+        : null
+}
+
+function isStillFocusable(el: HTMLElement): boolean {
+    return el.isConnected && !el.closest('[inert]')
+}
+
+function entryCardOrRegion(id: string): HTMLElement | null {
+    const region = document.querySelector<HTMLElement>('section[role="region"]')
+    return region && (findFocusTarget(region, [id]) ?? region)
+}
+
+function restoreOpenerFocus(opener: Opener): void {
+    const target = isStillFocusable(opener.el)
+        ? opener.el
+        : entryCardOrRegion(opener.id)
+    target?.focus({ preventScroll: true })
+}
+
 export function TimelineShell({
     entries,
     children,
@@ -117,18 +105,16 @@ export function TimelineShell({
     const pathname = usePathname()
     const router = useRouter()
     const pathSlug = slugFromPathname(pathname)
-    // Unknown slugs don't focus anything; the post page itself renders the 404.
     const openSlug =
         pathSlug !== null && findEntry(entries, pathSlug) ? pathSlug : null
-    // Any page other than the start page (a post, or a 404) sits below the collapsed timeline.
-    const pageKey = openSlug ?? (pathname && pathname !== '/' ? pathname : null)
+    const isStartPage = !pathname || pathname === '/'
+    const pageKey = openSlug ?? (isStartPage ? null : pathname)
 
     const postRef = useRef<HTMLDivElement>(null)
-    // StrictMode-safe "is this still the initial address" check.
-    const initialKey = useRef(pageKey)
+    // A ref, not a mount flag: StrictMode re-runs the effect on the initial page.
+    const initialPageKey = useRef(pageKey)
     const navigated = useRef(false)
-    // The element focused when a post was opened (and its entry), to restore focus on close.
-    const opener = useRef<{ el: HTMLElement; id: string } | null>(null)
+    const openerRef = useRef<Opener | null>(null)
 
     const close = useCallback(
         () => router.push('/', { scroll: false }),
@@ -138,59 +124,33 @@ export function TimelineShell({
     const openEntry = useCallback(
         (id: string) => {
             if (id === openSlug || !findEntry(entries, id)) return
-            // Remember the entry that opened it (also when switching posts), so closing returns there.
-            const active = document.activeElement
-            if (
-                active instanceof HTMLElement &&
-                active.closest('[role="region"]')
-            ) {
-                opener.current = { el: active, id }
-            }
+            const focusedEl = focusedTimelineElement()
+            if (focusedEl) openerRef.current = { el: focusedEl, id }
             router.push(postHref(id), { scroll: false })
         },
         [entries, openSlug, router]
     )
 
-    // One scroll per page change; also runs for back/forward and direct links.
     useEffect(() => {
-        if (pageKey !== initialKey.current) navigated.current = true
-        const first = !navigated.current
+        if (pageKey !== initialPageKey.current) navigated.current = true
+        const isInitialPage = !navigated.current
         if (pageKey === null) {
-            // The post is gone, so the document is short and the browser clamps anyway.
             if (window.scrollY > 0)
                 window.scrollTo({ top: 0, behavior: 'auto' })
-            const from = opener.current
-            opener.current = null
-            if (from && document.activeElement === document.body) {
-                // The collapse relayouts the timeline; the opening card may have been replaced meanwhile.
-                const region = document.querySelector<HTMLElement>(
-                    'section[role="region"]'
-                )
-                const el =
-                    from.el.isConnected && !from.el.closest('[inert]')
-                        ? from.el
-                        : ((region && findFocusTarget(region, [from.id])) ??
-                          region)
-                el?.focus({ preventScroll: true })
-            }
+            const opener = openerRef.current
+            openerRef.current = null
+            if (opener && document.activeElement === document.body)
+                restoreOpenerFocus(opener)
             return
         }
-        const el = postRef.current
-        if (!el) return
-        // Opened from within the page: move focus to the post so keyboard and screen reader users land in it.
-        let focusFrame = 0
-        if (!first) {
-            if (!focusPostHeading(el))
-                focusFrame = window.requestAnimationFrame(() =>
-                    focusPostHeading(el)
-                )
-        }
-        // A direct link keeps the collapsed timeline fully in view and only scrolls if the post starts below the fold.
-        const stopScroll = first
-            ? scrollToPost(el, false, true)
-            : scrollToPost(el, !prefersReducedMotion())
+        const post = postRef.current
+        if (!post) return
+        const cancelFocus = isInitialPage ? () => {} : focusPost(post)
+        const stopScroll = isInitialPage
+            ? scrollToPost(post, false, true)
+            : scrollToPost(post, !prefersReducedMotion())
         return () => {
-            window.cancelAnimationFrame(focusFrame)
+            cancelFocus()
             stopScroll()
         }
     }, [pageKey])

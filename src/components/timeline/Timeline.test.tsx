@@ -5,10 +5,18 @@ import { MAX_VISIBLE_MS, ZOOM_STEP_FACTOR } from '@/lib/viewport'
 import { expectNoAxeViolations } from '@/test/axe'
 import { sampleEntry } from '@/test/entries'
 import { stubReducedMotion } from '@/test/motion'
-import { act, fireEvent, render, screen } from '@testing-library/react'
+import {
+    act,
+    fireEvent,
+    render,
+    renderHook,
+    screen,
+} from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { ANIMATION_MS, COLLAPSED_HEIGHT, FOCUS_VISIBLE_MS } from './constants'
-import { revealDelta, Timeline } from './Timeline'
+import { PRIVATE_UNDER_TESTS, Timeline } from './Timeline'
+
+const { dataBounds, useSnapshotPerKey } = PRIVATE_UNDER_TESTS
 
 const WIDTH = 1000
 const HEIGHT = 800
@@ -595,17 +603,40 @@ describe('Timeline', () => {
             expect(holder.dataset.entryIds!.split(' ')).toContain(id)
         })
     })
+})
 
-    describe('revealDelta', () => {
-        it.each([
-            ['visible', 100, 276, 0],
-            ['cut off left', -50, 126, 66],
-            ['off to the right', 1200, 1376, 1000 - 16 - 1376],
-            ['wide and visible enough', -2000, 100, 0],
-            ['wide and just off the left', -2000, 30, 16 + 2000],
-            ['wide and off the right', 990, 3000, 16 - 990],
-        ])('%s', (_, left, right, expected) => {
-            expect(revealDelta(left, right, 1000)).toBe(expected)
-        })
+describe('dataBounds', () => {
+    const TODAY = Date.UTC(2026, 8, 27)
+    const CENTURY_BACK = { min: TODAY - 100 * MS_PER_YEAR, max: TODAY }
+
+    it('reaches from the earliest entry start to today', () => {
+        const earliest = sampleEntry('grosser-nordischer-krieg')
+        const mixed = [POST_POINT, earliest]
+        const bounds = dataBounds(mixed, TODAY)
+        expect(bounds).toEqual({ min: startOf(earliest.start), max: TODAY })
+    })
+
+    it('reaches a century back without entries', () => {
+        const none: Entry[] = []
+        expect(dataBounds(none, TODAY)).toEqual(CENTURY_BACK)
+    })
+
+    it('reaches a century back when every entry lies in the future', () => {
+        const future: Entry[] = [{ ...POST_POINT, start: { year: 2100 } }]
+        expect(dataBounds(future, TODAY)).toEqual(CENTURY_BACK)
+    })
+})
+
+describe('useSnapshotPerKey', () => {
+    it('holds the value until the key changes', () => {
+        const initialProps = { value: 1, key: 'a' }
+        const { result, rerender } = renderHook(
+            ({ value, key }) => useSnapshotPerKey(value, key),
+            { initialProps }
+        )
+        rerender({ value: 2, key: 'a' })
+        expect(result.current).toBe(1)
+        rerender({ value: 3, key: 'b' })
+        expect(result.current).toBe(3)
     })
 })

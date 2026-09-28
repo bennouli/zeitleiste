@@ -12,7 +12,7 @@ import {
     type EntryCardProps,
 } from './EntryCard'
 
-const { cardPlacement } = PRIVATE_UNDER_TESTS
+const { wrapperStyle } = PRIVATE_UNDER_TESTS
 
 const point = sampleEntry('dekabristenaufstand')
 const span = sampleEntry('grosser-nordischer-krieg')
@@ -41,6 +41,20 @@ function card(e: Entry): HTMLElement {
     return screen.getByRole(e.post ? 'button' : 'note', {
         name: new RegExp(`^${e.title}`),
     })
+}
+
+async function recordEscapes(interaction: () => Promise<void>) {
+    const escapesConsumed: boolean[] = []
+    const onKey = (e: KeyboardEvent) => {
+        if (e.key === 'Escape') escapesConsumed.push(e.defaultPrevented)
+    }
+    window.addEventListener('keydown', onKey)
+    try {
+        await interaction()
+    } finally {
+        window.removeEventListener('keydown', onKey)
+    }
+    return escapesConsumed
 }
 
 describe('EntryCard', () => {
@@ -217,22 +231,15 @@ describe('EntryCard', () => {
     it('consumes Escape only when it closes a tooltip', async () => {
         const user = userEvent.setup()
         renderCard({ entry: span })
-        const seen: boolean[] = []
-        const onKey = (e: KeyboardEvent) => {
-            if (e.key === 'Escape') seen.push(e.defaultPrevented)
-        }
-        window.addEventListener('keydown', onKey)
-        try {
+        const escapesConsumed = await recordEscapes(async () => {
             await user.keyboard('{Escape}')
             await user.hover(card(span))
             await user.keyboard('{Escape}')
             expect(screen.queryByRole('tooltip')).toBeNull()
             // Already dismissed: the next Escape is left to others.
             await user.keyboard('{Escape}')
-        } finally {
-            window.removeEventListener('keydown', onKey)
-        }
-        expect(seen).toEqual([false, true, false])
+        })
+        expect(escapesConsumed).toEqual([false, true, false])
     })
 
     it('keeps a keyboard-opened tooltip when the mouse passes over and leaves', async () => {
@@ -279,21 +286,15 @@ describe('EntryCard', () => {
     it('does not keep a tooltip open over an opened post, so Escape reaches the shell', async () => {
         const user = userEvent.setup()
         const { onOpen } = renderCard({ entry: withPost })
-        const seen: boolean[] = []
-        const onKey = (e: KeyboardEvent) => seen.push(e.defaultPrevented)
-        window.addEventListener('keydown', onKey)
-        try {
-            await user.tab()
-            expect(screen.getByRole('tooltip')).toBeInTheDocument()
-            await user.keyboard('{Enter}')
-            expect(onOpen).toHaveBeenCalled()
-            expect(screen.queryByRole('tooltip')).toBeNull()
-            seen.length = 0
-            await user.keyboard('{Escape}')
-        } finally {
-            window.removeEventListener('keydown', onKey)
-        }
-        expect(seen).toEqual([false])
+        await user.tab()
+        expect(screen.getByRole('tooltip')).toBeInTheDocument()
+        await user.keyboard('{Enter}')
+        expect(onOpen).toHaveBeenCalled()
+        expect(screen.queryByRole('tooltip')).toBeNull()
+        const escapesConsumed = await recordEscapes(() =>
+            user.keyboard('{Escape}')
+        )
+        expect(escapesConsumed).toEqual([false])
     })
 
     it('leaves Escape in a text field alone', async () => {
@@ -301,16 +302,11 @@ describe('EntryCard', () => {
         render(<input aria-label="Suche" />)
         renderCard({ entry: span })
         await user.hover(card(span))
-        const seen: boolean[] = []
-        const onKey = (e: KeyboardEvent) => seen.push(e.defaultPrevented)
-        window.addEventListener('keydown', onKey)
-        try {
-            screen.getByRole('textbox', { name: 'Suche' }).focus()
-            await user.keyboard('{Escape}')
-        } finally {
-            window.removeEventListener('keydown', onKey)
-        }
-        expect(seen).toEqual([false])
+        screen.getByRole('textbox', { name: 'Suche' }).focus()
+        const escapesConsumed = await recordEscapes(() =>
+            user.keyboard('{Escape}')
+        )
+        expect(escapesConsumed).toEqual([false])
         expect(screen.getByRole('tooltip')).toBeInTheDocument()
     })
 
@@ -574,22 +570,20 @@ describe('EntryCard', () => {
     })
 })
 
-describe('cardPlacement', () => {
-    it('lifts a card above the axis by its level and reaches the connector down to the axis', () => {
-        expect(cardPlacement('above', 2, 72, 40)).toEqual({
-            wrapperStyle: {
-                left: 40,
-                bottom: 144,
-                paddingBottom: CONNECTOR_MIN_PX,
-            },
-            connectorStyle: { height: 144 + CONNECTOR_MIN_PX, bottom: -144 },
+describe('wrapperStyle', () => {
+    it('lifts a card above the axis by its level', () => {
+        expect(wrapperStyle('above', 2, 72, 40)).toEqual({
+            left: 40,
+            bottom: 144,
+            paddingBottom: CONNECTOR_MIN_PX,
         })
     })
 
-    it('lowers a card below the axis by its level and reaches the connector up to the axis', () => {
-        expect(cardPlacement('below', 1, 60, 10)).toEqual({
-            wrapperStyle: { left: 10, top: 60, paddingTop: CONNECTOR_MIN_PX },
-            connectorStyle: { height: 60 + CONNECTOR_MIN_PX, top: -60 },
+    it('lowers a card below the axis by its level', () => {
+        expect(wrapperStyle('below', 1, 60, 10)).toEqual({
+            left: 10,
+            top: 60,
+            paddingTop: CONNECTOR_MIN_PX,
         })
     })
 })

@@ -5,7 +5,8 @@ import { entryLabel, formatEntryDate } from '@/lib/format'
 import clsx from 'clsx'
 import type { CSSProperties } from 'react'
 import { useId, useRef } from 'react'
-import { REGION_BG, REGION_BORDER_L } from './regionStyles'
+import { Connector } from './Connector'
+import { REGION_BORDER_L } from './regionStyles'
 import { Tooltip } from './Tooltip'
 import { useTooltipTrigger } from './useTooltipTrigger'
 
@@ -164,12 +165,8 @@ export function EntryCard({
         )
     }
 
-    const { wrapperStyle, connectorStyle } = cardPlacement(
-        side,
-        level,
-        rowHeightPx,
-        x
-    )
+    const style = wrapperStyle(side, level, rowHeightPx, x)
+    const offset = level * rowHeightPx
 
     return (
         <div
@@ -178,18 +175,16 @@ export function EntryCard({
                 alignEnd && '-translate-x-full',
                 open ? 'z-30' : highlighted ? 'z-20' : 'z-0'
             )}
-            style={wrapperStyle}
+            style={style}
             data-entry-id={entry.id}
             data-highlighted={highlighted ? 'true' : undefined}
         >
-            <div
-                aria-hidden="true"
-                className={clsx(
-                    'absolute w-0.5',
-                    alignEnd ? 'right-0' : 'left-0',
-                    REGION_BG[entry.region]
-                )}
-                style={connectorStyle}
+            <Connector
+                region={entry.region}
+                alignEnd={alignEnd}
+                side={side}
+                heightPx={offset + CONNECTOR_MIN_PX}
+                offsetPx={offset}
             />
             {body}
         </div>
@@ -212,37 +207,16 @@ export function EntryTooltipContent({ entry }: { entry: Entry }) {
     )
 }
 
-function cardPlacement(
+function wrapperStyle(
     side: EntryCardProps['side'],
     level: number,
     rowHeightPx: number,
     x: number
-): { wrapperStyle: CSSProperties; connectorStyle: CSSProperties } {
+): CSSProperties {
     const offset = level * rowHeightPx
-    const connectorHeight = offset + CONNECTOR_MIN_PX
     return side === 'above'
-        ? {
-              wrapperStyle: {
-                  left: x,
-                  bottom: offset,
-                  paddingBottom: CONNECTOR_MIN_PX,
-              },
-              connectorStyle: {
-                  height: connectorHeight,
-                  bottom: -offset,
-              },
-          }
-        : {
-              wrapperStyle: {
-                  left: x,
-                  top: offset,
-                  paddingTop: CONNECTOR_MIN_PX,
-              },
-              connectorStyle: {
-                  height: connectorHeight,
-                  top: -offset,
-              },
-          }
+        ? { left: x, bottom: offset, paddingBottom: CONNECTOR_MIN_PX }
+        : { left: x, top: offset, paddingTop: CONNECTOR_MIN_PX }
 }
 
-export const PRIVATE_UNDER_TESTS = { cardPlacement }
+export const PRIVATE_UNDER_TESTS = { wrapperStyle }
