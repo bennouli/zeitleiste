@@ -41,6 +41,8 @@ export type TicksOptions = {
     minLabelGapPx?: number
     /** Estimated width of one label character in px, default 7.5. */
     charWidthPx?: number
+    /** Steps finer than a year (with month names) only when a year spans at least this many px; default 0. */
+    minYearWidthForMonthsPx?: number
     /** Default 'de'. */
     locale?: string
 }
@@ -251,6 +253,10 @@ export function ticks(
 ): TickResult {
     const minLabelGapPx = positiveOr(options.minLabelGapPx, 72)
     const charWidthPx = positiveOr(options.charWidthPx, 7.5)
+    const minYearWidthForMonthsPx = positiveOr(
+        options.minYearWidthForMonthsPx,
+        0
+    )
     const locale = options.locale ?? 'de'
     const fallback = CENTURY
     if (
@@ -261,8 +267,10 @@ export function ticks(
         return { unit: fallback.unit, ticks: [] }
     }
     const pxPerMs = widthPx / (end - start)
+    const monthsAllowed = YEAR_MS * pxPerMs >= minYearWidthForMonthsPx
     for (const c of CANDIDATES) {
         if (c.minStepMs * pxPerMs < minLabelGapPx) continue
+        if (c.minStepMs < YEAR_MS && !monthsAllowed) continue
         const result = build(c, start, end, locale)
         if (
             c === fallback ||

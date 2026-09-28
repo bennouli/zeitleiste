@@ -18,8 +18,8 @@ beyond ink.
   arrive. `weight` × `style` loads every combination, so EB Garamond also ships a 500 italic; it costs a file, nothing more.
 - Widths of text columns are set in `rem` (`max-w-reading`, 40.625 rem): a `ch` width changes when the web font replaces its fallback.
 - **Small caps** = uppercase, letter-spacing 0.06–0.18 em, 10–11 px, IBM Plex Sans. It is the label style for dates, tick labels and meta
-  lines. The stylesheet has no utility layer yet, so the components that use it (#37 and its sub-issues) set it with Tailwind classes until
-  a third use makes a shared utility worthwhile.
+  lines. The `small-caps` utility in `globals.css` sets the font, 10 px and uppercase; each use adds its letter-spacing
+  (`tracking-[0.06em]`, `tracking-[0.1em]`).
 
 ## Colours
 

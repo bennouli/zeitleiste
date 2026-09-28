@@ -336,6 +336,32 @@ describe('ticks: edge cases', () => {
     })
 })
 
+describe('ticks: month threshold', () => {
+    const WIDTH = 1000
+    const START_1900 = Date.UTC(1900, 0, 1)
+    const MONTH_THRESHOLD = { minYearWidthForMonthsPx: 420 }
+    const rangeAtYearWidth = (yearWidthPx: number) =>
+        [START_1900, START_1900 + (WIDTH / yearWidthPx) * MS_PER_YEAR] as const
+
+    it('keeps whole years while a year spans less than the threshold', () => {
+        const [start, end] = rangeAtYearWidth(400)
+        expect(ticks(start, end, WIDTH, MONTH_THRESHOLD).unit).toBe('year')
+    })
+
+    it('steps by months once a year spans more than the threshold', () => {
+        const [start, end] = rangeAtYearWidth(440)
+        const { unit } = ticks(start, end, WIDTH, MONTH_THRESHOLD)
+        expect(fineness(unit)).toBeGreaterThan(fineness('year'))
+    })
+
+    it('shows month steps below the threshold without the option', () => {
+        const [start, end] = rangeAtYearWidth(400)
+        expect(fineness(ticks(start, end, WIDTH).unit)).toBeGreaterThan(
+            fineness('year')
+        )
+    })
+})
+
 describe('timeToX', () => {
     const s = Date.UTC(1900, 0, 1)
     const e = Date.UTC(2000, 0, 1)
