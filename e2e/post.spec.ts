@@ -1,7 +1,10 @@
 import { expect, test, type Locator } from '@playwright/test'
+import { sampleEntry } from '../src/test/entries'
 import { openTimeline, timelineRegion } from './timeline'
 
-const POST_PATH = '/post/oktoberrevolution'
+const POST_ENTRY = sampleEntry('oktoberrevolution')
+const POST_PATH = `/post/${POST_ENTRY.id}`
+const FIRST_BODY_PARAGRAPH = POST_ENTRY.post!.body.split(/\n\s*\n/)[0]!.trim()
 const DESKTOP = { width: 1920, height: 1080 }
 const MAX_COLUMN_PX = 660
 
@@ -26,9 +29,9 @@ test('title, lead and body are set in the serif at their sizes; the column stays
     await openTimeline(page, POST_PATH)
     const article = page.getByRole('article')
     const title = article.getByRole('heading', { level: 2 })
-    const column = title.locator('..')
-    const lead = column.locator('> p').nth(1)
-    const body = column.locator('> p').nth(2)
+    const column = article.locator('> div')
+    const lead = article.getByText(POST_ENTRY.summary)
+    const body = article.getByText(FIRST_BODY_PARAGRAPH)
 
     expect(await typeface(title)).toMatchObject({
         family: expect.stringContaining('EB Garamond'),
@@ -45,8 +48,10 @@ test('title, lead and body are set in the serif at their sizes; the column stays
         size: '16.5px',
         style: 'normal',
     })
-    const columnBox = await column.boundingBox()
-    expect(columnBox!.width).toBeLessThanOrEqual(MAX_COLUMN_PX)
+    const columnWidth = await column.evaluate(
+        (el) => el.getBoundingClientRect().width
+    )
+    expect(columnWidth).toBeLessThanOrEqual(MAX_COLUMN_PX)
 })
 
 for (const [reducedMotion, transitionProperty] of [
