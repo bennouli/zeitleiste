@@ -131,6 +131,11 @@ export function formatGroupName(entries: readonly Entry[]): string {
     return `Gruppe mit ${count} ${noun}, ${formatGroupYears(entries)}`
 }
 
+/** Accessible name of a group's axis marker, distinct from the stack's: 'Hineinzoomen: Gruppe mit 6 Einträgen, 1917–1922'. */
+export function formatGroupZoomName(entries: readonly Entry[]): string {
+    return `Hineinzoomen: ${formatGroupName(entries)}`
+}
+
 /** Position of a stack's window: zero-based `index` of `count` → '1 von 6'. */
 export function formatPosition(index: number, count: number): string {
     return `${index + 1} von ${count}`

@@ -49,6 +49,8 @@ const STRIP_BUTTON_PX = 14
 const STRIP_ICON_PX = 12
 const STRIP_DOT_PX = 5
 const STRIP_GAP_PX = 3
+/** Minimum distance between the arrows' centres, the 24 px target spacing of WCAG 2.5.8. */
+const STRIP_MIN_BUTTON_SPACING_PX = 24
 /** Distance between the indicator strip and the cards. */
 const STRIP_OFFSET_PX = 8
 /** Larger groups get the arrows without dots. */
@@ -73,11 +75,14 @@ function stripHeightPx(entryCount: number, steppable: boolean): number {
     const dotCount = hasDots(entryCount) ? entryCount : 0
     const itemCount = buttonCount + dotCount
     if (itemCount === 0) return 0
-    return (
+    const stackedHeight =
         buttonCount * STRIP_BUTTON_PX +
         dotCount * STRIP_DOT_PX +
         (itemCount - 1) * STRIP_GAP_PX
-    )
+    const spacedButtonsHeight = steppable
+        ? STRIP_BUTTON_PX + STRIP_MIN_BUTTON_SPACING_PX
+        : 0
+    return Math.max(stackedHeight, spacedButtonsHeight)
 }
 
 function hasDots(entryCount: number): boolean {
@@ -425,13 +430,14 @@ function IndicatorStrip({
     return (
         <div
             className={clsx(
-                'absolute flex flex-col items-center',
+                'absolute flex flex-col items-center justify-between',
                 anchoredAt === 'end' ? 'left-full' : 'right-full',
                 side === 'above' ? 'bottom-0' : 'top-0'
             )}
             style={{
                 gap: STRIP_GAP_PX,
                 width: STRIP_BUTTON_PX,
+                height: stripHeightPx(entryCount, steppable),
                 [anchoredAt === 'end' ? 'marginLeft' : 'marginRight']:
                     STRIP_OFFSET_PX,
             }}
@@ -486,4 +492,5 @@ export const PRIVATE_UNDER_TESTS = {
     STRIP_BUTTON_PX,
     STRIP_DOT_PX,
     STRIP_GAP_PX,
+    STRIP_MIN_BUTTON_SPACING_PX,
 }

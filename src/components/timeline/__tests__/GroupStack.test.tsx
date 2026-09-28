@@ -245,20 +245,25 @@ describe('GroupStack', () => {
     })
 
     it('reserves the height of a strip taller than its cards', () => {
-        const { STRIP_BUTTON_PX, STRIP_DOT_PX, STRIP_GAP_PX } =
-            PRIVATE_UNDER_TESTS
+        const {
+            STRIP_BUTTON_PX,
+            STRIP_DOT_PX,
+            STRIP_GAP_PX,
+            STRIP_MIN_BUTTON_SPACING_PX,
+        } = PRIVATE_UNDER_TESTS
         const tinySlot = 1
         const oneVisible = 1
         const sixMembers = 6
         const sevenMembers = 7
         const stripOfSix =
             2 * STRIP_BUTTON_PX + 6 * STRIP_DOT_PX + 7 * STRIP_GAP_PX
-        const stripWithoutDots = 2 * STRIP_BUTTON_PX + STRIP_GAP_PX
+        const arrowsAtMinimumSpacing =
+            STRIP_BUTTON_PX + STRIP_MIN_BUTTON_SPACING_PX
         expect(groupStackHeightPx(sixMembers, oneVisible, tinySlot)).toBe(
             stripOfSix
         )
         expect(groupStackHeightPx(sevenMembers, oneVisible, tinySlot)).toBe(
-            stripWithoutDots
+            arrowsAtMinimumSpacing
         )
     })
 

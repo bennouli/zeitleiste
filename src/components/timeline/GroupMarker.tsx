@@ -34,7 +34,7 @@ export function GroupMarker({
 }: GroupMarkerProps) {
     const tooltipId = useId()
     const anchorRef = useRef<HTMLDivElement>(null)
-    const { open, triggerProps, hoverProps, dismiss } = useTooltipTrigger({
+    const { open, triggerProps, hoverProps } = useTooltipTrigger({
         tooltipId,
         anchorRef,
     })
@@ -46,11 +46,7 @@ export function GroupMarker({
                 aria-label={label}
                 aria-describedby={tooltipId}
                 {...triggerProps}
-                onClick={() => {
-                    // Otherwise the next Escape would only close this note.
-                    dismiss()
-                    onActivate()
-                }}
+                onClick={onActivate}
                 className={clsx(
                     'flex cursor-zoom-in items-center justify-center rounded-full border border-fg bg-surface text-label font-medium tabular-nums text-fg',
                     'hover:bg-accent hover:text-accent-fg focus-visible:bg-accent focus-visible:text-accent-fg',

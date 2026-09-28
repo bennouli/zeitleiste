@@ -1,7 +1,7 @@
 'use client'
 
 import type { Entry } from '@/lib/entry'
-import { formatGroupName } from '@/lib/format'
+import { formatGroupName, formatGroupZoomName } from '@/lib/format'
 import { compareIds } from '@/lib/order'
 import type { CSSProperties, ReactNode } from 'react'
 import { AXIS_LINE_Y_PX } from './Axis'
@@ -219,7 +219,7 @@ function MarkerItem({ item, highlighted, onZoomIntoGroup }: MarkerItemProps) {
         >
             <GroupMarker
                 entries={item.entries}
-                label={markerLabel(item.entries)}
+                label={formatGroupZoomName(item.entries)}
                 side={item.slot.side}
                 highlighted={highlighted}
                 onActivate={() => {
@@ -229,10 +229,3 @@ function MarkerItem({ item, highlighted, onZoomIntoGroup }: MarkerItemProps) {
         </div>
     )
 }
-
-/** Name of a group's axis marker; differs from the stack's name so the two tab stops are distinguishable. */
-function markerLabel(entries: Entry[]): string {
-    return `Hineinzoomen: ${formatGroupName(entries)}`
-}
-
-export const PRIVATE_UNDER_TESTS = { markerLabel }
