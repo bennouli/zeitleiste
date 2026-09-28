@@ -63,14 +63,15 @@ Working only from what the diff actually contains:
 
 ## Dimension 1 — Design tokens (CRITICAL)
 
-`src/app/globals.css` holds two layers: primitives (`--gray-*`, `--red-*`, `--blue-*`, `--violet-*`, spacing, radii) and semantic tokens
-(`surface`, `surface-raised`, `fg`, `fg-muted`, `border`, `accent`, `accent-fg`, `russia`, `west`, `both`, `focus`). Components use semantic
-tokens only; Tailwind's default palette is disabled. `pnpm check:tokens` is the gate; this review is the backstop for what it cannot see.
+`src/app/(frontend)/globals.css` holds two layers: primitives (`--gray-*`, `--red-*`, `--blue-*`, `--violet-*`, spacing, radii) and semantic
+tokens (`surface`, `surface-raised`, `fg`, `fg-muted`, `border`, `accent`, `accent-fg`, `russia`, `west`, `both`, `focus`). Components use
+semantic tokens only; Tailwind's default palette is disabled. `pnpm check:tokens` is the gate; this review is the backstop for what it
+cannot see.
 
 ```bash
-git diff $R -- 'src' ':!src/app/globals.css' ':!*.test.*' \
+git diff $R -- 'src' ':!src/app/(frontend)/globals.css' ':!*.test.*' \
   | grep -nE '^\+.*(#[0-9a-fA-F]{3,8}\b|rgba?\(|hsla?\(|oklch\(|var\(--(gray|red|blue|violet|space|radius)-)'
-git diff $R -- 'src' ':!src/app/globals.css' \
+git diff $R -- 'src' ':!src/app/(frontend)/globals.css' \
   | grep -nE '^\+.*\b(bg|text|border|ring|from|to)-(red|blue|green|gray|zinc|slate|amber|white|black)-?[0-9]*\b'
 ```
 

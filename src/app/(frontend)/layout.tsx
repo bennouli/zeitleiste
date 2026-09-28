@@ -14,22 +14,22 @@ const timelineEntries = entries.map((e) =>
 const ebGaramond = localFont({
     src: [
         {
-            path: '../fonts/eb-garamond/eb-garamond-latin-ext-400-normal.woff2',
+            path: '../../fonts/eb-garamond/eb-garamond-latin-ext-400-normal.woff2',
             weight: '400',
             style: 'normal',
         },
         {
-            path: '../fonts/eb-garamond/eb-garamond-latin-400-normal.woff2',
+            path: '../../fonts/eb-garamond/eb-garamond-latin-400-normal.woff2',
             weight: '400',
             style: 'normal',
         },
         {
-            path: '../fonts/eb-garamond/eb-garamond-latin-ext-500-normal.woff2',
+            path: '../../fonts/eb-garamond/eb-garamond-latin-ext-500-normal.woff2',
             weight: '500',
             style: 'normal',
         },
         {
-            path: '../fonts/eb-garamond/eb-garamond-latin-500-normal.woff2',
+            path: '../../fonts/eb-garamond/eb-garamond-latin-500-normal.woff2',
             weight: '500',
             style: 'normal',
         },
@@ -42,12 +42,12 @@ const ebGaramond = localFont({
 const ebGaramondItalic = localFont({
     src: [
         {
-            path: '../fonts/eb-garamond/eb-garamond-latin-400-italic.woff2',
+            path: '../../fonts/eb-garamond/eb-garamond-latin-400-italic.woff2',
             weight: '400',
             style: 'italic',
         },
         {
-            path: '../fonts/eb-garamond/eb-garamond-latin-ext-400-italic.woff2',
+            path: '../../fonts/eb-garamond/eb-garamond-latin-ext-400-italic.woff2',
             weight: '400',
             style: 'italic',
         },
@@ -61,22 +61,22 @@ const ebGaramondItalic = localFont({
 const ibmPlexSans = localFont({
     src: [
         {
-            path: '../fonts/ibm-plex-sans/ibm-plex-sans-latin-ext-400-normal.woff2',
+            path: '../../fonts/ibm-plex-sans/ibm-plex-sans-latin-ext-400-normal.woff2',
             weight: '400',
             style: 'normal',
         },
         {
-            path: '../fonts/ibm-plex-sans/ibm-plex-sans-latin-400-normal.woff2',
+            path: '../../fonts/ibm-plex-sans/ibm-plex-sans-latin-400-normal.woff2',
             weight: '400',
             style: 'normal',
         },
         {
-            path: '../fonts/ibm-plex-sans/ibm-plex-sans-latin-ext-500-normal.woff2',
+            path: '../../fonts/ibm-plex-sans/ibm-plex-sans-latin-ext-500-normal.woff2',
             weight: '500',
             style: 'normal',
         },
         {
-            path: '../fonts/ibm-plex-sans/ibm-plex-sans-latin-500-normal.woff2',
+            path: '../../fonts/ibm-plex-sans/ibm-plex-sans-latin-500-normal.woff2',
             weight: '500',
             style: 'normal',
         },

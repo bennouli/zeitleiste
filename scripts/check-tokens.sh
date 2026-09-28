@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Fails if pages/components use raw colors or primitive tokens.
-# Only src/app/globals.css may define them; everything else uses semantic
+# Only src/app/(frontend)/globals.css may define them; everything else uses semantic
 # tokens (bg-surface, text-fg, text-russia, …).
 set -uo pipefail
 cd "$(dirname "$0")/.."
@@ -27,7 +27,7 @@ matches=$(grep -rEn \
   --include='*.ts' --include='*.tsx' --include='*.mts' --include='*.js' \
   --include='*.jsx' --include='*.mjs' --include='*.css' --include='*.mdx' \
   -e "$pattern" src/app src/components \
-  | grep -v '^src/app/globals\.css:' \
+  | grep -v '^src/app/(frontend)/globals\.css:' \
   | sed -E 's/([Ii]ssues? #[0-9]+|href="#[^"]*")/_/g' \
   | grep -E -e "$pattern")
 if [ -n "$matches" ]; then
