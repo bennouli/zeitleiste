@@ -55,7 +55,11 @@ describe('Axis', () => {
         expect(tickLabel(major)).toHaveClass('font-medium', 'text-fg')
         expect(tickLabel(minor)).toHaveClass('font-normal', 'text-fg-muted')
         for (const tick of [major, minor])
-            expect(tickLabel(tick)).toHaveClass('small-caps', 'tracking-label')
+            expect(tickLabel(tick)).toHaveClass(
+                'small-caps',
+                'text-label',
+                'tracking-label'
+            )
         const weightOrColour = /^(font-(medium|normal)|text-fg(-muted)?)$/
         const shapeClasses = (el: HTMLElement | null) =>
             [...(el?.classList ?? [])].filter((c) => !weightOrColour.test(c))
@@ -92,6 +96,7 @@ describe('Axis', () => {
         const { container } = renderAxis(500, 10)
         expect(screen.getByText('Heute')).toHaveClass(
             'small-caps',
+            'text-label',
             'font-medium'
         )
         const mark = container.querySelector<HTMLElement>('[data-today] > div')!

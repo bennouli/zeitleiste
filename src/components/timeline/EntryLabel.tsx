@@ -39,7 +39,7 @@ export function EntryLabel({ entry, side, open = false }: EntryLabelProps) {
             >
                 {entry.title}
             </span>
-            <span className="block small-caps leading-3 tracking-date whitespace-nowrap text-fg-muted">
+            <span className="block small-caps text-label leading-3 tracking-date whitespace-nowrap text-fg-muted">
                 {formatEntryDate(entry, 'short')}
                 {entry.post && (
                     <span aria-hidden="true">

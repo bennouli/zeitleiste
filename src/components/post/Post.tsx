@@ -24,7 +24,7 @@ export function Post({ entry }: { entry: Entry }) {
             className="relative mx-8 border-t border-border bg-surface text-fg"
         >
             <div className="mx-auto flex max-w-reading flex-col gap-4.5 pt-9 pb-16 font-serif">
-                <p className="pr-8 font-sans text-meta font-medium tracking-meta text-fg-muted uppercase">
+                <p className="pr-8 small-caps text-meta font-medium tracking-meta text-fg-muted">
                     <span>{formatEntryDate(entry, 'long')}</span>
                     <span aria-hidden="true"> · </span>
                     <span className="sr-only">, </span>

@@ -42,6 +42,7 @@ describe('EntryLabel', () => {
         )
         expect(screen.getByText('26. Dez. 1825')).toHaveClass(
             'small-caps',
+            'text-label',
             'tracking-date',
             'text-fg-muted'
         )
