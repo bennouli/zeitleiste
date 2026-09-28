@@ -304,7 +304,6 @@ describe('layoutEntries', () => {
     })
 
     it("counts a span's date range in its label width, so it groups when rows run out", () => {
-        // '1. Jan. – 30. Nov. 1900' is far wider than the title.
         const span: Entry = {
             ...POINT,
             id: 'span',
@@ -315,8 +314,7 @@ describe('layoutEntries', () => {
         const asPoint: Entry = { ...span, end: undefined }
         const spanWidth = estimateLabelWidthPx(span)
         const pointWidth = estimateLabelWidthPx(asPoint)
-        // Right of where the span's label would end as a point, left of where its range line ends.
-        const lateDays = Math.round((spanWidth + pointWidth) / 2)
+        const betweenPointAndSpanEnd = Math.round((spanWidth + pointWidth) / 2)
         const early: Entry = {
             ...POINT,
             id: 'early',
@@ -327,7 +325,9 @@ describe('layoutEntries', () => {
             ...POINT,
             id: 'late',
             title: 'Y',
-            start: dayOf(Date.UTC(1900, 0, 1) + lateDays * MS_PER_DAY),
+            start: dayOf(
+                Date.UTC(1900, 0, 1) + betweenPointAndSpanEnd * MS_PER_DAY
+            ),
         }
         const onePxPerDay: LayoutGeometry = {
             timeToX: (t) => (t - Date.UTC(1900, 0, 1)) / MS_PER_DAY,
@@ -347,8 +347,8 @@ describe('layoutEntries', () => {
         const withSpan = layoutOf([span, early, late])
         const withPoint = layoutOf([asPoint, early, late])
 
-        expect(lateDays - pointWidth).toBeGreaterThan(GAP_PX)
-        expect(spanWidth - lateDays).toBeGreaterThan(GAP_PX)
+        expect(betweenPointAndSpanEnd - pointWidth).toBeGreaterThan(GAP_PX)
+        expect(spanWidth - betweenPointAndSpanEnd).toBeGreaterThan(GAP_PX)
         expect(withPoint.items.map((i) => i.kind)).toEqual([
             'card',
             'card',
@@ -359,7 +359,7 @@ describe('layoutEntries', () => {
 })
 
 describe('useEntryLayout', () => {
-    it('places spans at their start like points', () => {
+    it('gives every span a label, placed at its start like a point', () => {
         const geometry: LayoutGeometry = {
             timeToX: timeToXOf(WIDE_DESKTOP),
             msPerPx:
@@ -376,7 +376,8 @@ describe('useEntryLayout', () => {
 
         const itemOf = (id: string) =>
             result.current.items.find((i) => i.entries.some((e) => e.id === id))
-        for (const span of spans) expect(itemOf(span.id)).toBeDefined()
+        for (const span of spans)
+            expect(itemOf(span.id)?.kind, span.id).toMatch(/^(card|group)$/)
         const spanCards = result.current.items.filter(
             (i) => i.kind === 'card' && isSpan(i.entries[0]!)
         )

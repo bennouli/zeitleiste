@@ -13,6 +13,7 @@ import {
 test.use({ viewport: { width: 1280, height: 800 }, reducedMotion: 'reduce' })
 
 const ORDER = new Map(entries.map((e, i) => [e.id, i]))
+const isZoomMarker = (f: Focused) => f.name.startsWith('Hineinzoomen:')
 const SPAN_IDS = entries
     .filter(isSpan)
     .map((e) => e.id)
@@ -58,6 +59,7 @@ for (const [label, size] of [
         page,
     }) => {
         await page.setViewportSize(size)
+        // No settle wait: the first layout is final (#72); a relayout mid-walk used to swap entries (#54).
         await openTimeline(page)
         const region = timelineRegion(page)
         const labelled = new Set<string>()
@@ -85,15 +87,11 @@ for (const [label, size] of [
                     await page.keyboard.press('ArrowDown')
                 }
                 await page.keyboard.press('Home')
-            } else if (f.ids.length === 1) {
+            } else if (f.ids.length === 1 && !isZoomMarker(f)) {
                 if (f.inCards) labelled.add(f.ids[0]!)
                 if (f.inSpans) barred.add(f.ids[0]!)
             }
-            if (
-                f.inCards &&
-                f.t !== null &&
-                !f.name.startsWith('Hineinzoomen:')
-            )
+            if (f.inCards && f.t !== null && !isZoomMarker(f))
                 cardTimes.push(f.t)
             if (f.inSpans && f.t !== null) barTimes.push(f.t)
         }
