@@ -1,5 +1,6 @@
 import type { TimelineProps } from '@/components/timeline/Timeline'
 import { entries } from '@/data/entries'
+import type { Entry } from '@/lib/entry'
 import { expectNoAxeViolations } from '@/test/axe'
 import { sampleEntry } from '@/test/entries'
 import { stubReducedMotion } from '@/test/motion'
@@ -47,13 +48,30 @@ const okt = sampleEntry('oktoberrevolution')
 const otherPost = entries.find((e) => e.post && e.id !== 'oktoberrevolution')!
 const noPost = entries.find((e) => !e.post)!
 
-function renderAt(pathname: string, withPost = pathname !== '/') {
+function shellAt(pathname: string, post: Entry | null, shellEntries: Entry[]) {
     nav.pathname = pathname
-    return render(
-        <TimelineShell entries={entries}>
-            {withPost ? <Post entry={okt} /> : null}
+    return (
+        <TimelineShell entries={shellEntries}>
+            {post ? <Post entry={post} /> : null}
         </TimelineShell>
     )
+}
+
+function renderAt(
+    pathname: string,
+    post: Entry | null = pathname === '/' ? null : okt
+) {
+    const view = render(shellAt(pathname, post, entries))
+    const rerenderAt = (
+        nextPathname: string,
+        nextPost: Entry | null,
+        shellEntries = entries
+    ) => view.rerender(shellAt(nextPathname, nextPost, shellEntries))
+    return { ...view, rerenderAt }
+}
+
+function settle(ms: number) {
+    return act(() => new Promise((r) => setTimeout(r, ms)))
 }
 
 function stubPostTop(top: number) {
@@ -108,7 +126,7 @@ describe('TimelineShell', () => {
     it.each(['/post/gibt-es-nicht', `/post/${noPost.id}`, '/irgendwas'])(
         'collapses without focus for a 404 page (%s)',
         (path) => {
-            renderAt(path, false)
+            renderAt(path, null)
             const tl = screen.getByTestId('timeline')
             expect(tl).toHaveAttribute('data-collapsed', 'true')
             expect(tl).toHaveAttribute('data-focus', '')
@@ -124,7 +142,7 @@ describe('TimelineShell', () => {
     })
 
     it('switches between posts without remounting the timeline', async () => {
-        const { rerender } = renderAt('/post/oktoberrevolution')
+        const { rerenderAt } = renderAt('/post/oktoberrevolution')
         const tl = screen.getByTestId('timeline')
         await userEvent.click(
             screen.getByRole('button', { name: otherPost.title })
@@ -132,12 +150,7 @@ describe('TimelineShell', () => {
         expect(nav.push).toHaveBeenCalledWith(`/post/${otherPost.id}`, {
             scroll: false,
         })
-        nav.pathname = `/post/${otherPost.id}`
-        rerender(
-            <TimelineShell entries={entries}>
-                <Post entry={otherPost} />
-            </TimelineShell>
-        )
+        rerenderAt(`/post/${otherPost.id}`, otherPost)
         expect(screen.getByTestId('timeline')).toBe(tl)
         expect(tl).toHaveAttribute('data-focus', otherPost.id)
     })
@@ -189,51 +202,38 @@ describe('TimelineShell', () => {
     })
 
     it('scrolls the post into view when a post opens', async () => {
-        const { rerender } = renderAt('/')
+        const { rerenderAt } = renderAt('/')
         expect(window.scrollTo).not.toHaveBeenCalled()
-        nav.pathname = '/post/oktoberrevolution'
-        rerender(
-            <TimelineShell entries={entries}>
-                <Post entry={okt} />
-            </TimelineShell>
-        )
-        await act(() => new Promise((r) => setTimeout(r, 50)))
+        rerenderAt('/post/oktoberrevolution', okt)
+        await settle(50)
         expect(window.scrollTo).toHaveBeenCalled()
     })
 
     it('scrolls so the post starts at 40% of the viewport (reduced motion: one instant scroll)', async () => {
-        stubPostTop(1000)
+        const postTop = 1000
+        stubPostTop(postTop)
         stubReducedMotion(true)
-        const { rerender } = renderAt('/')
-        nav.pathname = '/post/oktoberrevolution'
-        rerender(
-            <TimelineShell entries={entries}>
-                <Post entry={okt} />
-            </TimelineShell>
-        )
-        await act(() => new Promise((r) => setTimeout(r, 50)))
+        const { rerenderAt } = renderAt('/')
+        rerenderAt('/post/oktoberrevolution', okt)
+        await settle(50)
         expect(window.scrollTo).toHaveBeenCalledTimes(1)
         expect(window.scrollTo).toHaveBeenLastCalledWith({
-            top: 1000 - window.innerHeight * 0.4,
+            top: postTop - window.innerHeight * 0.4,
             behavior: 'auto',
         })
     })
 
     it('animates the scroll over several frames and lands on the target', async () => {
-        stubPostTop(1000)
+        const postTop = 1000
+        stubPostTop(postTop)
         stubReducedMotion(false)
-        const { rerender } = renderAt('/')
-        nav.pathname = '/post/oktoberrevolution'
-        rerender(
-            <TimelineShell entries={entries}>
-                <Post entry={okt} />
-            </TimelineShell>
-        )
-        await act(() => new Promise((r) => setTimeout(r, 800)))
+        const { rerenderAt } = renderAt('/')
+        rerenderAt('/post/oktoberrevolution', okt)
+        await settle(800)
         const calls = vi.mocked(window.scrollTo).mock.calls
         expect(calls.length).toBeGreaterThan(3)
         expect(calls.at(-1)?.[0]).toEqual({
-            top: 1000 - window.innerHeight * 0.4,
+            top: postTop - window.innerHeight * 0.4,
             behavior: 'auto',
         })
     })
@@ -241,83 +241,57 @@ describe('TimelineShell', () => {
     it('does not scroll on a direct link when the post already starts in view', async () => {
         stubPostTop(window.innerHeight * 0.5)
         renderAt('/post/oktoberrevolution')
-        await act(() => new Promise((r) => setTimeout(r, 50)))
+        await settle(50)
         expect(window.scrollTo).not.toHaveBeenCalled()
     })
 
     it('scrolls on a direct link when the post starts below the fold', async () => {
         stubPostTop(window.innerHeight * 1.2)
         renderAt('/post/oktoberrevolution')
-        await act(() => new Promise((r) => setTimeout(r, 50)))
+        await settle(50)
         expect(window.scrollTo).toHaveBeenCalledTimes(1)
     })
 
     it('returns focus to the opening entry when the post closes', async () => {
-        const { rerender } = renderAt('/')
+        const { rerenderAt } = renderAt('/')
         const opener = screen.getByRole('button', { name: okt.title })
         await userEvent.click(opener)
-        nav.pathname = '/post/oktoberrevolution'
-        rerender(
-            <TimelineShell entries={entries}>
-                <Post entry={okt} />
-            </TimelineShell>
-        )
+        rerenderAt('/post/oktoberrevolution', okt)
         screen.getByRole('button', { name: 'Beitrag schließen' }).focus()
-        nav.pathname = '/'
-        rerender(<TimelineShell entries={entries}>{null}</TimelineShell>)
+        rerenderAt('/', null)
         // The opening button was replaced by the relayout; focus goes to the same entry's new card.
         expect(opener.isConnected).toBe(false)
         expect(screen.getByRole('button', { name: okt.title })).toHaveFocus()
     })
 
     it('returns focus to the entry that opened the current post after a direct link and a switch', async () => {
-        const { rerender } = renderAt('/post/oktoberrevolution')
+        const { rerenderAt } = renderAt('/post/oktoberrevolution')
         await userEvent.click(
             screen.getByRole('button', { name: otherPost.title })
         )
-        nav.pathname = `/post/${otherPost.id}`
-        rerender(
-            <TimelineShell entries={entries}>
-                <Post entry={otherPost} />
-            </TimelineShell>
-        )
+        rerenderAt(`/post/${otherPost.id}`, otherPost)
         expect(
             screen.getByRole('heading', { level: 2, name: otherPost.title })
         ).toHaveFocus()
-        nav.pathname = '/'
-        rerender(<TimelineShell entries={entries}>{null}</TimelineShell>)
+        rerenderAt('/', null)
         expect(
             screen.getByRole('button', { name: otherPost.title })
         ).toHaveFocus()
     })
 
     it('falls back to the timeline region when the entry is gone', async () => {
-        const { rerender } = renderAt('/')
+        const { rerenderAt } = renderAt('/')
         await userEvent.click(screen.getByRole('button', { name: okt.title }))
-        nav.pathname = '/post/oktoberrevolution'
-        rerender(
-            <TimelineShell entries={entries}>
-                <Post entry={okt} />
-            </TimelineShell>
-        )
-        nav.pathname = '/'
-        rerender(
-            <TimelineShell entries={entries.filter((e) => e.id !== okt.id)}>
-                {null}
-            </TimelineShell>
-        )
+        rerenderAt('/post/oktoberrevolution', okt)
+        const entriesWithoutOkt = entries.filter((e) => e.id !== okt.id)
+        rerenderAt('/', null, entriesWithoutOkt)
         expect(screen.getByRole('region', { name: 'Zeitleiste' })).toHaveFocus()
     })
 
     it('moves focus to the post heading when a post opens from the timeline', async () => {
-        const { rerender } = renderAt('/')
+        const { rerenderAt } = renderAt('/')
         await userEvent.click(screen.getByRole('button', { name: okt.title }))
-        nav.pathname = '/post/oktoberrevolution'
-        rerender(
-            <TimelineShell entries={entries}>
-                <Post entry={okt} />
-            </TimelineShell>
-        )
+        rerenderAt('/post/oktoberrevolution', okt)
         expect(
             screen.getByRole('heading', { level: 2, name: okt.title })
         ).toHaveFocus()
