@@ -12,7 +12,7 @@ function paragraphs(body: string): string[] {
         .filter((p) => p.length > 0)
 }
 
-/** The post of an entry, shown below the collapsed timeline: meta line, title, the summary as lead, then the body. */
+/** The post of an entry, shown below the collapsed timeline. */
 export function Post({ entry }: { entry: Entry }) {
     const { close } = usePostControls()
     const titleId = `post-title-${entry.id}`
@@ -20,7 +20,7 @@ export function Post({ entry }: { entry: Entry }) {
     return (
         <article
             aria-labelledby={titleId}
-            className="relative mx-8 border-t border-fg/25 bg-surface text-fg"
+            className="relative mx-8 border-t border-border bg-surface text-fg"
         >
             <div className="mx-auto flex max-w-reading flex-col gap-[18px] pt-9 pb-16 font-serif">
                 <p className="pr-8 font-sans text-[10.5px] font-medium tracking-[0.12em] text-fg-muted uppercase">
