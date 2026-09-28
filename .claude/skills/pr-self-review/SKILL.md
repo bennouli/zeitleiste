@@ -101,11 +101,11 @@ The `let` grep over-matches; read each hit and ask whether an expression reads b
 
 ## Dimension 3 — Logic out of components (MAJOR)
 
-Logic is a plain function with a unit test next to it; a component only draws. Shared logic lives in `src/lib`; logic specific to one
-component sits beside it as its own module (`bandGeometry.ts` next to `Timeline.tsx`) — placement is not the finding, burial is. The
-recurring finding: geometry, date maths or a state machine buried inside a component or hook, untested because it was never **extracted into
-an importable module**. `src/lib/placement.ts`, `cluster.ts`, `spans.ts` and `src/components/timeline/bandGeometry.ts` are the shape to
-follow.
+Logic is a plain function with a unit test in the `__tests__/` directory beside it; a component only draws. Shared logic lives in `src/lib`;
+logic specific to one component sits beside it as its own module (`bandGeometry.ts` next to `Timeline.tsx`) — placement is not the finding,
+burial is. The recurring finding: geometry, date maths or a state machine buried inside a component or hook, untested because it was never
+**extracted into an importable module**. `src/lib/placement.ts`, `cluster.ts`, `spans.ts` and `src/components/timeline/bandGeometry.ts` are
+the shape to follow.
 
 ```bash
 # new logic in components without a matching test
@@ -150,11 +150,11 @@ git diff $R -- 'src' ':!*.test.*' ':!src/lib/format.ts' | grep -nE "^\+.*(title|
 
 Vitest runs unit tests (`pnpm test`); Playwright runs the browser checks (`pnpm e2e`: axe on `/` and a post page, the keyboard walk).
 
-| What changed                       | Where it belongs                              |
-| ---------------------------------- | --------------------------------------------- |
-| Pure logic, geometry, formatting   | `x.test.ts` next to it in `src/lib`           |
-| A component's behaviour            | `X.test.tsx` beside it (Testing Library, axe) |
-| Keyboard flow, focus, page routing | `e2e/*.spec.ts`                               |
+| What changed                       | Where it belongs                                        |
+| ---------------------------------- | ------------------------------------------------------- |
+| Pure logic, geometry, formatting   | `__tests__/x.test.ts` beside it in `src/lib`            |
+| A component's behaviour            | `__tests__/X.test.tsx` beside it (Testing Library, axe) |
+| Keyboard flow, focus, page routing | `e2e/*.spec.ts`                                         |
 
 Because nothing runs the suite for you, the PR's `## Verification` section is the only evidence there is. A PR that claims a result is
 **awaiting confirmation**, not verified — say which commands were claimed and which are missing; never upgrade a claim to a pass.
