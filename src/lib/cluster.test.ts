@@ -1,5 +1,6 @@
 import { entries } from '@/data/entries'
 import { isSpan } from '@/lib/entry'
+import { compareIds } from '@/lib/order'
 import { MS_PER_DAY, MS_PER_YEAR } from '@/lib/time'
 import { describe, expect, it } from 'vitest'
 import {
@@ -53,7 +54,7 @@ function shuffle<T>(arr: readonly T[], seed: number): T[] {
 
 function chronologicalIds(points: readonly ClusterPoint[]): string[] {
     return [...points]
-        .sort((a, b) => a.t - b.t || (a.id < b.id ? -1 : 1))
+        .sort((a, b) => a.t - b.t || compareIds(a.id, b.id))
         .map((p) => p.id)
 }
 
@@ -131,7 +132,7 @@ describe('buildClusterTree / cutTree stability', () => {
         for (let seed = 1; seed <= 10; seed++) {
             const points = randomPoints(seed, 40)
             const sorted = [...points].sort(
-                (a, b) => a.t - b.t || (a.id < b.id ? -1 : 1)
+                (a, b) => a.t - b.t || compareIds(a.id, b.id)
             )
             const root = buildClusterTree(points)
             for (const minGap of [MS_PER_DAY, 3 * MS_PER_DAY, 8 * MS_PER_DAY]) {

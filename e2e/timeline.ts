@@ -17,12 +17,12 @@ export function timelineRegion(page: Page): Locator {
     return page.getByRole('region', { name: 'Zeitleiste' })
 }
 
-export async function ready(page: Page, path = '/') {
+export async function openTimeline(page: Page, path = '/') {
     await page.goto(path)
     await expect(timelineRegion(page)).toHaveAttribute('data-view-start', /\d/)
 }
 
-export function focused(page: Page): Promise<Focused> {
+export function describeFocus(page: Page): Promise<Focused> {
     return page.evaluate(() => {
         const el = document.activeElement as HTMLElement
         const holder = el.closest<HTMLElement>(
@@ -52,15 +52,18 @@ export function focused(page: Page): Promise<Focused> {
     })
 }
 
-export async function tabUntil(
-    page: Page,
-    isDone: (f: Focused) => boolean | Promise<boolean>
-): Promise<Focused | null> {
-    let f: Focused | null = null
+export async function* tabThrough(page: Page): AsyncGenerator<Focused> {
     for (let i = 0; i < MAX_TABS; i++) {
         await page.keyboard.press('Tab')
-        f = await focused(page)
-        if (await isDone(f)) break
+        yield await describeFocus(page)
     }
-    return f
+}
+
+export async function tabUntil(
+    page: Page,
+    isDone: (f: Focused) => boolean
+): Promise<Focused | null> {
+    let lastFocus: Focused | null = null
+    for await (lastFocus of tabThrough(page)) if (isDone(lastFocus)) break
+    return lastFocus
 }

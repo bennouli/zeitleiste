@@ -3,7 +3,7 @@ import { isSpan, type Entry } from '@/lib/entry'
 import type { SpanBar } from '@/lib/spans'
 import { startOf } from '@/lib/time'
 import { expectNoAxeViolations } from '@/test/axe'
-import { render, screen } from '@testing-library/react'
+import { act, fireEvent, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import {
@@ -16,6 +16,7 @@ import {
 const TODAY = Date.UTC(2026, 8, 27)
 const WIDTH = 1920
 const LANE = 20
+const LAYOUT_OPTIONS = { minWidthPx: 64, charWidthPx: 7 }
 const spans = entries.filter(isSpan)
 
 function linear(from: number, to: number, width = WIDTH) {
@@ -24,6 +25,7 @@ function linear(from: number, to: number, width = WIDTH) {
 
 /** Widest zoom: 1700 to today across 1920 px. */
 const wide = linear(startOf({ year: 1700 }), TODAY)
+const wideLayout = () => spanBandLayout(spans, wide, TODAY, LAYOUT_OPTIONS)
 
 function renderBand(props: Partial<SpanBandProps> = {}) {
     const onOpen = vi.fn()
@@ -33,7 +35,7 @@ function renderBand(props: Partial<SpanBandProps> = {}) {
             timeToX={wide}
             today={TODAY}
             laneHeightPx={LANE}
-            minWidthPx={64}
+            minWidthPx={LAYOUT_OPTIONS.minWidthPx}
             onOpen={onOpen}
             {...props}
         />
@@ -84,10 +86,7 @@ describe('SpanBand', () => {
         const { container } = renderBand()
         const el = barEl(container, 'kubakrise')
         expect(px(el.style.width)).toBe(64)
-        const { bars } = spanBandLayout(spans, wide, TODAY, {
-            minWidthPx: 64,
-            charWidthPx: 7,
-        })
+        const { bars } = wideLayout()
         expect(bars.get('kubakrise')?.extended).toBe(true)
     })
 
@@ -112,10 +111,7 @@ describe('SpanBand', () => {
 
     it('sizes the band to laneCount * laneHeightPx', () => {
         const { container } = renderBand()
-        const { laneCount } = spanBandLayout(spans, wide, TODAY, {
-            minWidthPx: 64,
-            charWidthPx: 7,
-        })
+        const { laneCount } = wideLayout()
         expect((container.firstChild as HTMLElement).style.height).toBe(
             `${laneCount * LANE}px`
         )
@@ -216,6 +212,42 @@ describe('SpanBand', () => {
         expect(screen.queryByRole('tooltip')).toBeNull()
     })
 
+    it('shows no tooltip on a focus that follows a pointer press', () => {
+        renderBand({ spans: [withoutPost] })
+        const bar = screen.getByRole('group', { name: /Ohne Beitrag/ })
+        act(() => bar.focus())
+        expect(screen.getByRole('tooltip')).toBeInTheDocument()
+        act(() => bar.blur())
+        fireEvent.pointerDown(bar, { pointerType: 'mouse' })
+        act(() => bar.focus())
+        expect(screen.queryByRole('tooltip')).toBeNull()
+    })
+
+    it('leaves the tooltip open on Escape typed in a text field', async () => {
+        const user = userEvent.setup()
+        render(<input aria-label="Suche" />)
+        renderBand({ spans: [withoutPost] })
+        await user.hover(screen.getByRole('group', { name: /Ohne Beitrag/ }))
+        const field = screen.getByRole('textbox', { name: 'Suche' })
+        field.focus()
+        await user.keyboard('{Escape}')
+        expect(screen.getByRole('tooltip')).toBeInTheDocument()
+        field.blur()
+        await user.keyboard('{Escape}')
+        expect(screen.queryByRole('tooltip')).toBeNull()
+    })
+
+    it('keeps a hover tooltip when a touch pointer leaves, and closes it when the mouse leaves', async () => {
+        const user = userEvent.setup()
+        renderBand({ spans: [withoutPost] })
+        const bar = screen.getByRole('group', { name: /Ohne Beitrag/ })
+        await user.hover(bar)
+        fireEvent.pointerOut(bar, { pointerType: 'touch' })
+        expect(screen.getByRole('tooltip')).toBeInTheDocument()
+        fireEvent.pointerOut(bar, { pointerType: 'mouse' })
+        expect(screen.queryByRole('tooltip')).toBeNull()
+    })
+
     it('highlights the given span', () => {
         const { container } = renderBand({ highlightedId: 'sowjetunion' })
         expect(barEl(container, 'sowjetunion').className).toContain('ring-2')
@@ -234,9 +266,10 @@ describe('SpanBand', () => {
 
     it('opens with the keyboard even if the last pointer gesture was a drag', async () => {
         const user = userEvent.setup()
+        const alwaysDrag = () => true
         const { onOpen } = renderBand({
             spans: [withPost, withoutPost],
-            wasDrag: () => true,
+            wasDrag: alwaysDrag,
         })
         await user.tab()
         expect(screen.getByRole('button')).toHaveFocus()
@@ -250,11 +283,9 @@ describe('SpanBand', () => {
     })
 
     it('orders bars chronologically by true start', () => {
-        const { container } = renderBand({ spans: [...spans].reverse() })
-        const { bars } = spanBandLayout(spans, wide, TODAY, {
-            minWidthPx: 64,
-            charWidthPx: 7,
-        })
+        const reversed = [...spans].reverse()
+        const { container } = renderBand({ spans: reversed })
+        const { bars } = wideLayout()
         const starts = [
             ...container.querySelectorAll<HTMLElement>('[data-span-id]'),
         ].map((el) => bars.get(el.dataset.spanId!)!.trueX0)
@@ -264,31 +295,27 @@ describe('SpanBand', () => {
     it('draws a left-extended uniform bar solid from x0, and honours an explicit maxX', () => {
         const id = 'russischer-angriffskrieg-gegen-die-ukraine'
         const { container } = renderBand()
-        const { bars } = spanBandLayout(spans, wide, TODAY, {
-            minWidthPx: 64,
-            charWidthPx: 7,
-        })
+        const { bars } = wideLayout()
         const el = barEl(container, id)
         expect(px(el.style.left)).toBeCloseTo(bars.get(id)!.x0, 6)
         expect(el.querySelector('[data-part]')).toBeNull()
-        const limited = spanBandLayout(spans, wide, TODAY, {
-            minWidthPx: 64,
-            charWidthPx: 7,
-            maxX: Infinity,
-        })
-        expect(limited.bars.get(id)!.x0).toBe(bars.get(id)!.trueX0)
+        const unlimited = { ...LAYOUT_OPTIONS, maxX: Infinity }
+        const unclampedLayout = spanBandLayout(spans, wide, TODAY, unlimited)
+        expect(unclampedLayout.bars.get(id)!.x0).toBe(bars.get(id)!.trueX0)
     })
 
     it('renders an empty band for no spans and skips non-finite positions', () => {
-        const { container } = renderBand({
-            spans: entries.filter((e) => !isSpan(e)),
-        })
+        const points = entries.filter((e) => !isSpan(e))
+        const { container } = renderBand({ spans: points })
         expect(container.querySelectorAll('[data-span-id]')).toHaveLength(0)
         expect((container.firstChild as HTMLElement).style.height).toBe('0px')
-        const layout = spanBandLayout([withPost], () => NaN, TODAY, {
-            minWidthPx: 64,
-            charWidthPx: 7,
-        })
+        const nowhere = () => NaN
+        const layout = spanBandLayout(
+            [withPost],
+            nowhere,
+            TODAY,
+            LAYOUT_OPTIONS
+        )
         expect(layout.laneCount).toBe(0)
     })
 })

@@ -55,7 +55,28 @@ function setup(props: Partial<React.ComponentProps<typeof GroupStack>> = {}) {
     return { ...utils, renderCard, group, list, viewport }
 }
 
+const TOUCH = { pointerType: 'touch', pointerId: 1, isPrimary: true }
+const FIVE_IN_ONE_SLOT = {
+    entries: makeEntries(5),
+    visibleCount: 1,
+    slotHeightPx: SLOT,
+    label: 'G',
+}
+
+const titleSpan = (e: Entry) => <span>{e.title}</span>
+
+function cardButton(onCardClick: (id: string) => void) {
+    return function renderCardButton(e: Entry) {
+        return (
+            <button type="button" onClick={() => onCardClick(e.id)}>
+                {e.title}
+            </button>
+        )
+    }
+}
+
 const translate = (list: HTMLElement) => list.style.transform
+const stackViewport = () => screen.getByRole('list').parentElement!
 const up = () => screen.getByRole('button', { name: 'Einen Eintrag nach oben' })
 const down = () =>
     screen.getByRole('button', { name: 'Einen Eintrag nach unten' })
@@ -132,21 +153,13 @@ describe('GroupStack', () => {
     })
 
     it('leaves keys alone that a card already handled', () => {
+        const keyHandlingCard = (e: Entry) => (
+            <button type="button" onKeyDown={(ev) => ev.preventDefault()}>
+                {e.title}
+            </button>
+        )
         render(
-            <GroupStack
-                entries={makeEntries(5)}
-                visibleCount={1}
-                slotHeightPx={SLOT}
-                label="Gruppe"
-                renderCard={(e) => (
-                    <button
-                        type="button"
-                        onKeyDown={(ev) => ev.preventDefault()}
-                    >
-                        {e.title}
-                    </button>
-                )}
-            />
+            <GroupStack {...FIVE_IN_ONE_SLOT} renderCard={keyHandlingCard} />
         )
         fireEvent.keyDown(screen.getByRole('button', { name: 'Eintrag 1' }), {
             key: 'ArrowDown',
@@ -186,26 +199,25 @@ describe('GroupStack', () => {
     it('steps once per vertical touch swipe and ignores horizontal and mouse drags', () => {
         const { viewport } = setup()
         const card = screen.getByTestId('card-e0')
-        const touch = { pointerType: 'touch', pointerId: 1, isPrimary: true }
 
-        fireEvent.pointerDown(card, { ...touch, clientX: 50, clientY: 200 })
-        fireEvent.pointerMove(card, { ...touch, clientX: 50, clientY: 180 })
+        fireEvent.pointerDown(card, { ...TOUCH, clientX: 50, clientY: 200 })
+        fireEvent.pointerMove(card, { ...TOUCH, clientX: 50, clientY: 180 })
         expect(screen.getByText('1 von 7')).toBeInTheDocument()
-        fireEvent.pointerMove(card, { ...touch, clientX: 52, clientY: 160 })
-        fireEvent.pointerMove(card, { ...touch, clientX: 52, clientY: 60 })
-        fireEvent.pointerUp(card, { ...touch, clientX: 52, clientY: 60 })
+        fireEvent.pointerMove(card, { ...TOUCH, clientX: 52, clientY: 160 })
+        fireEvent.pointerMove(card, { ...TOUCH, clientX: 52, clientY: 60 })
+        fireEvent.pointerUp(card, { ...TOUCH, clientX: 52, clientY: 60 })
         expect(screen.getByText('2 von 7')).toBeInTheDocument()
 
         // Swipe down → back one.
-        fireEvent.pointerDown(viewport, { ...touch, clientX: 50, clientY: 100 })
-        fireEvent.pointerMove(viewport, { ...touch, clientX: 50, clientY: 140 })
-        fireEvent.pointerUp(viewport, touch)
+        fireEvent.pointerDown(viewport, { ...TOUCH, clientX: 50, clientY: 100 })
+        fireEvent.pointerMove(viewport, { ...TOUCH, clientX: 50, clientY: 140 })
+        fireEvent.pointerUp(viewport, TOUCH)
         expect(screen.getByText('1 von 7')).toBeInTheDocument()
 
         // Horizontal move → ignored (the timeline pans).
-        fireEvent.pointerDown(viewport, { ...touch, clientX: 50, clientY: 100 })
-        fireEvent.pointerMove(viewport, { ...touch, clientX: 150, clientY: 60 })
-        fireEvent.pointerUp(viewport, touch)
+        fireEvent.pointerDown(viewport, { ...TOUCH, clientX: 50, clientY: 100 })
+        fireEvent.pointerMove(viewport, { ...TOUCH, clientX: 150, clientY: 60 })
+        fireEvent.pointerUp(viewport, TOUCH)
         expect(screen.getByText('1 von 7')).toBeInTheDocument()
 
         // Mouse drag → ignored.
@@ -219,52 +231,31 @@ describe('GroupStack', () => {
     })
 
     it('clamps initialIndex and follows changes to it', () => {
-        const entries = makeEntries(7)
-        const renderCard = (e: Entry) => <span>{e.title}</span>
+        const props = {
+            entries: makeEntries(7),
+            visibleCount: 3,
+            slotHeightPx: SLOT,
+            renderCard: titleSpan,
+            label: 'G',
+        }
         const { rerender, getByRole } = render(
-            <GroupStack
-                entries={entries}
-                visibleCount={3}
-                slotHeightPx={SLOT}
-                renderCard={renderCard}
-                label="G"
-                initialIndex={10}
-            />
+            <GroupStack {...props} initialIndex={10} />
         )
         expect(screen.getByText('5 von 7')).toBeInTheDocument()
         expect(getByRole('list').style.transform).toBe('translateY(-400px)')
-        rerender(
-            <GroupStack
-                entries={entries}
-                visibleCount={3}
-                slotHeightPx={SLOT}
-                renderCard={renderCard}
-                label="G"
-                initialIndex={2}
-            />
-        )
+        rerender(<GroupStack {...props} initialIndex={2} />)
         expect(screen.getByText('3 von 7')).toBeInTheDocument()
-        rerender(
-            <GroupStack
-                entries={entries}
-                visibleCount={3}
-                slotHeightPx={SLOT}
-                renderCard={renderCard}
-                label="G"
-                initialIndex={-3}
-            />
-        )
+        rerender(<GroupStack {...props} initialIndex={-3} />)
         expect(screen.getByText('1 von 7')).toBeInTheDocument()
     })
 
     it('keeps the window when initialIndex changes to undefined', () => {
         const entries = makeEntries(7)
-        const renderCard = (e: Entry) => <span>{e.title}</span>
         const props = {
             entries,
             visibleCount: 3,
             slotHeightPx: SLOT,
-            renderCard,
+            renderCard: titleSpan,
             label: 'G',
         }
         const { rerender } = render(<GroupStack {...props} initialIndex={4} />)
@@ -277,13 +268,12 @@ describe('GroupStack', () => {
 
     it('re-clamps when visibleCount grows', () => {
         const entries = makeEntries(4)
-        const renderCard = (e: Entry) => <span>{e.title}</span>
         const { rerender } = render(
             <GroupStack
                 entries={entries}
                 visibleCount={1}
                 slotHeightPx={SLOT}
-                renderCard={renderCard}
+                renderCard={titleSpan}
                 label="G"
                 initialIndex={3}
             />
@@ -294,7 +284,7 @@ describe('GroupStack', () => {
                 entries={entries}
                 visibleCount={2}
                 slotHeightPx={SLOT}
-                renderCard={renderCard}
+                renderCard={titleSpan}
                 label="G"
                 initialIndex={3}
             />
@@ -358,11 +348,10 @@ describe('GroupStack', () => {
 
     it('reports window changes from initialIndex and re-clamping, not the initial position', () => {
         const onIndexChange = vi.fn()
-        const renderCard = (e: Entry) => <span>{e.title}</span>
         const props = {
             visibleCount: 2,
             slotHeightPx: SLOT,
-            renderCard,
+            renderCard: titleSpan,
             label: 'G',
             onIndexChange,
         }
@@ -387,31 +376,18 @@ describe('GroupStack', () => {
 
     it('resets the swipe on pointercancel and swallows the click after a stepping swipe', () => {
         const onCardClick = vi.fn()
-        render(
-            <GroupStack
-                entries={makeEntries(5)}
-                visibleCount={1}
-                slotHeightPx={SLOT}
-                label="G"
-                renderCard={(e) => (
-                    <button type="button" onClick={onCardClick}>
-                        {e.title}
-                    </button>
-                )}
-            />
-        )
-        const list = screen.getByRole('list')
-        const viewport = list.parentElement!
-        const touch = { pointerType: 'touch', pointerId: 1, isPrimary: true }
-        fireEvent.pointerDown(viewport, { ...touch, clientX: 0, clientY: 100 })
-        fireEvent.pointerCancel(viewport, touch)
-        fireEvent.pointerMove(viewport, { ...touch, clientX: 0, clientY: 0 })
+        const renderCard = cardButton(onCardClick)
+        render(<GroupStack {...FIVE_IN_ONE_SLOT} renderCard={renderCard} />)
+        const viewport = stackViewport()
+        fireEvent.pointerDown(viewport, { ...TOUCH, clientX: 0, clientY: 100 })
+        fireEvent.pointerCancel(viewport, TOUCH)
+        fireEvent.pointerMove(viewport, { ...TOUCH, clientX: 0, clientY: 0 })
         expect(screen.getByText('1 von 5')).toBeInTheDocument()
 
         const card = screen.getByRole('button', { name: 'Eintrag 1' })
-        fireEvent.pointerDown(card, { ...touch, clientX: 0, clientY: 100 })
-        fireEvent.pointerMove(card, { ...touch, clientX: 0, clientY: 40 })
-        fireEvent.pointerUp(card, touch)
+        fireEvent.pointerDown(card, { ...TOUCH, clientX: 0, clientY: 100 })
+        fireEvent.pointerMove(card, { ...TOUCH, clientX: 0, clientY: 40 })
+        fireEvent.pointerUp(card, TOUCH)
         // detail 1: a pointer click (detail 0 would be a keyboard activation).
         fireEvent.click(card, { detail: 1 })
         expect(screen.getByText('2 von 5')).toBeInTheDocument()
@@ -424,20 +400,9 @@ describe('GroupStack', () => {
     it('lets a touch tap on a card click it, without capturing the pointer', async () => {
         const user = userEvent.setup()
         const onCardClick = vi.fn()
-        render(
-            <GroupStack
-                entries={makeEntries(5)}
-                visibleCount={1}
-                slotHeightPx={SLOT}
-                label="G"
-                renderCard={(e) => (
-                    <button type="button" onClick={() => onCardClick(e.id)}>
-                        {e.title}
-                    </button>
-                )}
-            />
-        )
-        const viewport = screen.getByRole('list').parentElement!
+        const renderCard = cardButton(onCardClick)
+        render(<GroupStack {...FIVE_IN_ONE_SLOT} renderCard={renderCard} />)
+        const viewport = stackViewport()
         const capture = vi.fn()
         viewport.setPointerCapture = capture
         const card = screen.getByRole('button', { name: 'Eintrag 1' })
@@ -448,10 +413,18 @@ describe('GroupStack', () => {
         expect(screen.getByText('1 von 5')).toBeInTheDocument()
 
         // A short vertical wobble below the threshold is still a tap.
-        const touch = { pointerType: 'touch', pointerId: 3, isPrimary: true }
-        fireEvent.pointerDown(card, { ...touch, clientX: 10, clientY: 100 })
-        fireEvent.pointerMove(card, { ...touch, clientX: 10, clientY: 90 })
-        fireEvent.pointerUp(card, touch)
+        const secondTouch = { ...TOUCH, pointerId: 3 }
+        fireEvent.pointerDown(card, {
+            ...secondTouch,
+            clientX: 10,
+            clientY: 100,
+        })
+        fireEvent.pointerMove(card, {
+            ...secondTouch,
+            clientX: 10,
+            clientY: 90,
+        })
+        fireEvent.pointerUp(card, secondTouch)
         fireEvent.click(card)
         expect(onCardClick).toHaveBeenCalledTimes(2)
         expect(capture).not.toHaveBeenCalled()
@@ -460,48 +433,38 @@ describe('GroupStack', () => {
     it('captures only once a vertical swipe is recognised and never stops pointer propagation', () => {
         const outer = { down: vi.fn(), move: vi.fn(), up: vi.fn() }
         const onCardClick = vi.fn()
+        const renderCard = cardButton(onCardClick)
         render(
             <div
                 onPointerDown={outer.down}
                 onPointerMove={outer.move}
                 onPointerUp={outer.up}
             >
-                <GroupStack
-                    entries={makeEntries(5)}
-                    visibleCount={1}
-                    slotHeightPx={SLOT}
-                    label="G"
-                    renderCard={(e) => (
-                        <button type="button" onClick={onCardClick}>
-                            {e.title}
-                        </button>
-                    )}
-                />
+                <GroupStack {...FIVE_IN_ONE_SLOT} renderCard={renderCard} />
             </div>
         )
-        const viewport = screen.getByRole('list').parentElement!
+        const viewport = stackViewport()
         const capture = vi.fn()
         viewport.setPointerCapture = capture
         const card = screen.getByRole('button', { name: 'Eintrag 1' })
-        const touch = { pointerType: 'touch', pointerId: 1, isPrimary: true }
 
         // Horizontal: no capture, every event reaches the timeline.
-        fireEvent.pointerDown(card, { ...touch, clientX: 0, clientY: 100 })
-        fireEvent.pointerMove(card, { ...touch, clientX: 80, clientY: 60 })
-        fireEvent.pointerUp(card, touch)
+        fireEvent.pointerDown(card, { ...TOUCH, clientX: 0, clientY: 100 })
+        fireEvent.pointerMove(card, { ...TOUCH, clientX: 80, clientY: 60 })
+        fireEvent.pointerUp(card, TOUCH)
         expect(capture).not.toHaveBeenCalled()
         expect(outer.down).toHaveBeenCalledTimes(1)
         expect(outer.move).toHaveBeenCalledTimes(1)
         expect(outer.up).toHaveBeenCalledTimes(1)
 
         // Vertical: captured on recognition, steps once, swallows the click.
-        fireEvent.pointerDown(card, { ...touch, clientX: 0, clientY: 100 })
-        fireEvent.pointerMove(card, { ...touch, clientX: 0, clientY: 90 })
+        fireEvent.pointerDown(card, { ...TOUCH, clientX: 0, clientY: 100 })
+        fireEvent.pointerMove(card, { ...TOUCH, clientX: 0, clientY: 90 })
         expect(capture).not.toHaveBeenCalled()
-        fireEvent.pointerMove(card, { ...touch, clientX: 0, clientY: 40 })
+        fireEvent.pointerMove(card, { ...TOUCH, clientX: 0, clientY: 40 })
         expect(capture).toHaveBeenCalledExactlyOnceWith(1)
-        fireEvent.pointerMove(viewport, { ...touch, clientX: 0, clientY: -100 })
-        fireEvent.pointerUp(viewport, touch)
+        fireEvent.pointerMove(viewport, { ...TOUCH, clientX: 0, clientY: -100 })
+        fireEvent.pointerUp(viewport, TOUCH)
         fireEvent.click(card, { detail: 1 })
         expect(screen.getByText('2 von 5')).toBeInTheDocument()
         expect(capture).toHaveBeenCalledTimes(1)
@@ -512,43 +475,30 @@ describe('GroupStack', () => {
     it('does not swallow a later keyboard or mouse click after a swipe that ended without a click', async () => {
         const user = userEvent.setup()
         const onCardClick = vi.fn()
-        render(
-            <GroupStack
-                entries={makeEntries(5)}
-                visibleCount={1}
-                slotHeightPx={SLOT}
-                label="G"
-                renderCard={(e) => (
-                    <button type="button" onClick={onCardClick}>
-                        {e.title}
-                    </button>
-                )}
-            />
-        )
-        const viewport = screen.getByRole('list').parentElement!
-        const touch = { pointerType: 'touch', pointerId: 1, isPrimary: true }
-        fireEvent.pointerDown(viewport, { ...touch, clientX: 0, clientY: 100 })
-        fireEvent.pointerMove(viewport, { ...touch, clientX: 0, clientY: 40 })
-        fireEvent.pointerUp(viewport, touch)
+        const renderCard = cardButton(onCardClick)
+        render(<GroupStack {...FIVE_IN_ONE_SLOT} renderCard={renderCard} />)
+        const viewport = stackViewport()
+        fireEvent.pointerDown(viewport, { ...TOUCH, clientX: 0, clientY: 100 })
+        fireEvent.pointerMove(viewport, { ...TOUCH, clientX: 0, clientY: 40 })
+        fireEvent.pointerUp(viewport, TOUCH)
         expect(screen.getByText('2 von 5')).toBeInTheDocument()
         // Keyboard activation right away (click with detail 0).
         screen.getByRole('button', { name: 'Eintrag 2' }).focus()
         await user.keyboard('{Enter}')
         expect(onCardClick).toHaveBeenCalledTimes(1)
         // A mouse click after another click-less swipe.
-        fireEvent.pointerDown(viewport, { ...touch, clientX: 0, clientY: 100 })
-        fireEvent.pointerMove(viewport, { ...touch, clientX: 0, clientY: 40 })
-        fireEvent.pointerUp(viewport, touch)
+        fireEvent.pointerDown(viewport, { ...TOUCH, clientX: 0, clientY: 100 })
+        fireEvent.pointerMove(viewport, { ...TOUCH, clientX: 0, clientY: 40 })
+        fireEvent.pointerUp(viewport, TOUCH)
         await user.click(screen.getByRole('button', { name: 'Eintrag 3' }))
         expect(onCardClick).toHaveBeenCalledTimes(2)
     })
 
     it('resets the swipe on lostpointercapture', () => {
         const { viewport } = setup()
-        const touch = { pointerType: 'touch', pointerId: 1, isPrimary: true }
-        fireEvent.pointerDown(viewport, { ...touch, clientX: 0, clientY: 100 })
-        fireEvent.lostPointerCapture(viewport, touch)
-        fireEvent.pointerMove(viewport, { ...touch, clientX: 0, clientY: 0 })
+        fireEvent.pointerDown(viewport, { ...TOUCH, clientX: 0, clientY: 100 })
+        fireEvent.lostPointerCapture(viewport, TOUCH)
+        fireEvent.pointerMove(viewport, { ...TOUCH, clientX: 0, clientY: 0 })
         expect(screen.getByText('1 von 7')).toBeInTheDocument()
     })
 

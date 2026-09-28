@@ -1,6 +1,6 @@
 import AxeBuilder from '@axe-core/playwright'
 import { expect, test } from '@playwright/test'
-import { ready } from './timeline'
+import { openTimeline } from './timeline'
 
 const VIEWPORTS = [
     { name: 'desktop', size: { width: 1280, height: 800 } },
@@ -14,7 +14,7 @@ for (const { name, size } of VIEWPORTS) {
         test.use({ viewport: size })
         for (const path of PAGES) {
             test(`${path} has no violations`, async ({ page }) => {
-                await ready(page, path)
+                await openTimeline(page, path)
                 const { violations } = await new AxeBuilder({ page }).analyze()
                 expect(
                     violations.map((v) => ({

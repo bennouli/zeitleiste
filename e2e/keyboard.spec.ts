@@ -1,8 +1,9 @@
 import { expect, test, type Page } from '@playwright/test'
 import { entries } from '../src/data/entries'
 import {
-    focused,
-    ready,
+    describeFocus,
+    openTimeline,
+    tabThrough,
     tabUntil,
     timelineRegion,
     type Focused,
@@ -22,14 +23,14 @@ const view = async (page: Page) => {
 test('Tab reaches the region first, then the entries in chronological order', async ({
     page,
 }) => {
-    await ready(page)
+    await openTimeline(page)
     await page.keyboard.press('Tab')
     await expect(timelineRegion(page)).toBeFocused()
 
     const firstThree: Focused[] = []
     for (let i = 0; i < 3; i++) {
         await page.keyboard.press('Tab')
-        firstThree.push(await focused(page))
+        firstThree.push(await describeFocus(page))
     }
     for (const f of firstThree) {
         expect(f.inPoints).toBe(true)
@@ -52,14 +53,14 @@ for (const [label, size] of [
         page,
     }) => {
         await page.setViewportSize(size)
-        await ready(page)
+        await openTimeline(page)
         const region = timelineRegion(page)
         const seen = new Set<string>()
         const pointTimes: number[] = []
         const spanTimes: number[] = []
         await page.keyboard.press('Tab')
-        await tabUntil(page, async (f) => {
-            if (f.name === 'Hineinzoomen') return true
+        for await (const f of tabThrough(page)) {
+            if (f.name === 'Hineinzoomen') break
             expect(f.outline, `focus visible on "${f.name}"`).not.toMatch(
                 /^none|0px$/
             )
@@ -88,8 +89,7 @@ for (const [label, size] of [
             )
                 pointTimes.push(f.t)
             if (f.inSpans && f.t !== null) spanTimes.push(f.t)
-            return false
-        })
+        }
         expect([...seen].sort()).toEqual(entries.map((e) => e.id).sort())
         expect(pointTimes).toEqual([...pointTimes].sort((a, b) => a - b))
         expect(spanTimes).toEqual([...spanTimes].sort((a, b) => a - b))
@@ -104,7 +104,7 @@ test('Enter on a group marker zooms into the group and keeps focus in the timeli
     page,
 }) => {
     await page.setViewportSize({ width: 390, height: 844 })
-    await ready(page)
+    await openTimeline(page)
     await page.keyboard.press('Tab')
     const marker = await tabUntil(page, (f) =>
         f.name.startsWith('Hineinzoomen: ')
@@ -117,7 +117,9 @@ test('Enter on a group marker zooms into the group and keeps focus in the timeli
         .toBeLessThan(before.span)
     await expect
         .poll(async () =>
-            (await focused(page)).ids.some((id) => marker!.ids.includes(id))
+            (await describeFocus(page)).ids.some((id) =>
+                marker!.ids.includes(id)
+            )
         )
         .toBe(true)
 })
@@ -125,7 +127,7 @@ test('Enter on a group marker zooms into the group and keeps focus in the timeli
 test('Enter opens a post, focus lands in it, Escape returns to the start page and the entry', async ({
     page,
 }) => {
-    await ready(page)
+    await openTimeline(page)
     await page.keyboard.press('Tab')
     const postCard = await tabUntil(
         page,
@@ -142,13 +144,13 @@ test('Enter opens a post, focus lands in it, Escape returns to the start page an
     await page.keyboard.press('Escape')
     await expect(page).toHaveURL(/\/$/)
     await expect(page.getByRole('article')).toHaveCount(0)
-    await expect.poll(async () => (await focused(page)).ids).toContain(id)
+    await expect.poll(async () => (await describeFocus(page)).ids).toContain(id)
 })
 
 test('+ and - zoom, the arrow keys pan the focused timeline', async ({
     page,
 }) => {
-    await ready(page)
+    await openTimeline(page)
     await page.keyboard.press('Tab')
     const v0 = await view(page)
     await page.keyboard.press('+')
