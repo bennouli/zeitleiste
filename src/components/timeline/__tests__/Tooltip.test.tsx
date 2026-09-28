@@ -53,7 +53,7 @@ describe('Tooltip', () => {
         expect(screen.getByRole('tooltip')).toHaveClass('top-full', 'left-0')
     })
 
-    it('is a 250 px note on the page colour with only an ink rule on its left, appearing without a fade', () => {
+    it('is a 288 px note on the page colour with only an ink rule on its left, appearing without a fade', () => {
         const anchorRef = { current: document.createElement('div') }
         render(
             <Tooltip id="tip" open placement="top" anchorRef={anchorRef}>
@@ -62,7 +62,7 @@ describe('Tooltip', () => {
         )
         const note = screen.getByRole('tooltip')
         expect(note).toHaveClass(
-            'w-62.5',
+            'w-72',
             'bg-surface',
             'border-l',
             'border-fg',

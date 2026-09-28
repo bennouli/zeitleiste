@@ -36,7 +36,7 @@ const ANCHOR_GAP_PX = 8
 const CURSOR_OFFSET_PX = 14
 
 const noteClass =
-    'flex w-62.5 flex-col gap-1.5 border-l border-fg bg-surface py-2 pr-0 pl-2.5 text-left text-fg'
+    'flex w-72 flex-col gap-1.5 border-l border-fg bg-surface py-2 pr-0 pl-2.5 text-left text-fg'
 
 /**
  * Controlled hover note. Always rendered so that the `aria-describedby`
