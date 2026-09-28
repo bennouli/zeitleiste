@@ -76,6 +76,9 @@ test('an ongoing span fades towards today; a finished one is solid', async ({
         /^linear-gradient\(to right, .+ 60%, .+\)$/
     )
     expect(await backgroundImage(FINISHED_SPAN)).toBe('none')
+    const restingGradient = await backgroundImage(ONGOING_SPAN)
+    await bar(page, ONGOING_SPAN).hover()
+    expect(await backgroundImage(ONGOING_SPAN)).not.toBe(restingGradient)
     const ongoing = await bar(page, ONGOING_SPAN).boundingBox()
     const todayX = await page
         .locator('[data-today]')
@@ -83,15 +86,16 @@ test('an ongoing span fades towards today; a finished one is solid', async ({
     expect(ongoing!.x + ongoing!.width).toBeCloseTo(todayX, 0)
 })
 
-test('hovering a span darkens it and shows its hover note; clicking it opens no post', async ({
+test('hovering a span strengthens it and shows its hover note; clicking it opens no post', async ({
     page,
 }) => {
     await openTimeline(page)
     const spanBar = bar(page, SPAN_WITH_POST)
+    const backgroundColor = () =>
+        spanBar.evaluate((el) => getComputedStyle(el).backgroundColor)
+    const restingColor = await backgroundColor()
     await spanBar.hover()
-    expect(await spanBar.evaluate((el) => getComputedStyle(el).filter)).toBe(
-        'brightness(0.7)'
-    )
+    expect(await backgroundColor()).not.toBe(restingColor)
     await expect(page.getByRole('tooltip')).toContainText('Kubakrise')
     const urlBefore = page.url()
     await spanBar.click()
