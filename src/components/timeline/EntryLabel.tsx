@@ -23,7 +23,8 @@ export function EntryLabel({ entry, side, open = false }: EntryLabelProps) {
         >
             <span
                 className={clsx(
-                    'block truncate font-serif text-[17px] leading-[1.1] text-fg',
+                    // The padding keeps the 4 px underline inside the box that truncation clips; the margin takes it back out of the layout.
+                    '-mb-1 block truncate pb-1 font-serif text-[17px] leading-[1.1] text-fg',
                     open
                         ? 'font-medium underline decoration-1 underline-offset-4'
                         : 'font-normal'

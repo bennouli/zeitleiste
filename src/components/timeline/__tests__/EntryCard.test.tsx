@@ -422,7 +422,7 @@ describe('EntryCard', () => {
         ['west', 'franzoesische-revolution'],
         ['both', 'wiener-kongress'],
     ])(
-        'sets the entry as type without border, background, shadow or region colour (%s)',
+        'sets the entry as type on the page colour, without border, shadow or region colour (%s)',
         (_, id) => {
             const e = sampleEntry(id)
             renderCard({ entry: e })
@@ -430,7 +430,7 @@ describe('EntryCard', () => {
             const classes = [card(e), ...card(e).querySelectorAll('*')]
                 .flatMap((el) => [...el.classList])
                 .filter((c) => boxClass.test(c))
-            expect(classes).toEqual([])
+            expect(classes).toEqual(['bg-surface'])
             expect(
                 document.querySelector('[data-connector]')!.className
             ).not.toMatch(/russia|west|both/)

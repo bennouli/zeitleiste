@@ -67,7 +67,8 @@ export function EntryCard({
     }
 
     const cardClass = clsx(
-        'block w-max cursor-pointer text-left',
+        // Paper, not a box: it masks the connectors of outer rows that pass behind the label.
+        'block w-max cursor-pointer bg-surface text-left',
         'focus-visible:outline-2 focus-visible:outline-focus',
         // Inside a stack the card fills the clipping window, so an outer outline would be cut off.
         inline && 'focus-visible:-outline-offset-2'
