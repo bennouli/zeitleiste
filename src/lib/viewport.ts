@@ -10,9 +10,8 @@ const MAX_VISIBLE_MS: number = 300 * 365.2425 * MS_PER_DAY
 /** Factor used by the zoom buttons. */
 export const ZOOM_STEP_FACTOR: number = 2
 
-/** Wheel delta that zooms by one button step (ZOOM_STEP_FACTOR); about three mouse-wheel notches. */
+/** Wheel delta in px that zooms by one button step. */
 const WHEEL_PX_PER_ZOOM_STEP = 300
-/** Beyond this many button steps any span has reached a zoom limit; keeps the wheel factor finite and non-zero. */
 const MAX_WHEEL_ZOOM_STEPS = 32
 
 /** A visible time range. Invariant: end > start. */
@@ -42,7 +41,7 @@ function safeWidth(width: number): number {
     return Number.isFinite(width) && width > 0 ? width : 1
 }
 
-function finiteOr(v: number, fallback: number): number {
+export function finiteOr(v: number, fallback: number): number {
     return Number.isFinite(v) ? v : fallback
 }
 

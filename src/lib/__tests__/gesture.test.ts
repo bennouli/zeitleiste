@@ -462,8 +462,8 @@ describe('wheelIntent', () => {
     })
 
     it('zooms on a diagonal delta with equal axes', () => {
-        const diagonal = wheel({ deltaX: 30, deltaY: -30 })
-        expect(wheelIntent(diagonal, PAGE_PX)).toEqual({
+        const diagonalScroll = wheel({ deltaX: 30, deltaY: -30 })
+        expect(wheelIntent(diagonalScroll, PAGE_PX)).toEqual({
             type: 'zoom',
             deltaPx: -30,
         })
@@ -486,8 +486,8 @@ describe('wheelIntent', () => {
     })
 
     it('treats non-finite deltas as no movement', () => {
-        const broken = wheel({ deltaX: Number.NaN, deltaY: Infinity })
-        expect(wheelIntent(broken, PAGE_PX)).toEqual({
+        const nonFiniteScroll = wheel({ deltaX: Number.NaN, deltaY: Infinity })
+        expect(wheelIntent(nonFiniteScroll, PAGE_PX)).toEqual({
             type: 'zoom',
             deltaPx: 0,
         })

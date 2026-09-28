@@ -1,4 +1,4 @@
-import { estimateVelocity } from './viewport'
+import { estimateVelocity, finiteOr } from './viewport'
 
 /** A press that moves less than this is a click, not a drag. */
 const DRAG_THRESHOLD_PX = 6
@@ -53,7 +53,7 @@ const MAX_VELOCITY_SAMPLES = 20
 
 const DOM_DELTA_LINE = 1
 const DOM_DELTA_PAGE = 2
-/** px per line-mode wheel unit: one line of the 16 px root font. */
+/** px per line-mode wheel unit. */
 const WHEEL_LINE_PX = 16
 
 export const initialGestureState: GestureState = {
@@ -151,8 +151,8 @@ export type WheelIntent =
 export function wheelIntent(sample: WheelSample, pagePx: number): WheelIntent {
     if (sample.ctrlKey || sample.metaKey) return { type: 'browser' }
     const pxPerUnit = wheelPxPerUnit(sample.deltaMode, pagePx)
-    const deltaX = finiteOrZero(sample.deltaX) * pxPerUnit
-    const deltaY = finiteOrZero(sample.deltaY) * pxPerUnit
+    const deltaX = finiteOr(sample.deltaX, 0) * pxPerUnit
+    const deltaY = finiteOr(sample.deltaY, 0) * pxPerUnit
     const isHorizontal = Math.abs(deltaX) > Math.abs(deltaY)
     if (sample.shiftKey || isHorizontal)
         return { type: 'pan', deltaPx: isHorizontal ? deltaX : deltaY }
@@ -367,13 +367,8 @@ function withEffectsBefore(
 
 function wheelPxPerUnit(deltaMode: number, pagePx: number): number {
     if (deltaMode === DOM_DELTA_LINE) return WHEEL_LINE_PX
-    if (deltaMode === DOM_DELTA_PAGE)
-        return Number.isFinite(pagePx) && pagePx > 0 ? pagePx : WHEEL_LINE_PX
+    if (deltaMode === DOM_DELTA_PAGE) return pagePx
     return 1
-}
-
-function finiteOrZero(v: number): number {
-    return Number.isFinite(v) ? v : 0
 }
 
 export const PRIVATE_UNDER_TESTS = {

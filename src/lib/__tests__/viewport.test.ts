@@ -288,9 +288,9 @@ describe('wheelZoom', () => {
 
     it('keeps the time under the pointer fixed', () => {
         const t = xToTime(vp, WIDTH, anchorX)
-        const zoomed = wheelZoom(vp, WIDTH, anchorX, -120, SAMPLE)
-        expect(visibleMs(zoomed)).toBeLessThan(visibleMs(vp))
-        expect(Math.abs(xToTime(zoomed, WIDTH, anchorX) - t)).toBeLessThan(1)
+        const zoomedIn = wheelZoom(vp, WIDTH, anchorX, -120, SAMPLE)
+        expect(visibleMs(zoomedIn)).toBeLessThan(visibleMs(vp))
+        expect(Math.abs(xToTime(zoomedIn, WIDTH, anchorX) - t)).toBeLessThan(1)
     })
 
     it('zooms in on a negative delta and out on a positive one', () => {
@@ -327,8 +327,8 @@ describe('wheelZoom', () => {
 
     it('returns to the start after an equal delta back', () => {
         const zoomedIn = wheelZoom(vp, WIDTH, anchorX, -80, SAMPLE)
-        const back = wheelZoom(zoomedIn, WIDTH, anchorX, 80, SAMPLE)
-        expect(viewportEquals(back, vp, 1000)).toBe(true)
+        const zoomedBack = wheelZoom(zoomedIn, WIDTH, anchorX, 80, SAMPLE)
+        expect(viewportEquals(zoomedBack, vp, 1000)).toBe(true)
     })
 
     it('stops at the button limits', () => {
@@ -341,8 +341,8 @@ describe('wheelZoom', () => {
     })
 
     it('ignores a non-finite delta', () => {
-        const zoomed = wheelZoom(vp, WIDTH, anchorX, Number.NaN, SAMPLE)
-        expect(viewportEquals(zoomed, vp)).toBe(true)
+        const unchangedVp = wheelZoom(vp, WIDTH, anchorX, Number.NaN, SAMPLE)
+        expect(viewportEquals(unchangedVp, vp)).toBe(true)
     })
 })
 
