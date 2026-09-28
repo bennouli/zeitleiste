@@ -25,17 +25,21 @@ beyond ink.
 Tokens in the `@theme static` block of `globals.css`. `text-<name>` sets the size and, where a line height is listed, the line height;
 `tracking-<name>` sets the letter spacing. Components use these, never `text-[Npx]`, `leading-[…]` or `tracking-[…]`.
 
-| Token             | Size / line height | Role                                                                 |
-| ----------------- | ------------------ | -------------------------------------------------------------------- |
-| `text-label`      | 10 px              | Small caps: tick labels, "Heute", date lines, counter, position line |
-| `text-label-lg`   | 11 px              | Wordmark                                                             |
-| `text-meta`       | 10.5 px            | Post meta line                                                       |
-| `text-entry`      | 17 px / 1.1        | Entry title on the timeline                                          |
-| `text-note-title` | 15 px / 1.2        | Hover note title                                                     |
-| `text-note`       | 13 px / 1.4        | Hover note text                                                      |
-| `text-post-title` | 44 px / 1.05       | Post title                                                           |
-| `text-lead`       | 20 px / 1.35       | Post lead                                                            |
-| `text-body`       | 16.5 px / 1.5      | Post body                                                            |
+Theme lengths are rem, so type follows the browser's font-size setting; the px values below hold at the 16 px default. Line heights are
+unitless and letter spacing is in em, so both scale with the size. The timeline's layout constants (row offsets, label height and width cap)
+are px measured at the 16 px default.
+
+| Token             | Size / line height          | Role                                                                 |
+| ----------------- | --------------------------- | -------------------------------------------------------------------- |
+| `text-label`      | 0.625 rem (10 px)           | Small caps: tick labels, "Heute", date lines, counter, position line |
+| `text-label-lg`   | 0.6875 rem (11 px)          | Wordmark                                                             |
+| `text-meta`       | 0.65625 rem (10.5 px)       | Post meta line                                                       |
+| `text-entry`      | 1.0625 rem (17 px) / 1.1    | Entry title on the timeline                                          |
+| `text-note-title` | 0.9375 rem (15 px) / 1.2    | Hover note title                                                     |
+| `text-note`       | 0.8125 rem (13 px) / 1.4    | Hover note text                                                      |
+| `text-post-title` | 2.75 rem (44 px) / 1.05     | Post title                                                           |
+| `text-lead`       | 1.25 rem (20 px) / 1.35     | Post lead                                                            |
+| `text-body`       | 1.03125 rem (16.5 px) / 1.5 | Post body                                                            |
 
 | Token               | Letter spacing | Role                 |
 | ------------------- | -------------- | -------------------- |

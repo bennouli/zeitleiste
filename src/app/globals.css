@@ -71,20 +71,20 @@
         var(--font-eb-garamond), ui-serif, Georgia, Cambria, 'Times New Roman',
         Times, serif;
 
-    --text-label: 10px;
-    --text-label-lg: 11px;
-    --text-meta: 10.5px;
-    --text-entry: 17px;
+    --text-label: 0.625rem;
+    --text-label-lg: 0.6875rem;
+    --text-meta: 0.65625rem;
+    --text-entry: 1.0625rem;
     --text-entry--line-height: 1.1;
-    --text-note-title: 15px;
+    --text-note-title: 0.9375rem;
     --text-note-title--line-height: 1.2;
-    --text-note: 13px;
+    --text-note: 0.8125rem;
     --text-note--line-height: 1.4;
-    --text-post-title: 44px;
+    --text-post-title: 2.75rem;
     --text-post-title--line-height: 1.05;
-    --text-lead: 20px;
+    --text-lead: 1.25rem;
     --text-lead--line-height: 1.35;
-    --text-body: 16.5px;
+    --text-body: 1.03125rem;
     --text-body--line-height: 1.5;
 
     --tracking-label: 0.06em;
