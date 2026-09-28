@@ -52,7 +52,7 @@ describe('useViewport', () => {
         const { result } = setup()
         const before = result.current.viewport
         const center = (before.start + before.end) / 2
-        act(() => result.current.zoomIn())
+        act(() => result.current.actions.zoomIn())
         expect(result.current.isAnimating).toBe(true)
         expect(result.current.isGesturing).toBe(true)
         act(() => {
@@ -71,7 +71,7 @@ describe('useViewport', () => {
         )
         expect((after.start + after.end) / 2).toBeCloseTo(center, -3)
 
-        act(() => result.current.zoomOut())
+        act(() => result.current.actions.zoomOut())
         flush()
         expect(visibleMs(result.current.viewport)).toBeCloseTo(
             visibleMs(before),
@@ -83,11 +83,11 @@ describe('useViewport', () => {
     it('two quick clicks build on the running animation target', () => {
         const { result } = setup()
         const span = visibleMs(result.current.viewport)
-        act(() => result.current.zoomIn())
+        act(() => result.current.actions.zoomIn())
         act(() => {
             vi.advanceTimersByTime(50)
         })
-        act(() => result.current.zoomIn())
+        act(() => result.current.actions.zoomIn())
         flush()
         expect(visibleMs(result.current.viewport)).toBeCloseTo(
             span / ZOOM_STEP_FACTOR ** 2,
@@ -99,7 +99,7 @@ describe('useViewport', () => {
         stubReducedMotion(true)
         const { result } = setup()
         const span = visibleMs(result.current.viewport)
-        act(() => result.current.zoomIn())
+        act(() => result.current.actions.zoomIn())
         expect(result.current.isAnimating).toBe(false)
         expect(visibleMs(result.current.viewport)).toBeCloseTo(
             span / ZOOM_STEP_FACTOR,
@@ -111,14 +111,14 @@ describe('useViewport', () => {
         stubReducedMotion(true)
         const { result } = setup()
         for (let i = 0; i < 40 && result.current.canZoomIn; i++)
-            act(() => result.current.zoomIn())
+            act(() => result.current.actions.zoomIn())
         expect(result.current.canZoomIn).toBe(false)
         expect(visibleMs(result.current.viewport)).toBeCloseTo(
             MIN_VISIBLE_MS,
             -3
         )
         for (let i = 0; i < 40 && result.current.canZoomOut; i++)
-            act(() => result.current.zoomOut())
+            act(() => result.current.actions.zoomOut())
         expect(result.current.canZoomOut).toBe(false)
         // Bounds are 200 years, below MAX_VISIBLE_MS: zooming out stops at the bounds.
         expect(visibleMs(result.current.viewport)).toBeCloseTo(
@@ -130,7 +130,7 @@ describe('useViewport', () => {
     it('panBy moves immediately; dragging right shows earlier times', () => {
         const { result } = setup()
         const before = result.current.viewport
-        act(() => result.current.panBy(100))
+        act(() => result.current.actions.panBy(100))
         const shift = (visibleMs(before) / WIDTH) * 100
         expect(result.current.viewport.start).toBeCloseTo(
             before.start - shift,
@@ -142,11 +142,11 @@ describe('useViewport', () => {
         const { result } = setup(50)
         const before = result.current.viewport
         act(() => {
-            result.current.beginGesture()
-            result.current.panBy(-20)
+            result.current.actions.beginGesture()
+            result.current.actions.panBy(-20)
         })
         expect(result.current.isGesturing).toBe(true)
-        act(() => result.current.startMomentum(-1))
+        act(() => result.current.actions.startMomentum(-1))
         expect(result.current.isGesturing).toBe(true)
         expect(result.current.gestureEnd).toBe(0)
         flush(3000)
@@ -159,7 +159,7 @@ describe('useViewport', () => {
 
     it('momentum stops at the bounds', () => {
         const { result } = setup(50)
-        act(() => result.current.startMomentum(-50))
+        act(() => result.current.actions.startMomentum(-50))
         flush(5000)
         expect(result.current.viewport.end).toBeCloseTo(bounds.max, -3)
         expect(result.current.isGesturing).toBe(false)
@@ -169,7 +169,7 @@ describe('useViewport', () => {
         stubReducedMotion(true)
         const { result } = setup(50)
         const before = result.current.viewport
-        act(() => result.current.startMomentum(-1))
+        act(() => result.current.actions.startMomentum(-1))
         expect(result.current.isGesturing).toBe(false)
         expect(result.current.viewport).toEqual(before)
     })
@@ -177,34 +177,34 @@ describe('useViewport', () => {
     it('pinch zooms in when the fingers spread', () => {
         const { result } = setup()
         const span = visibleMs(result.current.viewport)
-        act(() => result.current.pinch([400, 600], [300, 700]))
+        act(() => result.current.actions.pinch([400, 600], [300, 700]))
         expect(visibleMs(result.current.viewport)).toBeCloseTo(span / 2, -3)
     })
 
     it('zoomToTime centers the given time at the given span', () => {
         const { result } = setup()
         const c = Y2000 - 100 * MS_PER_YEAR
-        act(() => result.current.zoomToTime(c, 40 * MS_PER_YEAR))
+        act(() => result.current.actions.zoomToTime(c, 40 * MS_PER_YEAR))
         flush()
         const v = result.current.viewport
         expect(visibleMs(v)).toBeCloseTo(40 * MS_PER_YEAR, -3)
         expect((v.start + v.end) / 2).toBeCloseTo(c, -3)
     })
 
-    it('keeps the returned object across renders without a state change', () => {
-        const { result, rerender } = setup()
-        const initialControls = result.current
-        rerender()
-        expect(result.current).toBe(initialControls)
+    it('keeps the actions object across viewport changes', () => {
+        const { result } = setup()
+        const initialActions = result.current.actions
+        act(() => result.current.actions.panBy(100))
+        expect(result.current.actions).toBe(initialActions)
     })
 
     it('cancelAnimation stops where it is', () => {
         const { result } = setup()
-        act(() => result.current.zoomIn())
+        act(() => result.current.actions.zoomIn())
         act(() => {
             vi.advanceTimersByTime(100)
         })
-        act(() => result.current.cancelAnimation())
+        act(() => result.current.actions.cancelAnimation())
         const v = result.current.viewport
         flush()
         expect(result.current.viewport).toEqual(v)

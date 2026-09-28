@@ -49,6 +49,11 @@ export type ViewportControls = {
     canZoomOut: boolean
     /** Increments each time the viewport settles after a gesture, momentum or animation. */
     gestureEnd: number
+    /** Keeps its identity across renders. */
+    actions: ViewportActions
+}
+
+export type ViewportActions = {
     zoomIn: () => void
     zoomOut: () => void
     /** Animated (instant with reduced motion or `animate: false`). */
@@ -297,14 +302,8 @@ export function useViewport({
         [frameLoop, commit, settle, stopMotion]
     )
 
-    return useMemo(
+    const actions = useMemo<ViewportActions>(
         () => ({
-            viewport,
-            isAnimating,
-            isGesturing: isInteracting || isAnimating,
-            canZoomIn: canZoomInVp(viewport),
-            canZoomOut: canZoomOutVp(viewport, bounds),
-            gestureEnd,
             zoomIn,
             zoomOut,
             zoomToTime,
@@ -317,11 +316,6 @@ export function useViewport({
             cancelAnimation,
         }),
         [
-            viewport,
-            isAnimating,
-            isInteracting,
-            bounds,
-            gestureEnd,
             zoomIn,
             zoomOut,
             zoomToTime,
@@ -334,4 +328,14 @@ export function useViewport({
             cancelAnimation,
         ]
     )
+
+    return {
+        viewport,
+        isAnimating,
+        isGesturing: isInteracting || isAnimating,
+        canZoomIn: canZoomInVp(viewport),
+        canZoomOut: canZoomOutVp(viewport, bounds),
+        gestureEnd,
+        actions,
+    }
 }

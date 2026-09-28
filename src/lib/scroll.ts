@@ -15,15 +15,6 @@ const USER_INPUT_EVENTS = [
 const SETTLED_FRAMES = 3
 const SETTLED_TOLERANCE_PX = 0.5
 
-export function onUserInput(stop: () => void): () => void {
-    for (const type of USER_INPUT_EVENTS)
-        window.addEventListener(type, stop, { passive: true })
-    return () => {
-        for (const type of USER_INPUT_EVENTS)
-            window.removeEventListener(type, stop)
-    }
-}
-
 export function animateScroll(
     target: () => number,
     { durationMs, maxMs, easing = easeInOut }: ScrollTiming
@@ -58,3 +49,14 @@ export function animateScroll(
     frame = window.requestAnimationFrame(step)
     return cancel
 }
+
+function onUserInput(stop: () => void): () => void {
+    for (const type of USER_INPUT_EVENTS)
+        window.addEventListener(type, stop, { passive: true })
+    return () => {
+        for (const type of USER_INPUT_EVENTS)
+            window.removeEventListener(type, stop)
+    }
+}
+
+export const PRIVATE_UNDER_TESTS = { onUserInput }

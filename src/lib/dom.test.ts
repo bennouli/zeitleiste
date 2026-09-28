@@ -1,9 +1,21 @@
 import { stubReducedMotion } from '@/test/motion'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { isTypingTarget, prefersReducedMotion } from './dom'
+import { hasNoLayout, isTypingTarget, prefersReducedMotion } from './dom'
 
 afterEach(() => {
     vi.unstubAllGlobals()
+})
+
+describe('hasNoLayout', () => {
+    it('is true only for a rect with neither width nor height', () => {
+        const zeroSize = { width: 0, height: 0 }
+        const zeroWidth = { width: 0, height: 20 }
+        const zeroHeight = { width: 20, height: 0 }
+
+        expect(hasNoLayout(zeroSize)).toBe(true)
+        expect(hasNoLayout(zeroWidth)).toBe(false)
+        expect(hasNoLayout(zeroHeight)).toBe(false)
+    })
 })
 
 describe('isTypingTarget', () => {

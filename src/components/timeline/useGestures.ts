@@ -16,10 +16,10 @@ import {
 import type { KeyboardEvent, MouseEvent, PointerEvent } from 'react'
 import { useCallback, useRef, useState, type RefObject } from 'react'
 import { KEY_PAN_FRACTION } from './constants'
-import type { ViewportControls } from './useViewport'
+import type { ViewportActions } from './useViewport'
 
-type ViewportActions = Pick<
-    ViewportControls,
+type GestureActions = Pick<
+    ViewportActions,
     | 'panBy'
     | 'pinch'
     | 'beginGesture'
@@ -58,7 +58,7 @@ export const NO_DRAG_ATTR = 'data-no-drag'
  */
 export function useGestures(
     containerRef: RefObject<HTMLElement | null>,
-    actions: ViewportActions,
+    actions: GestureActions,
     width: number
 ): Gestures {
     const gesture = useRef<GestureState>(initialGestureState)

@@ -1,5 +1,6 @@
 'use client'
 
+import { hasNoLayout } from '@/lib/dom'
 import type { FocusEvent, RefObject } from 'react'
 import { useEffect, useLayoutEffect, useRef } from 'react'
 
@@ -58,9 +59,9 @@ export function useEntryFocus(
     }, [sectionRef])
 
     useLayoutEffect(() => {
-        const focused = focusedRef.current
+        const focusedItem = focusedRef.current
         const section = sectionRef.current
-        if (!focused || !section || isStillFocusable(focused.el)) return
+        if (!focusedItem || !section || isStillFocusable(focusedItem.el)) return
         const { activeElement } = document
         if (
             activeElement &&
@@ -69,7 +70,7 @@ export function useEntryFocus(
         )
             return
         focusedRef.current = null
-        const replacement = findFocusTarget(section, focused.ids) ?? section
+        const replacement = findFocusTarget(section, focusedItem.ids) ?? section
         replacement.focus({ preventScroll: true })
     })
 
@@ -129,10 +130,6 @@ function isFocusVisible(el: HTMLElement): boolean {
     } catch {
         return true
     }
-}
-
-function hasNoLayout(rect: DOMRect): boolean {
-    return rect.width === 0 && rect.height === 0
 }
 
 function isStillFocusable(el: HTMLElement): boolean {

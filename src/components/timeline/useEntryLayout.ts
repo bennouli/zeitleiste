@@ -107,7 +107,7 @@ export function useEntryLayout(
  * cluster that can't be merged further is shown as a bare marker on the axis.
  * `previous` slots are kept where they still fit, so cards don't flip sides needlessly.
  */
-export function layoutEntries(
+function layoutEntries(
     points: Entry[],
     geometry: LayoutGeometry,
     tree: Cluster | null,
@@ -123,16 +123,17 @@ export function layoutEntries(
     // Every round either shrinks the cut or turns a cluster into a bare marker, so this terminates.
     const lastRound = 2 * points.length + 1
     for (let round = 0; round <= lastRound; round++) {
-        const placed = placeCut(cut, markerOnly, geometry, byId, previous)
+        const placement = placeCut(cut, markerOnly, geometry, byId, previous)
         const overflow = new Set([
-            ...placed.overflow,
+            ...placement.overflow,
             ...markerCollisions(cut, markerOnly, geometry.timeToX),
         ])
-        if (overflow.size === 0) return toLayout(cut, placed, markerOnly, byId)
+        if (overflow.size === 0)
+            return toLayout(cut, placement, markerOnly, byId)
         if (round === lastRound)
             return toLayout(
                 cut,
-                placed,
+                placement,
                 new Set([...markerOnly, ...overflow]),
                 byId
             )
@@ -232,7 +233,7 @@ function markerCollisions(
 
 function toLayout(
     cut: readonly Cluster[],
-    placed: CutPlacement,
+    placement: CutPlacement,
     markerOnly: ReadonlySet<string>,
     byId: ReadonlyMap<string, Entry>
 ): EntryLayout {
@@ -249,7 +250,7 @@ function toLayout(
                     alignEnd: false,
                 },
             ]
-        const slot = placed.slots.get(cluster.id)
+        const slot = placement.slots.get(cluster.id)
         if (!slot) return []
         return [
             {
@@ -258,7 +259,7 @@ function toLayout(
                 t: cluster.t,
                 entries,
                 slot,
-                alignEnd: placed.extents.get(cluster.id)!.alignEnd,
+                alignEnd: placement.extents.get(cluster.id)!.alignEnd,
             },
         ]
     })
@@ -334,4 +335,9 @@ function mergeInto(cut: readonly Cluster[], parent: ClusterNode): Cluster[] {
     })
 }
 
-export const PRIVATE_UNDER_TESTS = { parentMap, markerCollisions, mergeInto }
+export const PRIVATE_UNDER_TESTS = {
+    layoutEntries,
+    parentMap,
+    markerCollisions,
+    mergeInto,
+}

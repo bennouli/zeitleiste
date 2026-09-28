@@ -102,10 +102,10 @@ export function GroupStack({
     const groupRef = useRef<HTMLDivElement>(null)
     useReportedIndex(topIndex, onIndexChange)
 
-    const go = (next: number) => {
-        const target = clamp(next, maxIndex)
-        if (target === topIndex) return
-        setRawIndex(target)
+    const go = (targetIndex: number) => {
+        const clampedIndex = clamp(targetIndex, maxIndex)
+        if (clampedIndex === topIndex) return
+        setRawIndex(clampedIndex)
         // Focus inside a card that leaves the window would fall to <body> (the
         // slot becomes inert); keep it on the group.
         const group = groupRef.current
@@ -113,7 +113,7 @@ export function GroupStack({
         const slotIndex = focusedSlotIndex(group)
         if (
             slotIndex !== null &&
-            (slotIndex < target || slotIndex >= target + slotCount)
+            (slotIndex < clampedIndex || slotIndex >= clampedIndex + slotCount)
         )
             group.focus()
     }
@@ -123,10 +123,10 @@ export function GroupStack({
     const onKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
         if (e.defaultPrevented || e.altKey || e.ctrlKey || e.metaKey) return
         if (isTypingTarget(e.target)) return
-        const next = stepForKey(e.key, topIndex, maxIndex)
-        if (next === null || maxIndex === 0) return
+        const targetIndex = stepForKey(e.key, topIndex, maxIndex)
+        if (targetIndex === null || maxIndex === 0) return
         e.preventDefault()
-        go(next)
+        go(targetIndex)
     }
 
     // A button that becomes disabled would drop focus to <body>; keep it on the group.

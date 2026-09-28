@@ -6,6 +6,13 @@ export function isTypingTarget(target: EventTarget | null): boolean {
     )
 }
 
+/** A zero-size rect: the element has no layout (hidden, detached, or jsdom). */
+export function hasNoLayout(
+    rect: Pick<DOMRectReadOnly, 'width' | 'height'>
+): boolean {
+    return rect.width === 0 && rect.height === 0
+}
+
 export function prefersReducedMotion(): boolean {
     if (
         typeof window === 'undefined' ||

@@ -1,5 +1,6 @@
 'use client'
 
+import { hasNoLayout } from '@/lib/dom'
 import clsx from 'clsx'
 import type { ReactNode, RefObject, SyntheticEvent } from 'react'
 import { useLayoutEffect, useRef } from 'react'
@@ -143,13 +144,13 @@ function useFollowAnchor(
                     align
                 )
                 clippers ??= clippingAncestors(anchor)
-                const hidden = anchorHidden(anchor, rect, clippers)
-                const positionKey = `${left}|${top}|${hidden}`
+                const isHidden = anchorHidden(anchor, rect, clippers)
+                const positionKey = `${left}|${top}|${isHidden}`
                 if (positionKey !== appliedKey) {
                     appliedKey = positionKey
                     bubbleEl.style.left = `${left}px`
                     bubbleEl.style.top = `${top}px`
-                    bubbleEl.style.visibility = hidden ? 'hidden' : ''
+                    bubbleEl.style.visibility = isHidden ? 'hidden' : ''
                 }
             }
             frame = requestAnimationFrame(update)
@@ -166,11 +167,14 @@ function bubblePosition(
     placement: Placement,
     align: Align
 ): { left: number; top: number } {
-    const preferred =
+    const preferredLeft =
         align === 'start' ? anchor.left : anchor.right - bubble.width
     const left = Math.max(
         VIEWPORT_MARGIN_PX,
-        Math.min(preferred, viewportWidth - bubble.width - VIEWPORT_MARGIN_PX)
+        Math.min(
+            preferredLeft,
+            viewportWidth - bubble.width - VIEWPORT_MARGIN_PX
+        )
     )
     const top = placement === 'top' ? anchor.top - bubble.height : anchor.bottom
     return { left, top }
@@ -185,11 +189,9 @@ function anchorHidden(
     rect: DOMRectReadOnly,
     clippers: Element[]
 ): boolean {
-    // A zero-size rect means no layout (jsdom); nothing to judge then.
-    const laidOut = rect.width > 0 || rect.height > 0
     return (
         anchor.closest('[inert]') !== null ||
-        (laidOut && !visibleIn(rect, clipRect(clippers)))
+        (!hasNoLayout(rect) && !visibleIn(rect, clipRect(clippers)))
     )
 }
 

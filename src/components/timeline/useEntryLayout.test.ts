@@ -11,17 +11,19 @@ import { entryAnchor, MS_PER_YEAR } from '@/lib/time'
 import { describe, expect, it } from 'vitest'
 import { CARD_WIDTH_PX } from './EntryCard'
 import {
-    layoutEntries,
     PRIVATE_UNDER_TESTS,
     type EntryLayout,
     type LayoutItem,
 } from './useEntryLayout'
 
-const { parentMap, markerCollisions, mergeInto } = PRIVATE_UNDER_TESTS
+const { layoutEntries, parentMap, markerCollisions, mergeInto } =
+    PRIVATE_UNDER_TESTS
 
 const points = entries.filter((e) => !isSpan(e))
 const T0 = Date.UTC(1700, 0, 1)
 const T1 = Date.UTC(2026, 8, 27)
+const Y1918 = Date.UTC(1918, 0, 1)
+const Y1900 = Date.UTC(1900, 0, 1)
 
 type LayoutScenario = {
     pts: Entry[]
@@ -32,6 +34,25 @@ type LayoutScenario = {
     maxLevels?: number
     groupLevels?: number
 }
+
+const WIDE_DESKTOP: LayoutScenario = {
+    pts: points,
+    width: 1920,
+    visibleYears: 300,
+}
+const WIDE_LAPTOP: LayoutScenario = {
+    pts: points,
+    width: 1000,
+    visibleYears: 300,
+}
+const NEAR_1918_LAPTOP: LayoutScenario = {
+    pts: points,
+    width: 1000,
+    visibleYears: 10,
+    centerT: Y1918,
+}
+const ZERO_WIDTH: LayoutScenario = { pts: points, width: 0, visibleYears: 300 }
+const NO_POINTS: LayoutScenario = { pts: [], width: 1000, visibleYears: 300 }
 
 /** Layout of `pts` with `visibleYears` across `width` px, centered on `centerT`. */
 function layout({
@@ -70,7 +91,7 @@ function extent(
 
 function checkInvariants(
     pts: Entry[],
-    l: EntryLayout,
+    entryLayout: EntryLayout,
     width: number,
     visibleYears: number,
     centerT: number
@@ -78,23 +99,27 @@ function checkInvariants(
     const span = visibleYears * MS_PER_YEAR
     const timeToX = (t: number) => ((t - (centerT - span / 2)) / span) * width
     // Every point exactly once.
-    const seen = l.items.flatMap((i) => i.entries.map((e) => e.id)).sort()
+    const seen = entryLayout.items
+        .flatMap((i) => i.entries.map((e) => e.id))
+        .sort()
     expect(seen).toEqual(pts.map((e) => e.id).sort())
     // Chronological members and items.
-    for (const i of l.items) {
+    for (const i of entryLayout.items) {
         for (let k = 1; k < i.entries.length; k++)
             expect(entryAnchor(i.entries[k]!)).toBeGreaterThanOrEqual(
                 entryAnchor(i.entries[k - 1]!)
             )
     }
-    for (let k = 1; k < l.items.length; k++)
-        expect(l.items[k]!.t).toBeGreaterThanOrEqual(l.items[k - 1]!.t)
+    for (let k = 1; k < entryLayout.items.length; k++)
+        expect(entryLayout.items[k]!.t).toBeGreaterThanOrEqual(
+            entryLayout.items[k - 1]!.t
+        )
     // No two placed items share a row and overlap.
-    const placed = l.items.filter((i) => i.kind !== 'marker')
-    for (let a = 0; a < placed.length; a++) {
-        for (let b = a + 1; b < placed.length; b++) {
-            const A = placed[a]!
-            const B = placed[b]!
+    const placedItems = entryLayout.items.filter((i) => i.kind !== 'marker')
+    for (let a = 0; a < placedItems.length; a++) {
+        for (let b = a + 1; b < placedItems.length; b++) {
+            const A = placedItems[a]!
+            const B = placedItems[b]!
             const sameSide = A.slot.side === B.slot.side
             const rowsA = A.kind === 'group' ? [0, 1, 2] : [A.slot.level]
             const rowsB = B.kind === 'group' ? [0, 1, 2] : [B.slot.level]
@@ -117,14 +142,15 @@ describe('layoutEntries', () => {
                     Date.UTC(1917, 6, 1),
                     T1,
                 ]) {
+                    const scenario: LayoutScenario = {
+                        pts: points,
+                        width,
+                        visibleYears: years,
+                        centerT: center,
+                    }
                     checkInvariants(
                         points,
-                        layout({
-                            pts: points,
-                            width,
-                            visibleYears: years,
-                            centerT: center,
-                        }),
+                        layout(scenario),
                         width,
                         years,
                         center
@@ -135,14 +161,16 @@ describe('layoutEntries', () => {
     })
 
     it('places cards above first and below only when above is taken', () => {
-        const l = layout({ pts: points, width: 1920, visibleYears: 300 })
-        expect(l.items.some((i) => i.slot.side === 'above')).toBe(true)
-        const singles = l.items.filter((i) => i.kind === 'card')
+        const entryLayout = layout(WIDE_DESKTOP)
+        expect(entryLayout.items.some((i) => i.slot.side === 'above')).toBe(
+            true
+        )
+        const singles = entryLayout.items.filter((i) => i.kind === 'card')
         expect(singles.length).toBeGreaterThan(3)
     })
 
     it('groups the crowded years at the widest zoom and splits them when zoomed in', () => {
-        const wide = layout({ pts: points, width: 1000, visibleYears: 300 })
+        const wide = layout(WIDE_LAPTOP)
         const group = wide.items.find(
             (i) =>
                 i.kind !== 'card' &&
@@ -150,12 +178,7 @@ describe('layoutEntries', () => {
         )
         expect(group).toBeDefined()
         expect(group!.entries.length).toBeGreaterThanOrEqual(3)
-        const near = layout({
-            pts: points,
-            width: 1000,
-            visibleYears: 10,
-            centerT: Date.UTC(1918, 0, 1),
-        })
+        const near = layout(NEAR_1918_LAPTOP)
         const single = near.items.find((i) =>
             i.entries.some((e) => e.id === 'oktoberrevolution')
         )
@@ -174,18 +197,19 @@ describe('layoutEntries', () => {
             end: undefined,
             importance: ((k % 3) + 1) as 1 | 2 | 3,
         }))
-        const l = layout({
+        const narrowPhone1900: LayoutScenario = {
             pts: many,
             width: 375,
             visibleYears: 40,
-            centerT: Date.UTC(1900, 0, 1),
+            centerT: Y1900,
             maxLevels: 1,
             groupLevels: 2,
-        })
-        checkInvariants(many, l, 375, 40, Date.UTC(1900, 0, 1))
+        }
+        const entryLayout = layout(narrowPhone1900)
+        checkInvariants(many, entryLayout, 375, 40, Y1900)
         // Groups never span more than the cap in px (a marker far from its members would mislead).
         const span = 40 * MS_PER_YEAR
-        for (const i of l.items.filter((i) => i.kind === 'group')) {
+        for (const i of entryLayout.items.filter((i) => i.kind === 'group')) {
             const px =
                 ((entryAnchor(i.entries.at(-1)!) - entryAnchor(i.entries[0]!)) /
                     span) *
@@ -195,24 +219,16 @@ describe('layoutEntries', () => {
     })
 
     it('keeps previous slots that still fit', () => {
-        const first = layout({ pts: points, width: 1920, visibleYears: 300 })
+        const first = layout(WIDE_DESKTOP)
         const previous = new Map(first.items.map((i) => [i.id, i.slot]))
-        const second = layout({
-            pts: points,
-            width: 1920,
-            visibleYears: 300,
-            previous,
-        })
+        const withPrevious: LayoutScenario = { ...WIDE_DESKTOP, previous }
+        const second = layout(withPrevious)
         for (const i of second.items) expect(i.slot).toEqual(previous.get(i.id))
     })
 
     it('returns nothing for width 0 or no points', () => {
-        expect(
-            layout({ pts: points, width: 0, visibleYears: 300 }).items
-        ).toEqual([])
-        expect(
-            layout({ pts: [], width: 1000, visibleYears: 300 }).items
-        ).toEqual([])
+        expect(layout(ZERO_WIDTH).items).toEqual([])
+        expect(layout(NO_POINTS).items).toEqual([])
     })
 })
 

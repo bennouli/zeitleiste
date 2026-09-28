@@ -223,6 +223,15 @@ describe('SpanBand', () => {
         expect(screen.queryByRole('tooltip')).toBeNull()
     })
 
+    it('shows the tooltip on a programmatic focus after a mouse click', () => {
+        renderBand({ spans: [withoutPost] })
+        const bar = screen.getByRole('group', { name: /Ohne Beitrag/ })
+        fireEvent.pointerDown(bar, { pointerType: 'mouse' })
+        fireEvent.click(bar)
+        act(() => bar.focus({ preventScroll: true }))
+        expect(screen.getByRole('tooltip')).toBeInTheDocument()
+    })
+
     it('leaves the tooltip open on Escape typed in a text field', async () => {
         const user = userEvent.setup()
         render(<input aria-label="Suche" />)

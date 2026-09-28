@@ -65,15 +65,15 @@ export function pointerDown(
     state: GestureState,
     sample: PointerSample
 ): GestureTransition {
-    const staleDropped = dropStalePress(state, sample)
-    if (staleDropped.state.pointers.size === 0)
+    const withoutStalePress = dropStalePress(state, sample)
+    if (withoutStalePress.state.pointers.size === 0)
         return withEffectsBefore(
-            staleDropped.effects,
-            beginPress(staleDropped.state, sample)
+            withoutStalePress.effects,
+            beginPress(withoutStalePress.state, sample)
         )
-    if (startsPinch(staleDropped.state, sample))
-        return beginPinch(staleDropped.state, sample)
-    return staleDropped
+    if (startsPinch(withoutStalePress.state, sample))
+        return beginPinch(withoutStalePress.state, sample)
+    return withoutStalePress
 }
 
 export function pointerMove(

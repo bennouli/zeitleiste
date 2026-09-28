@@ -22,7 +22,7 @@ import { DEFAULT_CHAR_WIDTH_PX, SpanBand, spanBandLayout } from './SpanBand'
 import { TimelineContext, type TimelineContextValue } from './TimelineContext'
 import { useEntryLayout } from './useEntryLayout'
 import { useGestures } from './useGestures'
-import { useViewport, type ViewportControls } from './useViewport'
+import { useViewport, type ViewportActions } from './useViewport'
 import { ZoomControls } from './ZoomControls'
 
 export type TimelineProps = {
@@ -49,10 +49,10 @@ export function Timeline({
     const height = useSettled(liveHeight, HEIGHT_SETTLE_MS)
     const helpId = useId()
     const controls = useViewport({ bounds, width })
-    const { viewport, zoomToTime } = controls
-    const gestures = useGestures(elRef, controls, width)
-    useCenteredEntry(entries, focusEntryId, zoomToTime)
-    const { onFocus } = useEntryFocus(elRef, controls.panStep, width)
+    const { viewport, actions } = controls
+    const gestures = useGestures(elRef, actions, width)
+    useCenteredEntry(entries, focusEntryId, actions.zoomToTime)
+    const { onFocus } = useEntryFocus(elRef, actions.panStep, width)
 
     const toX = useCallback(
         (t: number) => timeToX(viewport, width, t),
@@ -127,7 +127,8 @@ export function Timeline({
 
     const zoomIntoGroup = (groupEntries: Entry[]) => {
         const target = groupZoomTarget(groupEntries, viewport)
-        if (target) zoomToTime(target.centerT, target.spanMs, { animate: true })
+        if (target)
+            actions.zoomToTime(target.centerT, target.spanMs, { animate: true })
     }
 
     return (
@@ -200,8 +201,8 @@ export function Timeline({
                 <ZoomControls
                     canZoomIn={controls.canZoomIn}
                     canZoomOut={controls.canZoomOut}
-                    onZoomIn={controls.zoomIn}
-                    onZoomOut={controls.zoomOut}
+                    onZoomIn={actions.zoomIn}
+                    onZoomOut={actions.zoomOut}
                 />
             </section>
         </TimelineContext>
@@ -256,7 +257,7 @@ function useSettled<T>(value: T, delayMs: number): T {
 function useCenteredEntry(
     entries: Entry[],
     focusEntryId: string | null,
-    zoomToTime: ViewportControls['zoomToTime']
+    zoomToTime: ViewportActions['zoomToTime']
 ) {
     const focusedOnce = useRef(false)
     const entriesRef = useRef(entries)

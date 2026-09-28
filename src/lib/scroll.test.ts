@@ -1,5 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { animateScroll, onUserInput } from './scroll'
+import { animateScroll, PRIVATE_UNDER_TESTS } from './scroll'
+
+const { onUserInput } = PRIVATE_UNDER_TESTS
 
 type FrameCallback = (now: number) => void
 

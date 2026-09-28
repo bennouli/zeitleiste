@@ -291,10 +291,14 @@ describe('pointerEnd', () => {
     })
 
     it('one finger lifting from a pinch hands over to a drag with the other', () => {
+        const firstFingerDown = touch(1, 400, 0)
+        const secondFingerDown = touch(2, 600, 10)
+        const secondFingerSpread = touch(2, 800, 20)
+        const pressState = stateAfterPress(firstFingerDown)
+        const pinchStartState = pointerDown(pressState, secondFingerDown).state
         const pinchState = pointerMove(
-            pointerDown(stateAfterPress(touch(1, 400, 0)), touch(2, 600, 10))
-                .state,
-            touch(2, 800, 20)
+            pinchStartState,
+            secondFingerSpread
         ).state
         const firstFingerUp = touch(1, 400, 30)
         const { state, effects } = pointerEnd(pinchState, firstFingerUp, false)
