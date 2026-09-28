@@ -145,11 +145,11 @@ describe('SpanLayer', () => {
         const { container } = renderLayer({ spans: mixed })
         expect(barEl(container, 'laufend')).toHaveClass(
             'bg-linear-to-r',
-            'from-fg/12',
+            'from-fg/35',
             'from-60%',
-            'to-fg/2'
+            'to-fg/10'
         )
-        expect(barEl(container, 'vorbei')).toHaveClass('bg-fg/12')
+        expect(barEl(container, 'vorbei')).toHaveClass('bg-fg/35')
         expect(barEl(container, 'vorbei')).not.toHaveClass('bg-linear-to-r')
     })
 

@@ -85,12 +85,13 @@ tokens pick the light or the dark primitive.
 
 The other ink steps are Tailwind opacity modifiers on `fg`, so they follow the theme with `--fg`:
 
-| Step     | Class (example) | Used for                       |
-| -------- | --------------- | ------------------------------ |
-| ink 40 % | `border-fg/40`  | Connectors.                    |
-| ink 30 % | `text-fg/30`    | Disabled arrows.               |
-| ink 12 % | `bg-fg/12`      | Span bars.                     |
-| ink 2 %  | `to-fg/2`       | Fading end of an ongoing span. |
+| Step     | Class (example)  | Used for                              |
+| -------- | ---------------- | ------------------------------------- |
+| ink 55 % | `hover:bg-fg/55` | Span bar on hover and keyboard focus. |
+| ink 40 % | `border-fg/40`   | Connectors.                           |
+| ink 35 % | `bg-fg/35`       | Span bars.                            |
+| ink 30 % | `text-fg/30`     | Disabled arrows.                      |
+| ink 10 % | `to-fg/10`       | Fading end of an ongoing span.        |
 
 - **Why monochrome:** the timeline is read by position and time, not by region; colour-coding Russia and the West would suggest a two-sided
   story the content does not tell. `--russia`, `--west` and `--both` stay as names so a region colour can return in one line.

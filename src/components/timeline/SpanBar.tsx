@@ -47,11 +47,11 @@ export function SpanBarView({
                 aria-label={entryLabel(entry)}
                 aria-describedby={tooltipId}
                 className={clsx(
-                    'absolute hover:brightness-70',
+                    'absolute',
                     'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus',
                     ongoing
-                        ? 'bg-linear-to-r from-fg/12 from-60% to-fg/2'
-                        : 'bg-fg/12'
+                        ? 'bg-linear-to-r from-fg/35 from-60% to-fg/10 hover:from-fg/55 focus-visible:from-fg/55'
+                        : 'bg-fg/35 hover:bg-fg/55 focus-visible:bg-fg/55'
                 )}
                 style={{
                     left: bar.x0,
