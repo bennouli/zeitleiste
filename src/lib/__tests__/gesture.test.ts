@@ -1,13 +1,16 @@
 import { describe, expect, it } from 'vitest'
 import {
+    PRIVATE_UNDER_TESTS,
     clearDrag,
     initialGestureState,
     isGrabbing,
     pointerDown,
     pointerEnd,
     pointerMove,
+    wheelIntent,
     type GestureState,
     type PointerSample,
+    type WheelSample,
 } from '../gesture'
 
 const mouse = (x: number, t: number, extra: Partial<PointerSample> = {}) => ({
@@ -401,5 +404,92 @@ describe('isGrabbing', () => {
         expect(isGrabbing(initialGestureState)).toBe(false)
         expect(isGrabbing(pressState)).toBe(false)
         expect(isGrabbing(dragState)).toBe(true)
+    })
+})
+
+describe('wheelIntent', () => {
+    const { WHEEL_LINE_PX } = PRIVATE_UNDER_TESTS
+    const PAGE_PX = 1000
+    const wheel = (extra: Partial<WheelSample>): WheelSample => ({
+        deltaX: 0,
+        deltaY: 0,
+        deltaMode: WheelEvent.DOM_DELTA_PIXEL,
+        shiftKey: false,
+        ctrlKey: false,
+        metaKey: false,
+        ...extra,
+    })
+
+    it('zooms by the vertical delta', () => {
+        const scroll = wheel({ deltaY: 100, deltaX: 20 })
+        expect(wheelIntent(scroll, PAGE_PX)).toEqual({
+            type: 'zoom',
+            deltaPx: 100,
+        })
+    })
+
+    it.each([
+        ['Ctrl', { ctrlKey: true }],
+        ['Cmd', { metaKey: true }],
+        ['Ctrl + Shift', { ctrlKey: true, shiftKey: true }],
+    ])('leaves %s + wheel to the browser', (_, modifiers) => {
+        const scroll = wheel({ deltaY: 100, ...modifiers })
+        expect(wheelIntent(scroll, PAGE_PX)).toEqual({ type: 'browser' })
+    })
+
+    it('pans by deltaY on Shift + wheel reported vertically', () => {
+        const scroll = wheel({ deltaY: 100, shiftKey: true })
+        expect(wheelIntent(scroll, PAGE_PX)).toEqual({
+            type: 'pan',
+            deltaPx: 100,
+        })
+    })
+
+    it('pans by deltaX on Shift + wheel reported horizontally', () => {
+        const scroll = wheel({ deltaX: -100, shiftKey: true })
+        expect(wheelIntent(scroll, PAGE_PX)).toEqual({
+            type: 'pan',
+            deltaPx: -100,
+        })
+    })
+
+    it('pans by deltaX when the horizontal delta dominates', () => {
+        const swipe = wheel({ deltaX: 40, deltaY: 10 })
+        expect(wheelIntent(swipe, PAGE_PX)).toEqual({
+            type: 'pan',
+            deltaPx: 40,
+        })
+    })
+
+    it('zooms on a diagonal delta with equal axes', () => {
+        const diagonal = wheel({ deltaX: 30, deltaY: -30 })
+        expect(wheelIntent(diagonal, PAGE_PX)).toEqual({
+            type: 'zoom',
+            deltaPx: -30,
+        })
+    })
+
+    it('converts line deltas to px', () => {
+        const lines = wheel({ deltaY: 3, deltaMode: WheelEvent.DOM_DELTA_LINE })
+        expect(wheelIntent(lines, PAGE_PX)).toEqual({
+            type: 'zoom',
+            deltaPx: 3 * WHEEL_LINE_PX,
+        })
+    })
+
+    it('converts page deltas to px of one page', () => {
+        const page = wheel({ deltaX: 1, deltaMode: WheelEvent.DOM_DELTA_PAGE })
+        expect(wheelIntent(page, PAGE_PX)).toEqual({
+            type: 'pan',
+            deltaPx: PAGE_PX,
+        })
+    })
+
+    it('treats non-finite deltas as no movement', () => {
+        const broken = wheel({ deltaX: Number.NaN, deltaY: Infinity })
+        expect(wheelIntent(broken, PAGE_PX)).toEqual({
+            type: 'zoom',
+            deltaPx: 0,
+        })
     })
 })

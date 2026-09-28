@@ -10,6 +10,11 @@ const MAX_VISIBLE_MS: number = 300 * 365.2425 * MS_PER_DAY
 /** Factor used by the zoom buttons. */
 export const ZOOM_STEP_FACTOR: number = 2
 
+/** Wheel delta that zooms by one button step (ZOOM_STEP_FACTOR); about three mouse-wheel notches. */
+const WHEEL_PX_PER_ZOOM_STEP = 300
+/** Beyond this many button steps any span has reached a zoom limit; keeps the wheel factor finite and non-zero. */
+const MAX_WHEEL_ZOOM_STEPS = 32
+
 /** A visible time range. Invariant: end > start. */
 export type Viewport = {
     start: number
@@ -156,6 +161,22 @@ export function zoomAround(
     const span = gestureSpan(visibleMs(base), f, normalizeBounds(bounds))
     const start = anchorT - ratio * span
     return clampViewport({ start, end: start + span }, bounds)
+}
+
+/** Stepless wheel zoom around `anchorX`: scrolling down (deltaPx > 0) zooms out, up zooms in. Same limits as the buttons. */
+export function wheelZoom(
+    vp: Viewport,
+    width: number,
+    anchorX: number,
+    deltaPx: number,
+    bounds: Bounds
+): Viewport {
+    const steps = clamp(
+        -finiteOr(deltaPx, 0) / WHEEL_PX_PER_ZOOM_STEP,
+        -MAX_WHEEL_ZOOM_STEPS,
+        MAX_WHEEL_ZOOM_STEPS
+    )
+    return zoomAround(vp, width, anchorX, ZOOM_STEP_FACTOR ** steps, bounds)
 }
 
 /** Set the span to `spanMs` centered on `centerT`, then clamp. Used by "open post → 40 years centered on the entry". */
@@ -339,6 +360,7 @@ export function estimateVelocity(
 
 export const PRIVATE_UNDER_TESTS = {
     MIN_VISIBLE_MS,
+    WHEEL_PX_PER_ZOOM_STEP,
     MAX_VISIBLE_MS,
     visibleMs,
     xToTime,

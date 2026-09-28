@@ -15,6 +15,7 @@ import {
     timeToX,
     tweenViewport,
     viewportEquals,
+    wheelZoom,
     zoomAround,
     zoomTo,
     type Bounds,
@@ -25,6 +26,7 @@ import {
 const {
     MIN_VISIBLE_MS,
     MAX_VISIBLE_MS,
+    WHEEL_PX_PER_ZOOM_STEP,
     visibleMs,
     xToTime,
     interpolateViewport,
@@ -277,6 +279,70 @@ describe('zoomAround', () => {
         expect(viewportEquals(zoomAround(vp, WIDTH, 500, 0, SAMPLE), vp)).toBe(
             true
         )
+    })
+})
+
+describe('wheelZoom', () => {
+    const vp = zoomTo(Date.UTC(1900, 0, 1), 50 * MS_PER_YEAR, SAMPLE)
+    const anchorX = 300
+
+    it('keeps the time under the pointer fixed', () => {
+        const t = xToTime(vp, WIDTH, anchorX)
+        const zoomed = wheelZoom(vp, WIDTH, anchorX, -120, SAMPLE)
+        expect(visibleMs(zoomed)).toBeLessThan(visibleMs(vp))
+        expect(Math.abs(xToTime(zoomed, WIDTH, anchorX) - t)).toBeLessThan(1)
+    })
+
+    it('zooms in on a negative delta and out on a positive one', () => {
+        const zoomedIn = wheelZoom(vp, WIDTH, anchorX, -50, SAMPLE)
+        const zoomedOut = wheelZoom(vp, WIDTH, anchorX, 50, SAMPLE)
+        expect(visibleMs(zoomedIn)).toBeLessThan(visibleMs(vp))
+        expect(visibleMs(zoomedOut)).toBeGreaterThan(visibleMs(vp))
+    })
+
+    it('is stepless: WHEEL_PX_PER_ZOOM_STEP px make one button step, half of it the square root', () => {
+        const oneStep = wheelZoom(
+            vp,
+            WIDTH,
+            anchorX,
+            -WHEEL_PX_PER_ZOOM_STEP,
+            SAMPLE
+        )
+        const halfStep = wheelZoom(
+            vp,
+            WIDTH,
+            anchorX,
+            -WHEEL_PX_PER_ZOOM_STEP / 2,
+            SAMPLE
+        )
+        expect(visibleMs(oneStep)).toBeCloseTo(
+            visibleMs(vp) / ZOOM_STEP_FACTOR,
+            0
+        )
+        expect(visibleMs(halfStep)).toBeCloseTo(
+            visibleMs(vp) / Math.sqrt(ZOOM_STEP_FACTOR),
+            0
+        )
+    })
+
+    it('returns to the start after an equal delta back', () => {
+        const zoomedIn = wheelZoom(vp, WIDTH, anchorX, -80, SAMPLE)
+        const back = wheelZoom(zoomedIn, WIDTH, anchorX, 80, SAMPLE)
+        expect(viewportEquals(back, vp, 1000)).toBe(true)
+    })
+
+    it('stops at the button limits', () => {
+        const hugeDeltaPx = 1e9
+        const fullyIn = wheelZoom(vp, WIDTH, anchorX, -hugeDeltaPx, SAMPLE)
+        const fullyOut = wheelZoom(vp, WIDTH, anchorX, hugeDeltaPx, SAMPLE)
+        expect(visibleMs(fullyIn)).toBeCloseTo(MIN_VISIBLE_MS, 0)
+        expect(canZoomIn(fullyIn)).toBe(false)
+        expect(canZoomOut(fullyOut, SAMPLE)).toBe(false)
+    })
+
+    it('ignores a non-finite delta', () => {
+        const zoomed = wheelZoom(vp, WIDTH, anchorX, Number.NaN, SAMPLE)
+        expect(viewportEquals(zoomed, vp)).toBe(true)
     })
 })
 
