@@ -5,21 +5,17 @@ import {
     placeItems,
     type BlockedInterval,
     type PlaceableItem,
+    type PlacedSide,
     type Placement,
+    type Side,
     type Slot,
 } from '../placement'
 
-const { usedLevels, candidateSlots, candidateSlotsKeepingSide, buildRows } =
+const { usedLevels, candidateSlots, alternatingSide, buildRows } =
     PRIVATE_UNDER_TESTS
 
-function item(
-    id: string,
-    x0: number,
-    x1: number,
-    importance = 1,
-    order = 0
-): PlaceableItem {
-    return { id, x0, x1, importance, order }
+function item(id: string, x0: number, x1: number, order = 0): PlaceableItem {
+    return { id, x0, x1, order }
 }
 
 /** Deterministic PRNG (mulberry32). */
@@ -38,13 +34,7 @@ function randomItems(seed: number, n: number): PlaceableItem[] {
     const r = rng(seed)
     return Array.from({ length: n }, (_, i) => {
         const x0 = Math.round(r() * 1200)
-        return item(
-            `e${i}`,
-            x0,
-            x0 + 80 + Math.round(r() * 120),
-            Math.floor(r() * 3),
-            Math.round(r() * 50)
-        )
+        return item(`e${i}`, x0, x0 + 80 + Math.round(r() * 120), x0)
     })
 }
 
@@ -62,18 +52,25 @@ const sameRow = (a: Slot, b: Slot) => a.side === b.side && a.level === b.level
 const conflicts = (a: PlaceableItem, b: PlaceableItem, gap: number) =>
     a.x0 < b.x1 + gap && b.x0 < a.x1 + gap
 
-function sorted(items: readonly PlaceableItem[]): PlaceableItem[] {
+function chronological(items: readonly PlaceableItem[]): PlaceableItem[] {
     return [...items].sort(
-        (a, b) =>
-            b.importance - a.importance ||
-            a.order - b.order ||
-            compareIds(a.id, b.id)
+        (a, b) => a.order - b.order || compareIds(a.id, b.id)
     )
 }
 
+function rowsFrom(firstSide: Side, maxLevels: number): Slot[] {
+    const otherSide: Side = firstSide === 'above' ? 'below' : 'above'
+    const levels = Array.from({ length: maxLevels }, (_, level) => level)
+    return [
+        ...levels.map((level) => ({ side: firstSide, level })),
+        ...levels.map((level) => ({ side: otherSide, level })),
+    ]
+}
+
 /**
- * Naive O(n²) oracle: each item keeps its previous slot if that row was free when it was placed,
- * otherwise it takes the first free row on its previous side, then the first free slot in try order.
+ * Naive O(n²) oracle, walking the items in chronological order: each keeps its previous slot if
+ * that row is free, otherwise it takes the first free row on its previous side, then the other
+ * side; an item without a previous slot starts on the side opposite the last placed item.
  */
 function checkOracle(
     items: readonly PlaceableItem[],
@@ -82,22 +79,21 @@ function checkOracle(
     maxLevels = 2,
     previous: ReadonlyMap<string, Slot> | null = null
 ) {
-    const order = candidateSlots(maxLevels)
     const placed: { item: PlaceableItem; slot: Slot }[] = []
-    for (const it of sorted(items)) {
+    for (const it of chronological(items)) {
         const free = (s: Slot) =>
             s.level < maxLevels &&
             !placed.some(
                 (q) => sameRow(q.slot, s) && conflicts(q.item, it, gap)
             )
         const prev = previous?.get(it.id)
+        const lastSide = placed.at(-1)?.slot.side
+        const firstSide: Side =
+            prev?.side ?? (lastSide === 'above' ? 'below' : 'above')
         const expected =
             prev && free(prev)
                 ? prev
-                : (prev
-                      ? candidateSlotsKeepingSide(maxLevels, prev.side)
-                      : order
-                  ).find(free)
+                : rowsFrom(firstSide, maxLevels).find(free)
         const actual = p.slots.get(it.id)
         if (expected === undefined) {
             expect(actual).toBeUndefined()
@@ -128,22 +124,83 @@ function checkNoOverlap(
     }
 }
 
+/** One row per side, the row below fully taken: a second item can only share the row above. */
+const BELOW_TAKEN = {
+    maxLevels: 1,
+    blocked: [
+        { side: 'below', level: 0, x0: -1000, x1: 1000 },
+    ] satisfies BlockedInterval[],
+}
+
 describe('placeItems', () => {
     it('puts two overlapping cards one above and one below', () => {
-        const p = placeItems([item('a', 0, 100), item('b', 50, 150)], null)
+        const items = [item('a', 0, 100, 0), item('b', 50, 150, 1)]
+        const p = placeItems(items, null)
         expect(p.slots.get('a')).toEqual({ side: 'above', level: 0 })
         expect(p.slots.get('b')).toEqual({ side: 'below', level: 0 })
         expect(p.overflow).toEqual([])
     })
 
-    it('keeps non-overlapping cards above', () => {
-        const p = placeItems([item('a', 0, 100), item('b', 200, 300)], null)
+    it('places the first item above and offers each next one the opposite side first', () => {
+        const items = [
+            item('c', 400, 500, 2),
+            item('a', 0, 100, 0),
+            item('b', 200, 300, 1),
+        ]
+        const p = placeItems(items, null)
         expect(p.slots.get('a')).toEqual({ side: 'above', level: 0 })
-        expect(p.slots.get('b')).toEqual({ side: 'above', level: 0 })
-        expect(usedLevels(p)).toEqual({ above: 1, below: 0 })
+        expect(p.slots.get('b')).toEqual({ side: 'below', level: 0 })
+        expect(p.slots.get('c')).toEqual({ side: 'above', level: 0 })
+        expect(usedLevels(p)).toEqual({ above: 1, below: 1 })
     })
 
-    it('never moves a card below if it fits above (oracle, random sets)', () => {
+    it('takes the next row on the offered side before crossing over', () => {
+        const belowNearTaken: BlockedInterval[] = [
+            { side: 'below', level: 0, x0: 0, x1: 200 },
+        ]
+        const items = [item('a', 300, 400, 0), item('b', 0, 100, 1)]
+        const p = placeItems(items, null, { blocked: belowNearTaken })
+        expect(p.slots.get('b')).toEqual({ side: 'below', level: 1 })
+    })
+
+    it('falls back to the other side, nearest row first, when the offered side is full', () => {
+        const belowTaken: BlockedInterval[] = [
+            { side: 'below', level: 0, x0: 0, x1: 300 },
+            { side: 'below', level: 1, x0: 0, x1: 300 },
+        ]
+        const items = [
+            item('a', 500, 600, 0),
+            item('b', 0, 100, 1),
+            item('c', 200, 300, 2),
+        ]
+        const p = placeItems(items, null, { blocked: belowTaken })
+        expect(p.slots.get('a')).toEqual({ side: 'above', level: 0 })
+        expect(p.slots.get('b')).toEqual({ side: 'above', level: 0 })
+        expect(p.slots.get('c')).toEqual({ side: 'above', level: 0 })
+    })
+
+    it('counts items placed elsewhere in the alternation at their chronological position', () => {
+        const aboveBefore: PlacedSide[] = [{ order: 1, side: 'above' }]
+        const aboveAfter: PlacedSide[] = [{ order: 9, side: 'above' }]
+        const belowBetween: PlacedSide[] = [{ order: 1, side: 'below' }]
+        const lone = [item('a', 0, 100, 5)]
+        const pair = [item('a', 0, 100, 0), item('b', 200, 300, 2)]
+        const afterAbove = placeItems(lone, null, {
+            placedElsewhere: aboveBefore,
+        })
+        const beforeAbove = placeItems(lone, null, {
+            placedElsewhere: aboveAfter,
+        })
+        const aroundBelow = placeItems(pair, null, {
+            placedElsewhere: belowBetween,
+        })
+        expect(afterAbove.slots.get('a')?.side).toBe('below')
+        expect(beforeAbove.slots.get('a')?.side).toBe('above')
+        expect(aroundBelow.slots.get('a')?.side).toBe('above')
+        expect(aroundBelow.slots.get('b')?.side).toBe('above')
+    })
+
+    it('matches the oracle on random sets', () => {
         for (let seed = 1; seed <= 40; seed++) {
             const items = randomItems(seed, 10 + (seed % 5) * 20)
             const p = placeItems(items, null)
@@ -170,31 +227,27 @@ describe('placeItems', () => {
     })
 
     it('normalizes swapped extents and handles zero-width cards', () => {
-        const p = placeItems(
-            [
-                item('a', 100, 0, 2),
-                item('b', 50, 50, 1),
-                item('c', 108, 108, 0),
-            ],
-            null
-        )
+        const items = [
+            item('a', 100, 0, 0),
+            item('b', 50, 50, 1),
+            item('c', 108, 108, 2),
+        ]
+        const p = placeItems(items, null)
         expect(p.slots.get('a')).toEqual({ side: 'above', level: 0 })
         expect(p.slots.get('b')).toEqual({ side: 'below', level: 0 })
         expect(p.slots.get('c')).toEqual({ side: 'above', level: 0 })
     })
 
     it('sends duplicate ids and non-finite extents to overflow', () => {
-        const p = placeItems(
-            [
-                item('a', 0, 100, 2),
-                item('a', 500, 600, 1),
-                item('n', NaN, 100),
-                item('m', 0, Infinity),
-            ],
-            null
-        )
+        const items = [
+            item('a', 0, 100, 0),
+            item('a', 500, 600, 1),
+            item('n', NaN, 100, 2),
+            item('m', 0, Infinity, 3),
+        ]
+        const p = placeItems(items, null)
         expect(p.slots.get('a')).toEqual({ side: 'above', level: 0 })
-        expect(p.overflow).toEqual(['a', 'm', 'n'])
+        expect(p.overflow).toEqual(['a', 'n', 'm'])
         expect(p.slots.size + p.overflow.length).toBe(4)
     })
 
@@ -203,28 +256,15 @@ describe('placeItems', () => {
         expect(p.slots.get('a')).not.toBe(p.slots.get('b'))
     })
 
-    it('gives the more important of two overlapping cards the above slot', () => {
-        const p = placeItems(
-            [item('minor', 0, 100, 1, 0), item('major', 50, 150, 3, 10)],
-            null
-        )
-        expect(p.slots.get('major')).toEqual({ side: 'above', level: 0 })
-        expect(p.slots.get('minor')).toEqual({ side: 'below', level: 0 })
-    })
-
-    it('breaks importance ties by order, then by id', () => {
-        const p = placeItems(
-            [item('a', 0, 100, 1, 5), item('b', 0, 100, 1, 2)],
-            null
-        )
-        expect(p.slots.get('b')?.side).toBe('above')
-        const q = placeItems([item('y', 0, 100), item('x', 0, 100)], null)
-        expect(q.slots.get('x')?.side).toBe('above')
+    it('breaks order ties by id', () => {
+        const p = placeItems([item('y', 0, 100), item('x', 0, 100)], null)
+        expect(p.slots.get('x')?.side).toBe('above')
+        expect(p.slots.get('y')?.side).toBe('below')
     })
 
     it('overflows when all four rows are full at one x', () => {
         const items = ['a', 'b', 'c', 'd', 'e', 'f'].map((id, i) =>
-            item(id, i, 100 + i, 10 - i)
+            item(id, i, 100 + i, i)
         )
         const p = placeItems(items, null)
         expect(p.slots.get('a')).toEqual({ side: 'above', level: 0 })
@@ -237,9 +277,9 @@ describe('placeItems', () => {
 
     it('respects maxLevels', () => {
         const items = [
-            item('a', 0, 100, 3),
-            item('b', 0, 100, 2),
-            item('c', 0, 100, 1),
+            item('a', 0, 100, 0),
+            item('b', 0, 100, 1),
+            item('c', 0, 100, 2),
         ]
         const p = placeItems(items, null, { maxLevels: 1 })
         expect(p.overflow).toEqual(['c'])
@@ -251,55 +291,36 @@ describe('placeItems', () => {
     })
 
     it('respects the gap; touching cards (x1 + gap == x0) fit in one row', () => {
-        const touching = placeItems(
-            [item('a', 0, 100), item('b', 108, 200)],
-            null
-        )
-        expect(touching.slots.get('b')).toEqual({ side: 'above', level: 0 })
-        const tooClose = placeItems(
-            [item('a', 0, 100), item('b', 107, 200)],
-            null
-        )
-        expect(tooClose.slots.get('b')).toEqual({ side: 'below', level: 0 })
-        const left = placeItems([item('a', 108, 200), item('b', 0, 101)], null)
-        expect(left.slots.get('b')).toEqual({ side: 'below', level: 0 })
-        const leftTouching = placeItems(
-            [item('a', 108, 200), item('b', 0, 100)],
-            null
-        )
-        expect(leftTouching.slots.get('b')).toEqual({ side: 'above', level: 0 })
-        const zeroGap = placeItems(
-            [item('a', 0, 100), item('b', 100, 200)],
-            null,
-            { gapPx: 0 }
-        )
-        expect(zeroGap.slots.get('b')).toEqual({ side: 'above', level: 0 })
-        const custom = placeItems(
-            [item('a', 0, 100), item('b', 120, 200)],
-            null,
-            { gapPx: 20 }
-        )
-        expect(custom.slots.get('b')).toEqual({ side: 'above', level: 0 })
-        const customClose = placeItems(
-            [item('a', 0, 100), item('b', 119, 200)],
-            null,
-            { gapPx: 20 }
-        )
-        expect(customClose.slots.get('b')).toEqual({ side: 'below', level: 0 })
+        const sharesRow = (
+            first: PlaceableItem,
+            second: PlaceableItem,
+            gapPx = 8
+        ) =>
+            placeItems([first, second], null, {
+                ...BELOW_TAKEN,
+                gapPx,
+            }).slots.has(second.id)
+        const a = item('a', 0, 100, 0)
+        const aRight = item('a', 108, 200, 0)
+        expect(sharesRow(a, item('b', 108, 200, 1))).toBe(true)
+        expect(sharesRow(a, item('b', 107, 200, 1))).toBe(false)
+        expect(sharesRow(aRight, item('b', 0, 101, 1))).toBe(false)
+        expect(sharesRow(aRight, item('b', 0, 100, 1))).toBe(true)
+        expect(sharesRow(a, item('b', 100, 200, 1), 0)).toBe(true)
+        expect(sharesRow(a, item('b', 120, 200, 1), 20)).toBe(true)
+        expect(sharesRow(a, item('b', 119, 200, 1), 20)).toBe(false)
     })
 
     it('checks neighbours on both sides when inserting between cards', () => {
-        const p = placeItems(
-            [
-                item('l', 0, 100, 3),
-                item('r', 300, 400, 3),
-                item('mid', 108, 292, 1),
-                item('wide', 90, 310, 0),
-            ],
-            null
-        )
+        const items = [
+            item('l', 0, 100, 0),
+            item('r', 300, 400, 1),
+            item('mid', 108, 292, 2),
+            item('wide', 90, 310, 3),
+        ]
+        const p = placeItems(items, null, BELOW_TAKEN)
         expect(p.slots.get('mid')).toEqual({ side: 'above', level: 0 })
-        expect(p.slots.get('wide')).toEqual({ side: 'below', level: 0 })
+        expect(p.overflow).toEqual(['wide'])
     })
 
     describe('hysteresis', () => {
@@ -309,6 +330,21 @@ describe('placeItems', () => {
             ])
             const p = placeItems([item('a', 0, 100)], prev)
             expect(p.slots.get('a')).toEqual({ side: 'below', level: 0 })
+        })
+
+        it('keeps a still-fitting slot against the alternation, which then continues from it', () => {
+            const prev = new Map<string, Slot>([
+                ['b', { side: 'above', level: 0 }],
+            ])
+            const items = [
+                item('a', 0, 100, 0),
+                item('b', 200, 300, 1),
+                item('c', 400, 500, 2),
+            ]
+            const p = placeItems(items, prev)
+            expect(p.slots.get('a')).toEqual({ side: 'above', level: 0 })
+            expect(p.slots.get('b')).toEqual({ side: 'above', level: 0 })
+            expect(p.slots.get('c')).toEqual({ side: 'below', level: 0 })
         })
 
         it('keeps a card on a higher level while it fits there', () => {
@@ -328,25 +364,26 @@ describe('placeItems', () => {
             expect(second.overflow).toEqual(first.overflow)
         })
 
-        it('falls back to the try order when its previous slot is taken', () => {
-            const items = [item('major', 0, 100, 5), item('minor', 50, 150, 1)]
+        it('stays on its previous side when its previous slot is taken', () => {
+            const items = [item('first', 0, 100, 0), item('second', 50, 150, 1)]
             const prevBelow = new Map<string, Slot>([
-                ['major', { side: 'below', level: 0 }],
-                ['minor', { side: 'below', level: 0 }],
+                ['first', { side: 'below', level: 0 }],
+                ['second', { side: 'below', level: 0 }],
             ])
             const p = placeItems(items, prevBelow)
-            expect(p.slots.get('major')).toEqual({ side: 'below', level: 0 })
-            // Stays on its side, one row further out, instead of changing sides.
-            expect(p.slots.get('minor')).toEqual({ side: 'below', level: 1 })
+            expect(p.slots.get('first')).toEqual({ side: 'below', level: 0 })
+            expect(p.slots.get('second')).toEqual({ side: 'below', level: 1 })
             const prevAbove = new Map<string, Slot>([
-                ['minor', { side: 'above', level: 0 }],
+                ['second', { side: 'above', level: 0 }],
             ])
             const q = placeItems(items, prevAbove)
-            expect(q.slots.get('major')).toEqual({ side: 'above', level: 0 })
-            expect(q.slots.get('minor')).toEqual({ side: 'above', level: 1 })
-            // Only when its side is full does it cross over.
-            const r = placeItems(items, prevAbove, { maxLevels: 1 })
-            expect(r.slots.get('minor')).toEqual({ side: 'below', level: 0 })
+            expect(q.slots.get('first')).toEqual({ side: 'above', level: 0 })
+            expect(q.slots.get('second')).toEqual({ side: 'above', level: 1 })
+            const oneRow = placeItems(items, prevAbove, { maxLevels: 1 })
+            expect(oneRow.slots.get('second')).toEqual({
+                side: 'below',
+                level: 0,
+            })
         })
 
         it('ignores previous entries for unknown ids and invalid slots', () => {
@@ -420,7 +457,7 @@ describe('usedLevels', () => {
 
     describe('blocked intervals', () => {
         it('keeps items out of blocked rows and lets them use the free ones', () => {
-            const item = { id: 'a', x0: 0, x1: 100, importance: 1, order: 0 }
+            const item = { id: 'a', x0: 0, x1: 100, order: 0 }
             const p = placeItems([item], null, {
                 maxLevels: 2,
                 blocked: [
@@ -433,7 +470,7 @@ describe('usedLevels', () => {
 
         it('respects the gap next to a blocked interval and merges overlapping blocks', () => {
             const p = placeItems(
-                [{ id: 'a', x0: 104, x1: 200, importance: 1, order: 0 }],
+                [{ id: 'a', x0: 104, x1: 200, order: 0 }],
                 null,
                 {
                     maxLevels: 1,
@@ -446,7 +483,7 @@ describe('usedLevels', () => {
             )
             expect(p.slots.get('a')).toEqual({ side: 'below', level: 0 })
             const q = placeItems(
-                [{ id: 'a', x0: 108, x1: 200, importance: 1, order: 0 }],
+                [{ id: 'a', x0: 108, x1: 200, order: 0 }],
                 null,
                 {
                     maxLevels: 1,
@@ -459,7 +496,7 @@ describe('usedLevels', () => {
 
         it('overflows when every row is blocked', () => {
             const p = placeItems(
-                [{ id: 'a', x0: 0, x1: 100, importance: 1, order: 0 }],
+                [{ id: 'a', x0: 0, x1: 100, order: 0 }],
                 null,
                 {
                     maxLevels: 1,
@@ -475,8 +512,8 @@ describe('usedLevels', () => {
 
     describe('hysteresis keeps the side', () => {
         it('moves to another row on the same side before changing sides', () => {
-            const blocker = { id: 'b', x0: 0, x1: 100, importance: 3, order: 0 }
-            const item = { id: 'a', x0: 10, x1: 110, importance: 1, order: 1 }
+            const blocker = { id: 'b', x0: 0, x1: 100, order: 0 }
+            const item = { id: 'a', x0: 10, x1: 110, order: 1 }
             const previous = new Map([
                 ['a', { side: 'below' as const, level: 0 }],
             ])
@@ -491,32 +528,25 @@ describe('usedLevels', () => {
 })
 
 describe('candidateSlots', () => {
-    it('alternates sides level by level', () => {
-        expect(candidateSlots(2)).toEqual([
-            { side: 'above', level: 0 },
+    it('lists every row on the given side, nearest first, before the other side', () => {
+        expect(candidateSlots(2, 'below')).toEqual([
             { side: 'below', level: 0 },
-            { side: 'above', level: 1 },
             { side: 'below', level: 1 },
+            { side: 'above', level: 0 },
+            { side: 'above', level: 1 },
         ])
     })
 
     it('is empty for zero levels', () => {
-        expect(candidateSlots(0)).toEqual([])
+        expect(candidateSlots(0, 'above')).toEqual([])
     })
 })
 
-describe('candidateSlotsKeepingSide', () => {
-    it('lists every row on the given side before the other side', () => {
-        expect(candidateSlotsKeepingSide(2, 'below')).toEqual([
-            { side: 'below', level: 0 },
-            { side: 'below', level: 1 },
-            { side: 'above', level: 0 },
-            { side: 'above', level: 1 },
-        ])
-    })
-
-    it('is empty for zero levels', () => {
-        expect(candidateSlotsKeepingSide(0, 'above')).toEqual([])
+describe('alternatingSide', () => {
+    it('starts above and then flips the last placed side', () => {
+        expect(alternatingSide(undefined)).toBe('above')
+        expect(alternatingSide('above')).toBe('below')
+        expect(alternatingSide('below')).toBe('above')
     })
 })
 

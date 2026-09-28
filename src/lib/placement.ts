@@ -13,9 +13,7 @@ export type PlaceableItem = {
     /** Horizontal extent of the card in px (already includes the card's width, i.e. x1 ≥ x0 + cardWidth). */
     x0: number
     x1: number
-    /** Higher gets placed first and therefore its preferred slot. */
-    importance: number
-    /** Ordering tiebreak, e.g. the anchor time; lower first. */
+    /** Chronological position, e.g. the anchor time; items are placed in this order. */
     order: number
 }
 
@@ -26,6 +24,13 @@ export type PlacementOptions = {
     maxLevels?: number
     /** Intervals already taken before any item is placed, e.g. the rows a group stack covers. */
     blocked?: readonly BlockedInterval[]
+    /** Items an earlier call placed, e.g. group stacks; they take part in the alternation. */
+    placedElsewhere?: readonly PlacedSide[]
+}
+
+export type PlacedSide = {
+    order: number
+    side: Side
 }
 
 export type BlockedInterval = Slot & {
@@ -97,28 +102,27 @@ class Row {
 }
 
 function compareItems(a: PlaceableItem, b: PlaceableItem): number {
-    if (a.importance !== b.importance) return b.importance - a.importance
     if (a.order !== b.order) return a.order - b.order
     return compareIds(a.id, b.id)
 }
 
-/** Try order: above 0, below 0, above 1, below 1, … */
-function candidateSlots(maxLevels: number): Slot[] {
-    return Array.from({ length: maxLevels }, (_, level): Slot[] => [
-        { side: 'above', level },
-        { side: 'below', level },
-    ]).flat()
-}
-
-/** Hysteresis: every row on the previous side first (nearest the axis first), then the other side. */
-function candidateSlotsKeepingSide(maxLevels: number, side: Side): Slot[] {
-    const other: Side = side === 'above' ? 'below' : 'above'
-    return [side, other].flatMap((s) =>
+/** Every row on `side` (nearest the axis first), then every row on the other side. */
+function candidateSlots(maxLevels: number, side: Side): Slot[] {
+    return [side, oppositeOf(side)].flatMap((s) =>
         Array.from({ length: maxLevels }, (_, level): Slot => ({
             side: s,
             level,
         }))
     )
+}
+
+/** The side an item is offered first: opposite the last placed one, above for the first. */
+function alternatingSide(lastSide: Side | undefined): Side {
+    return lastSide === undefined ? 'above' : oppositeOf(lastSide)
+}
+
+function oppositeOf(side: Side): Side {
+    return side === 'above' ? 'below' : 'above'
 }
 
 function buildRows(
@@ -144,8 +148,10 @@ function cloneSlot(slot: Slot): Slot {
 }
 
 /**
- * `previous` slots are kept when the item still fits there (hysteresis); if not, the item
- * first tries the other rows on its previous side before changing sides.
+ * Places items in chronological order, alternating sides: each item is offered the side opposite
+ * the last placed item first. `previous` slots are kept when the item still fits there
+ * (hysteresis); if not, the item first tries the other rows on its previous side before changing
+ * sides.
  */
 export function placeItems(
     items: readonly PlaceableItem[],
@@ -158,13 +164,22 @@ export function placeItems(
         Math.max(0, Math.floor(options.maxLevels ?? DEFAULT_MAX_LEVELS))
     )
     const rows = buildRows(maxLevels, gap, options.blocked ?? [])
-    const candidates = candidateSlots(maxLevels)
+    const placedElsewhere = [...(options.placedElsewhere ?? [])].sort(
+        (a, b) => a.order - b.order
+    )
 
     const slots = new Map<string, Slot>()
     const overflow: string[] = []
     const seen = new Set<string>()
+    let last: PlacedSide | undefined
+    let elsewhereIndex = 0
 
     for (const item of [...items].sort(compareItems)) {
+        while (
+            elsewhereIndex < placedElsewhere.length &&
+            placedElsewhere[elsewhereIndex]!.order < item.order
+        )
+            last = placedElsewhere[elsewhereIndex++]
         const x0 = Math.min(item.x0, item.x1)
         const x1 = Math.max(item.x0, item.x1)
         // Duplicate ids and non-finite extents cannot be placed safely.
@@ -178,18 +193,18 @@ export function placeItems(
             rows[slot.side]?.[slot.level]?.isFree(x0, x1) ?? false
         const prev = previous?.get(item.id)
         const keepPrev = prev !== undefined && fits(prev)
+        const firstSide =
+            prev && rows[prev.side] ? prev.side : alternatingSide(last?.side)
         const found = keepPrev
             ? prev
-            : (prev && rows[prev.side]
-                  ? candidateSlotsKeepingSide(maxLevels, prev.side)
-                  : candidates
-              ).find(fits)
+            : candidateSlots(maxLevels, firstSide).find(fits)
         const slot = found && cloneSlot(found)
 
         const row = slot && rows[slot.side][slot.level]
         if (slot && row) {
             row.insert(x0, x1)
             slots.set(item.id, slot)
+            last = { order: item.order, side: slot.side }
         } else {
             overflow.push(item.id)
         }
@@ -210,6 +225,6 @@ function usedLevels(p: Placement): { above: number; below: number } {
 export const PRIVATE_UNDER_TESTS = {
     usedLevels,
     candidateSlots,
-    candidateSlotsKeepingSide,
+    alternatingSide,
     buildRows,
 }

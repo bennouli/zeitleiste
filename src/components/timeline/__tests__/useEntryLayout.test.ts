@@ -81,6 +81,16 @@ function layout({
     return layoutEntries(pts, geometry, tree, parents, previous)
 }
 
+function timeToXOf({
+    width,
+    visibleYears,
+    centerT = (T0 + T1) / 2,
+}: LayoutScenario): (t: number) => number {
+    const span = visibleYears * MS_PER_YEAR
+    const start = centerT - span / 2
+    return (t) => ((t - start) / span) * width
+}
+
 function extent(
     item: LayoutItem,
     timeToX: (t: number) => number
@@ -164,13 +174,60 @@ describe('layoutEntries', () => {
         }
     })
 
-    it('places cards above first and below only when above is taken', () => {
-        const entryLayout = layout(WIDE_DESKTOP)
-        expect(entryLayout.items.some((i) => i.slot.side === 'above')).toBe(
-            true
+    it('alternates consecutive single entries between the sides wherever the other side has room', () => {
+        const EVENLY_SPACED: Entry[] = Array.from({ length: 12 }, (_, k) => ({
+            ...points[0]!,
+            id: `even${k}`,
+            title: `Punkt ${k}`,
+            start: { year: 1710 + k * 25 },
+            end: undefined,
+        }))
+        const evenlySpaced: LayoutScenario = {
+            pts: EVENLY_SPACED,
+            width: 1920,
+            visibleYears: 300,
+        }
+        const initialViews: LayoutScenario[] = [
+            WIDE_DESKTOP,
+            { ...WIDE_DESKTOP, width: 1280 },
+            WIDE_LAPTOP,
+        ]
+        const evenSides = layout(evenlySpaced).items.map((i) => i.slot.side)
+        expect(evenSides).toEqual(
+            EVENLY_SPACED.map((_, k) => (k % 2 === 0 ? 'above' : 'below'))
         )
-        const singles = entryLayout.items.filter((i) => i.kind === 'card')
-        expect(singles.length).toBeGreaterThan(3)
+        for (const scenario of [evenlySpaced, ...initialViews]) {
+            const entryLayout = layout(scenario)
+            const timeToX = timeToXOf(scenario)
+            const maxLevels = scenario.maxLevels ?? 3
+            const cardPairs = entryLayout.items
+                .slice(1)
+                .map((later, k) => [entryLayout.items[k]!, later] as const)
+                .filter(([a, b]) => a.kind === 'card' && b.kind === 'card')
+            expect(cardPairs.length).toBeGreaterThan(3)
+            for (const [earlier, later] of cardPairs) {
+                if (earlier.slot.side !== later.slot.side) continue
+                const otherSide =
+                    later.slot.side === 'above' ? 'below' : 'above'
+                const [x0, x1] = extent(later, timeToX)
+                const isRowTaken = (level: number) =>
+                    entryLayout.items.some((i) => {
+                        if (i.kind === 'marker' || i.slot.side !== otherSide)
+                            return false
+                        const rows =
+                            i.kind === 'group' ? [0, 1, 2] : [i.slot.level]
+                        const [i0, i1] = extent(i, timeToX)
+                        return (
+                            rows.includes(level) && i0 < x1 + 8 && x0 < i1 + 8
+                        )
+                    })
+                const levels = Array.from({ length: maxLevels }, (_, l) => l)
+                expect(
+                    levels.every(isRowTaken),
+                    `${earlier.id} and ${later.id} share a side`
+                ).toBe(true)
+            }
+        }
     })
 
     it('groups the crowded years at the widest zoom and splits them when zoomed in', () => {
