@@ -40,6 +40,37 @@ test('wheel over the timeline zooms in and out and does not scroll the page', as
     expect(await page.evaluate(() => window.scrollY)).toBe(0)
 })
 
+test('Shift + wheel up and a leftward swipe pan towards later dates', async ({
+    page,
+}) => {
+    await openTimeline(page)
+    const fullView = await view(page)
+    await page
+        .getByRole('button', { name: 'Hineinzoomen', exact: true })
+        .click()
+    await expect
+        .poll(async () => (await view(page)).span)
+        .toBeLessThan(fullView.span)
+    const box = (await timelineRegion(page).boundingBox())!
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2)
+    const before = await view(page)
+
+    await page.keyboard.down('Shift')
+    await page.mouse.wheel(0, -300)
+    await page.keyboard.up('Shift')
+
+    await expect
+        .poll(async () => (await view(page)).start)
+        .toBeGreaterThan(before.start)
+    const shiftPanned = await view(page)
+    expect(shiftPanned.span).toBeCloseTo(before.span, -3)
+    await page.mouse.wheel(300, 0)
+    await expect
+        .poll(async () => (await view(page)).start)
+        .toBeGreaterThan(shiftPanned.start)
+    expect((await view(page)).span).toBeCloseTo(before.span, -3)
+})
+
 test('Ctrl + wheel over the timeline is left to the browser', async ({
     page,
 }) => {
