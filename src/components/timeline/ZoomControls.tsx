@@ -12,14 +12,14 @@ type ZoomControlsProps = {
 }
 
 const buttonClass = clsx(
-    'flex size-7 cursor-pointer items-center justify-center rounded-full border border-fg bg-transparent font-sans text-[18px] leading-none text-fg',
+    'flex size-7 cursor-pointer items-center justify-center rounded-full border border-fg bg-transparent text-fg',
     'hover:not-aria-disabled:bg-accent hover:not-aria-disabled:text-accent-fg',
     'focus-visible:not-aria-disabled:bg-accent focus-visible:not-aria-disabled:text-accent-fg',
     'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus',
     'aria-disabled:cursor-not-allowed aria-disabled:border-fg/30 aria-disabled:text-fg/30'
 )
 
-/** "−" / "+" buttons; the only way to zoom on desktop. aria-disabled (not disabled) keeps keyboard focus at the limits. */
+/** Zoom-out and zoom-in buttons; the only way to zoom on desktop. aria-disabled (not disabled) keeps keyboard focus at the limits. */
 export function ZoomControls({
     canZoomIn,
     canZoomOut,
@@ -38,7 +38,7 @@ export function ZoomControls({
                 aria-disabled={!canZoomOut}
                 onClick={canZoomOut ? onZoomOut : undefined}
             >
-                <span aria-hidden="true">−</span>
+                <ZoomIcon />
             </button>
             <button
                 type="button"
@@ -47,8 +47,25 @@ export function ZoomControls({
                 aria-disabled={!canZoomIn}
                 onClick={canZoomIn ? onZoomIn : undefined}
             >
-                <span aria-hidden="true">+</span>
+                <ZoomIcon plus />
             </button>
         </div>
+    )
+}
+
+function ZoomIcon({ plus = false }: { plus?: boolean }) {
+    return (
+        <svg
+            aria-hidden="true"
+            width="18"
+            height="18"
+            viewBox="0 0 18 18"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+        >
+            <path d={plus ? 'M4 9h10M9 4v10' : 'M4 9h10'} />
+        </svg>
     )
 }

@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { ZoomControls } from '../ZoomControls'
 
 describe('ZoomControls', () => {
-    it('shows "−" before "+"', () => {
+    it('puts zoom out before zoom in', () => {
         const onZoomIn = vi.fn()
         const onZoomOut = vi.fn()
         render(
