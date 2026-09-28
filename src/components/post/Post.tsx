@@ -3,6 +3,7 @@
 import { usePostControls } from '@/components/PostContext'
 import { CATEGORY_LABEL, REGION_LABEL, type Entry } from '@/lib/entry'
 import { formatEntryDate } from '@/lib/format'
+import { X } from 'lucide-react'
 
 /** Splits a plain-text post body into paragraphs at blank lines. */
 function paragraphs(body: string): string[] {
@@ -20,47 +21,48 @@ export function Post({ entry }: { entry: Entry }) {
     return (
         <article
             aria-labelledby={titleId}
-            className="mx-auto max-w-reading bg-surface px-4 pt-8 pb-[60vh] text-fg sm:px-6"
+            className="relative mx-8 border-t border-border bg-surface text-fg"
         >
-            <header className="flex items-start gap-4">
-                <div className="min-w-0 flex-1">
-                    {/* Focused by the shell when the post opens. */}
-                    <h2
-                        id={titleId}
-                        tabIndex={-1}
-                        data-post-heading
-                        className="rounded-sm font-serif text-3xl leading-tight focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-focus"
-                    >
-                        {entry.title}
-                    </h2>
-                    <p className="mt-2 text-sm text-fg-muted">
-                        <span>{formatEntryDate(entry, 'long')}</span>
-                        <span aria-hidden="true"> · </span>
-                        <span className="sr-only">, </span>
-                        {CATEGORY_LABEL[entry.category]}
-                        <span aria-hidden="true"> · </span>
-                        <span className="sr-only">, </span>
-                        {REGION_LABEL[entry.region]}
-                    </p>
-                </div>
-                <button
-                    type="button"
-                    onClick={close}
-                    aria-label="Beitrag schließen"
-                    title="Schließen"
-                    className="-mt-1 -mr-2 flex size-10 shrink-0 items-center justify-center rounded-md text-2xl leading-none text-fg-muted hover:bg-surface-raised hover:text-fg focus-visible:outline-2 focus-visible:outline-focus"
+            <div className="mx-auto flex max-w-reading flex-col gap-4.5 pt-9 pb-16 font-serif">
+                <p className="pr-8 font-sans text-meta font-medium tracking-meta text-fg-muted uppercase">
+                    <span>{formatEntryDate(entry, 'long')}</span>
+                    <span aria-hidden="true"> · </span>
+                    <span className="sr-only">, </span>
+                    {CATEGORY_LABEL[entry.category]}
+                    <span aria-hidden="true"> · </span>
+                    <span className="sr-only">, </span>
+                    {REGION_LABEL[entry.region]}
+                </p>
+                {/* Focused by the shell when the post opens. */}
+                <h2
+                    id={titleId}
+                    tabIndex={-1}
+                    data-post-heading
+                    className="text-post-title font-normal focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-focus"
                 >
-                    <span aria-hidden="true">×</span>
-                </button>
-            </header>
-            <p className="mt-6 text-lg leading-relaxed">{entry.summary}</p>
-            {entry.post && (
-                <div className="mt-6 space-y-4 font-serif text-base leading-relaxed">
-                    {paragraphs(entry.post.body).map((p, i) => (
-                        <p key={i}>{p}</p>
+                    {entry.title}
+                </h2>
+                <p className="text-lead italic">{entry.summary}</p>
+                {entry.post &&
+                    paragraphs(entry.post.body).map((p, i) => (
+                        <p key={i} className="text-body text-pretty">
+                            {p}
+                        </p>
                     ))}
-                </div>
-            )}
+            </div>
+            <button
+                type="button"
+                onClick={close}
+                aria-label="Beitrag schließen"
+                title="Schließen"
+                className="absolute top-5.5 right-0 size-7 text-fg-muted hover:text-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
+            >
+                <X
+                    aria-hidden="true"
+                    className="size-full"
+                    strokeWidth={1.25}
+                />
+            </button>
         </article>
     )
 }

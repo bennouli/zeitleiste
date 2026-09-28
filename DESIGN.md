@@ -16,7 +16,8 @@ beyond ink.
 
 - Loaded with `next/font/google` (self-hosted, `display: 'swap'`, metric-adjusted fallback), so the page does not shift when the fonts
   arrive. `weight` × `style` loads every combination, so EB Garamond also ships a 500 italic; it costs a file, nothing more.
-- Widths of text columns are set in `rem` (`max-w-reading`, 40.625 rem): a `ch` width changes when the web font replaces its fallback.
+- Widths of text columns are set in `rem` (`max-w-reading`, 41.25 rem = 660 px): a `ch` width changes when the web font replaces its
+  fallback.
 - **Small caps** = uppercase, letter-spacing 0.06–0.18 em, 10–11 px, IBM Plex Sans. It is the label style for dates, tick labels and meta
   lines. The `small-caps` utility in `globals.css` sets the font, `text-label` and uppercase; each use adds its tracking token.
 
