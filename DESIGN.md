@@ -56,11 +56,11 @@ The other ink steps are Tailwind opacity modifiers on `fg`, so they follow the t
 
 ## Motion
 
-| Motion                          | Duration | Easing                                    | Constant                |
-| ------------------------------- | -------- | ----------------------------------------- | ----------------------- |
-| Post collapse (timeline height) | 500 ms   | `ease-in-out` = `cubic-bezier(.4,0,.2,1)` | `COLLAPSE_ANIMATION_MS` |
-| Zoom and pan                    | 300 ms   | ease-out (cubic)                          | `ZOOM_ANIMATION_MS`     |
-| Hover states                    | none     | —                                         | —                       |
+| Motion                          | Duration                                                               | Easing                                    | Constant                |
+| ------------------------------- | ---------------------------------------------------------------------- | ----------------------------------------- | ----------------------- |
+| Post collapse (timeline height) | 500 ms                                                                 | `ease-in-out` = `cubic-bezier(.4,0,.2,1)` | `COLLAPSE_ANIMATION_MS` |
+| Zoom and pan                    | 300 ms                                                                 | ease-out (cubic)                          | `ZOOM_ANIMATION_MS`     |
+| Hover states                    | none (target; the hover note's 150 ms fade-in is still there, for #37) | —                                         | —                       |
 
 Tailwind's defaults nearest the prototype, so the classes stay plain (`duration-500 ease-in-out`). `prefers-reduced-motion` turns all of
 them off.

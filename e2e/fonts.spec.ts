@@ -10,6 +10,9 @@ const FONT_DELAY_MS = 1000
 /** A subpixel line-height nudge where the fallback font is not the one next/font measured; a column changing width scores 0.008. */
 const MAX_FONT_LAYOUT_SHIFT = 0.001
 
+/** How long to wait for a buffered layout-shift entry before counting none. */
+const SHIFT_OBSERVE_MS = 500
+
 const FONTS = [
     {
         family: /^['"]?EB Garamond['"]?$/,
@@ -52,7 +55,7 @@ test('the post page does not shift layout when the fonts arrive', async ({
     await openTimeline(page, POST_PATH)
     await page.evaluate(() => document.fonts.ready)
     const fontShift = await page.evaluate(
-        () =>
+        (observeMs) =>
             new Promise<number>((resolve) => {
                 const fontsArrivedAt = Math.min(
                     ...performance
@@ -64,7 +67,7 @@ test('the post page does not shift layout when the fonts arrive', async ({
                 )
                 if (!Number.isFinite(fontsArrivedAt))
                     throw new Error('no web font was requested')
-                const shiftAfterFonts = (entries: PerformanceEntryList) =>
+                const sumShiftAfterFonts = (entries: PerformanceEntryList) =>
                     entries
                         .filter((e) => e.startTime >= fontsArrivedAt)
                         .reduce(
@@ -73,10 +76,11 @@ test('the post page does not shift layout when the fonts arrive', async ({
                             0
                         )
                 new PerformanceObserver((list) =>
-                    resolve(shiftAfterFonts(list.getEntries()))
+                    resolve(sumShiftAfterFonts(list.getEntries()))
                 ).observe({ type: 'layout-shift', buffered: true })
-                setTimeout(() => resolve(0), 500)
-            })
+                setTimeout(() => resolve(0), observeMs)
+            }),
+        SHIFT_OBSERVE_MS
     )
     expect(fontShift).toBeLessThan(MAX_FONT_LAYOUT_SHIFT)
 })
