@@ -38,13 +38,13 @@ function tickLabel(tick: Element): HTMLElement | null {
 
 describe('Axis', () => {
     it.each([
-        ['inside the view', 600, '600px'],
-        ['left of the view', -50, '0px'],
-        ['right of the view', 1400, `${WIDTH}px`],
-    ])('draws the line from the left edge to today (%s)', (_, todayX, w) => {
+        ['inside the view', 600],
+        ['left of the view', -50],
+        ['right of the view', 1400],
+    ])('draws the line across the full width (today %s)', (_, todayX) => {
         const { container } = renderAxis(todayX, 10)
         const line = container.querySelector<HTMLElement>('[data-axis-line]')!
-        expect(line.style.width).toBe(w)
+        expect(line.style.width).toBe(`${WIDTH}px`)
         expect(line).toHaveClass('left-0', 'bg-fg')
         expect(line.style.height).toBe(`${AXIS_LINE_THICKNESS_PX}px`)
     })
@@ -114,6 +114,38 @@ describe('Axis', () => {
         expect(label).toHaveAttribute('data-today-align', align)
         expect(label).toHaveClass(shift)
     })
+
+    it('draws a year tick after today like one before it', () => {
+        const { container } = renderAxis(500, 200)
+        const tickAt = (year: number) =>
+            container.querySelector(`[data-t="${Date.UTC(year, 0, 1)}"]`)!
+        const before = tickAt(2026)
+        const after = tickAt(2028)
+        expect(after).not.toBeNull()
+        expect(after.getAttribute('data-tick')).toBe(
+            before.getAttribute('data-tick')
+        )
+        expect(after.firstElementChild!.className).toBe(
+            before.firstElementChild!.className
+        )
+        expect(tickLabel(after)).toHaveTextContent('2028')
+        expect(tickLabel(after)!.className).toBe(tickLabel(before)!.className)
+    })
+
+    it.each([
+        ['before', 50, Date.UTC(2026, 0, 1), Date.UTC(2028, 0, 1)],
+        ['after', 500, Date.UTC(2026, 9, 1), Date.UTC(2026, 6, 1)],
+    ])(
+        'drops a tick label just %s "Heute" and keeps the tick',
+        (_, yearWidthPx, hiddenT, shownT) => {
+            const { container } = renderAxis(500, yearWidthPx)
+            const tickAt = (t: number) =>
+                container.querySelector(`[data-t="${t}"]`)!
+            expect(tickAt(hiddenT)).not.toBeNull()
+            expect(tickLabel(tickAt(hiddenT))).toBeNull()
+            expect(tickLabel(tickAt(shownT))).not.toBeNull()
+        }
+    )
 
     it('drops a tick label that would run into "Heute" and keeps the tick', () => {
         const { container } = renderAxis(900, 50)

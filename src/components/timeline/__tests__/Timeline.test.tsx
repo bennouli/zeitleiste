@@ -153,7 +153,7 @@ describe('Timeline', () => {
         )
     })
 
-    it('shows no tick after today, although the axis runs past it', () => {
+    it('keeps ticking past today up to the end of the view', () => {
         const { region, container } = renderTimeline()
         const today = Date.UTC(2026, 8, 27)
         expect(view(region).end).toBeGreaterThan(today)
@@ -161,7 +161,7 @@ describe('Timeline', () => {
             ...container.querySelectorAll<HTMLElement>('[data-tick]'),
         ].map((tick) => Number(tick.dataset.t))
         expect(tickTimes.length).toBeGreaterThan(2)
-        expect(tickTimes.every((t) => t <= today)).toBe(true)
+        expect(tickTimes.some((t) => t > today)).toBe(true)
     })
 
     it('axis runs from the earliest entry to today plus room for a card; an earlier entry moves the start', () => {
