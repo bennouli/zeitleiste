@@ -101,9 +101,11 @@ The `let` grep over-matches; read each hit and ask whether an expression reads b
 
 ## Dimension 3 — Logic out of components (MAJOR)
 
-Pure logic lives in `src/lib` as plain functions with a unit test next to them; a component only draws. The recurring finding: geometry,
-date maths or a state machine buried inside a component or hook, untested because it was never **extracted into an importable module**.
-`src/lib/placement.ts`, `cluster.ts`, `spans.ts` and `viewport.ts` are the shape to follow.
+Logic is a plain function with a unit test next to it; a component only draws. Shared logic lives in `src/lib`; logic specific to one
+component sits beside it as its own module (`bandGeometry.ts` next to `Timeline.tsx`) — placement is not the finding, burial is. The
+recurring finding: geometry, date maths or a state machine buried inside a component or hook, untested because it was never **extracted into
+an importable module**. `src/lib/placement.ts`, `cluster.ts`, `spans.ts` and `src/components/timeline/bandGeometry.ts` are the shape to
+follow.
 
 ```bash
 # new logic in components without a matching test
