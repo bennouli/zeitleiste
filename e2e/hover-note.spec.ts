@@ -21,7 +21,7 @@ const isRoomy = ({ x, y }: Box) =>
 
 async function entryInView(page: Page) {
     for (const card of await page
-        .locator('[data-layer="points"] [aria-describedby]')
+        .locator('[data-layer="cards"] [aria-describedby]')
         .all()) {
         const box = await card.boundingBox()
         if (box && isRoomy(box)) return card

@@ -18,6 +18,8 @@ const point = sampleEntry('dekabristenaufstand')
 const span = sampleEntry('grosser-nordischer-krieg')
 const ongoing = sampleEntry('russischer-angriffskrieg-gegen-die-ukraine')
 const withPost = sampleEntry('oktoberrevolution')
+const spanWithPost = sampleEntry('kubakrise')
+const spanAcrossMonths = sampleEntry('russlandfeldzug-1812')
 
 function renderCard(props: Partial<EntryCardProps> & { entry: Entry }) {
     const onOpen = vi.fn()
@@ -63,6 +65,8 @@ describe('EntryCard', () => {
         ['span', span, '1700–1721'],
         ['ongoing', ongoing, 'seit 24. Feb. 2022'],
         ['point with post', withPost, '7. Nov. 1917'],
+        ['span with post', spanWithPost, '16.–28. Okt. 1962'],
+        ['span across months', spanAcrossMonths, '24. Juni 1812 – Dez. 1812'],
     ])('shows title and short date (%s)', (_, e, date) => {
         renderCard({ entry: e })
         const el = card(e)

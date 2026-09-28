@@ -12,6 +12,8 @@ const { TITLE_CHAR_WIDTH_PX, DATE_CHAR_WIDTH_PX, POST_CHEVRON_WIDTH_PX } =
 
 const point = sampleEntry('dekabristenaufstand')
 const withPost = sampleEntry('oktoberrevolution')
+const spanWithPost = sampleEntry('kubakrise')
+const spanAcrossMonths = sampleEntry('russlandfeldzug-1812')
 
 describe('estimateLabelWidthPx', () => {
     it('grows with the title', () => {
@@ -41,5 +43,20 @@ describe('estimateLabelWidthPx', () => {
         )
         const tinyTitle: Entry = { ...withPost, title: 'X' }
         expect(estimateLabelWidthPx(tinyTitle)).toBe(dateLineWidth)
+    })
+
+    it("counts a span's date range, with the post suffix and its chevron", () => {
+        const tinyTitle: Entry = { ...spanWithPost, title: 'X' }
+        const dateLine = '16.–28. Okt. 1962 · Beitrag'
+        expect(estimateLabelWidthPx(tinyTitle)).toBe(
+            dateLine.length * DATE_CHAR_WIDTH_PX + POST_CHEVRON_WIDTH_PX
+        )
+    })
+
+    it("lets a span's range line widen the label past the title cap", () => {
+        const rangeLine = '24. Juni 1812 – Dez. 1812'
+        const rangeWidth = rangeLine.length * DATE_CHAR_WIDTH_PX
+        expect(rangeWidth).toBeGreaterThan(LABEL_MAX_WIDTH_PX)
+        expect(estimateLabelWidthPx(spanAcrossMonths)).toBe(rangeWidth)
     })
 })

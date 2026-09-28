@@ -7,19 +7,24 @@ import {
 } from '@/lib/cluster'
 import { isSpan, type Entry } from '@/lib/entry'
 import type { Slot } from '@/lib/placement'
-import { entryAnchor, MS_PER_YEAR } from '@/lib/time'
+import { entryAnchor, MS_PER_DAY, MS_PER_YEAR } from '@/lib/time'
+import { sampleEntry } from '@/test/entries'
+import { renderHook } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 import { estimateLabelWidthPx, LABEL_MAX_WIDTH_PX } from '../labelMetrics'
 import {
     PRIVATE_UNDER_TESTS,
+    useEntryLayout,
     type EntryLayout,
+    type LayoutGeometry,
     type LayoutItem,
 } from '../useEntryLayout'
 
 const { layoutEntries, parentMap, markerCollisions, mergeInto } =
     PRIVATE_UNDER_TESTS
 
-const points = entries.filter((e) => !isSpan(e))
+const POINT = sampleEntry('dekabristenaufstand')
+const spans = entries.filter(isSpan)
 const T0 = Date.UTC(1700, 0, 1)
 const T1 = Date.UTC(2026, 8, 27)
 const Y1918 = Date.UTC(1918, 0, 1)
@@ -36,23 +41,23 @@ type LayoutScenario = {
 }
 
 const WIDE_DESKTOP: LayoutScenario = {
-    pts: points,
+    pts: entries,
     width: 1920,
     visibleYears: 300,
 }
 const WIDE_LAPTOP: LayoutScenario = {
-    pts: points,
+    pts: entries,
     width: 1000,
     visibleYears: 300,
 }
 const NEAR_1918_LAPTOP: LayoutScenario = {
-    pts: points,
+    pts: entries,
     width: 1000,
     visibleYears: 10,
     centerT: Y1918,
 }
-const ZERO_WIDTH: LayoutScenario = { pts: points, width: 0, visibleYears: 300 }
-const NO_POINTS: LayoutScenario = { pts: [], width: 1000, visibleYears: 300 }
+const ZERO_WIDTH: LayoutScenario = { pts: entries, width: 0, visibleYears: 300 }
+const NO_ENTRIES: LayoutScenario = { pts: [], width: 1000, visibleYears: 300 }
 const GAP_PX = 8
 const DEFAULT_LEVELS = 3
 
@@ -123,7 +128,7 @@ function checkInvariants(
     centerT: number
 ) {
     const timeToX = timeToXOf({ pts, width, visibleYears, centerT })
-    // Every point exactly once.
+    // Every entry exactly once.
     const seen = entryLayout.items
         .flatMap((i) => i.entries.map((e) => e.id))
         .sort()
@@ -157,7 +162,7 @@ function checkInvariants(
 }
 
 describe('layoutEntries', () => {
-    it('shows every sample point exactly once without overlaps at several zoom levels and widths', () => {
+    it('shows every sample entry exactly once without overlaps at several zoom levels and widths', () => {
         for (const width of [360, 1000, 1920]) {
             for (const years of [300, 100, 40, 10, 2]) {
                 for (const center of [
@@ -166,13 +171,13 @@ describe('layoutEntries', () => {
                     T1,
                 ]) {
                     const scenario: LayoutScenario = {
-                        pts: points,
+                        pts: entries,
                         width,
                         visibleYears: years,
                         centerT: center,
                     }
                     checkInvariants(
-                        points,
+                        entries,
                         layout(scenario),
                         width,
                         years,
@@ -185,7 +190,7 @@ describe('layoutEntries', () => {
 
     it('alternates consecutive single entries between the sides wherever the other side has room', () => {
         const EVENLY_SPACED: Entry[] = Array.from({ length: 12 }, (_, k) => ({
-            ...points[0]!,
+            ...POINT,
             id: `even${k}`,
             title: `Punkt ${k}`,
             start: { year: 1710 + k * 25 },
@@ -254,7 +259,7 @@ describe('layoutEntries', () => {
 
     it('never drops entries under extreme crowding; the rest become bare markers', () => {
         const many: Entry[] = Array.from({ length: 300 }, (_, k) => ({
-            ...points[0]!,
+            ...POINT,
             id: `p${k}`,
             title: `Punkt ${k}`,
             start: {
@@ -293,9 +298,92 @@ describe('layoutEntries', () => {
         for (const i of second.items) expect(i.slot).toEqual(previous.get(i.id))
     })
 
-    it('returns nothing for width 0 or no points', () => {
+    it('returns nothing for width 0 or no entries', () => {
         expect(layout(ZERO_WIDTH).items).toEqual([])
-        expect(layout(NO_POINTS).items).toEqual([])
+        expect(layout(NO_ENTRIES).items).toEqual([])
+    })
+
+    it("counts a span's date range in its label width, so it groups when rows run out", () => {
+        const span: Entry = {
+            ...POINT,
+            id: 'span',
+            title: 'X',
+            start: { year: 1900, month: 1, day: 1 },
+            end: { year: 1900, month: 11, day: 30 },
+        }
+        const asPoint: Entry = { ...span, end: undefined }
+        const spanWidth = estimateLabelWidthPx(span)
+        const pointWidth = estimateLabelWidthPx(asPoint)
+        const betweenPointAndSpanEnd = Math.round((spanWidth + pointWidth) / 2)
+        const early: Entry = {
+            ...POINT,
+            id: 'early',
+            title: 'Ein Punkt mit einem langen Titel',
+            start: dayOf(Date.UTC(1900, 0, 1) + 50 * MS_PER_DAY),
+        }
+        const late: Entry = {
+            ...POINT,
+            id: 'late',
+            title: 'Y',
+            start: dayOf(
+                Date.UTC(1900, 0, 1) + betweenPointAndSpanEnd * MS_PER_DAY
+            ),
+        }
+        const onePxPerDay: LayoutGeometry = {
+            timeToX: (t) => (t - Date.UTC(1900, 0, 1)) / MS_PER_DAY,
+            msPerPx: MS_PER_DAY,
+            width: 1000,
+            maxLevels: 1,
+            groupLevels: 1,
+            gapPx: GAP_PX,
+        }
+        const layoutOf = (pts: Entry[]) => {
+            const tree = buildClusterTree(
+                pts.map((e) => ({ id: e.id, t: entryAnchor(e) }))
+            )
+            return layoutEntries(pts, onePxPerDay, tree, parentMap(tree), null)
+        }
+
+        const withSpan = layoutOf([span, early, late])
+        const withPoint = layoutOf([asPoint, early, late])
+
+        expect(betweenPointAndSpanEnd - pointWidth).toBeGreaterThan(GAP_PX)
+        expect(spanWidth - betweenPointAndSpanEnd).toBeGreaterThan(GAP_PX)
+        expect(withPoint.items.map((i) => i.kind)).toEqual([
+            'card',
+            'card',
+            'card',
+        ])
+        expect(withSpan.items.some((i) => i.kind !== 'card')).toBe(true)
+    })
+})
+
+describe('useEntryLayout', () => {
+    it('gives every span a label, placed at its start like a point', () => {
+        const geometry: LayoutGeometry = {
+            timeToX: timeToXOf(WIDE_DESKTOP),
+            msPerPx:
+                (WIDE_DESKTOP.visibleYears * MS_PER_YEAR) / WIDE_DESKTOP.width,
+            width: WIDE_DESKTOP.width,
+            maxLevels: DEFAULT_LEVELS,
+            groupLevels: DEFAULT_LEVELS,
+            gapPx: GAP_PX,
+        }
+
+        const { result } = renderHook(() =>
+            useEntryLayout(entries, geometry, 'key')
+        )
+
+        const itemOf = (id: string) =>
+            result.current.items.find((i) => i.entries.some((e) => e.id === id))
+        for (const span of spans)
+            expect(itemOf(span.id)?.kind, span.id).toMatch(/^(card|group)$/)
+        const spanCards = result.current.items.filter(
+            (i) => i.kind === 'card' && isSpan(i.entries[0]!)
+        )
+        expect(spanCards.length).toBeGreaterThan(0)
+        for (const card of spanCards)
+            expect(card.t).toBe(entryAnchor(card.entries[0]!))
     })
 })
 
@@ -394,6 +482,15 @@ describe('mergeInto', () => {
         expect(mergeInto(cut, abc)).toEqual(cut)
     })
 })
+
+function dayOf(t: number): Entry['start'] {
+    const date = new Date(t)
+    return {
+        year: date.getUTCFullYear(),
+        month: date.getUTCMonth() + 1,
+        day: date.getUTCDate(),
+    }
+}
 
 function leavesOf(cluster: Cluster): Cluster[] {
     return isGroup(cluster)

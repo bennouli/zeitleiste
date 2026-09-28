@@ -24,6 +24,7 @@ import { SpanLayer } from './SpanLayer'
 import { TimelineContext, type TimelineContextValue } from './TimelineContext'
 import { useEntryLayout } from './useEntryLayout'
 import { useGestures } from './useGestures'
+import { useSettled } from './useSettled'
 import { useViewport, type ViewportActions } from './useViewport'
 import { ZoomControls } from './ZoomControls'
 
@@ -52,6 +53,7 @@ export function Timeline({
         [entries, today, width]
     )
     const height = useSettled(liveHeight, HEIGHT_SETTLE_MS)
+    const isMeasured = width > 0 && height > 0
     const helpId = useId()
     const controls = useViewport({ bounds, width })
     const { viewport, actions } = controls
@@ -154,7 +156,7 @@ export function Timeline({
                     Mit Plus und Minus zoomen, mit den Pfeiltasten links und
                     rechts in der Zeit verschieben.
                 </p>
-                {width > 0 && (
+                {isMeasured && (
                     <>
                         <div data-layer="above" className="min-h-0 flex-1" />
                         <div
@@ -231,17 +233,6 @@ function useElementSize() {
         return () => ro.disconnect()
     }, [])
     return { ...size, ref, elRef }
-}
-
-/** The last value that stayed unchanged for `delayMs`; ignores the frames of a height transition. */
-function useSettled<T>(value: T, delayMs: number): T {
-    const [settled, setSettled] = useState(value)
-    useEffect(() => {
-        if (Object.is(value, settled)) return
-        const id = window.setTimeout(() => setSettled(value), delayMs)
-        return () => window.clearTimeout(id)
-    }, [value, settled, delayMs])
-    return settled
 }
 
 /**

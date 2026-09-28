@@ -153,6 +153,31 @@ describe('Timeline', () => {
         )
     })
 
+    it('lays out the entries for the measured height from the first render on', () => {
+        const itemPositions = (container: HTMLElement) =>
+            [
+                ...container.querySelectorAll<HTMLElement>(
+                    '[data-layer="cards"] [data-entry-id]'
+                ),
+            ].map((el) => `${el.dataset.entryId} ${el.getAttribute('style')}`)
+        const { container } = renderTimeline()
+        const firstLayout = itemPositions(container)
+
+        flush()
+
+        expect(firstLayout.length).toBeGreaterThan(0)
+        expect(itemPositions(container)).toEqual(firstLayout)
+    })
+
+    it('draws no entries before the timeline has a height', () => {
+        vi.spyOn(HTMLElement.prototype, 'clientHeight', 'get').mockReturnValue(
+            0
+        )
+        const { container } = renderTimeline()
+        expect(container.querySelector('[data-layer="cards"]')).toBeNull()
+        expect(container.querySelector('[data-layer="spans"]')).toBeNull()
+    })
+
     it('keeps ticking past today up to the end of the view', () => {
         const { region, container } = renderTimeline()
         const today = Date.UTC(2026, 8, 27)
@@ -551,11 +576,10 @@ describe('Timeline', () => {
     })
 
     describe('keyboard access', () => {
-        const points = entries.filter((e) => e.end === undefined)
         const tabbables = (container: HTMLElement) =>
             [
                 ...container.querySelectorAll<HTMLElement>(
-                    '[data-layer="points"] :is(button, [tabindex="0"])'
+                    '[data-layer="cards"] :is(button, [tabindex="0"])'
                 ),
             ].filter((el) => !el.closest('[inert]'))
         const tOf = (el: HTMLElement) =>
@@ -570,7 +594,7 @@ describe('Timeline', () => {
                         Element.prototype.matches.call(el, sel)
                 )
 
-        it('renders every point entry, off-screen ones too, in chronological DOM order', () => {
+        it('renders every entry, spans too, off-screen ones too, in chronological DOM order', () => {
             const { container } = renderTimeline()
             fireEvent.click(
                 screen.getByRole('button', { name: 'Hineinzoomen' })
@@ -581,13 +605,13 @@ describe('Timeline', () => {
             flush()
             const holders = [
                 ...container.querySelectorAll<HTMLElement>(
-                    '[data-layer="points"] [data-entry-ids]'
+                    '[data-layer="cards"] [data-entry-ids]'
                 ),
             ]
             const covered = new Set(
                 holders.flatMap((h) => h.dataset.entryIds!.split(' '))
             )
-            for (const e of points) expect(covered).toContain(e.id)
+            for (const e of entries) expect(covered).toContain(e.id)
             const times = tabbables(container).map(tOf)
             expect(times.length).toBeGreaterThan(0)
             expect(times).toEqual([...times].sort((a, b) => a - b))

@@ -1,5 +1,6 @@
 import { expect, test, type Page } from '@playwright/test'
 import { entries } from '../src/data/entries'
+import { isSpan } from '../src/lib/entry'
 import {
     describeFocus,
     openTimeline,
@@ -12,6 +13,11 @@ import {
 test.use({ viewport: { width: 1280, height: 800 }, reducedMotion: 'reduce' })
 
 const ORDER = new Map(entries.map((e, i) => [e.id, i]))
+const isZoomMarker = (f: Focused) => f.name.startsWith('Hineinzoomen:')
+const SPAN_IDS = entries
+    .filter(isSpan)
+    .map((e) => e.id)
+    .sort()
 
 const view = async (page: Page) => {
     const region = timelineRegion(page)
@@ -33,7 +39,7 @@ test('Tab reaches the region first, then the entries in chronological order', as
         firstThree.push(await describeFocus(page))
     }
     for (const f of firstThree) {
-        expect(f.inPoints).toBe(true)
+        expect(f.inCards).toBe(true)
         expect(f.ids.length).toBeGreaterThan(0)
     }
     // Chronological per the sample data (which is sorted by start) and by anchor time.
@@ -53,11 +59,13 @@ for (const [label, size] of [
         page,
     }) => {
         await page.setViewportSize(size)
+        // No settle wait: the first layout is final (#72); a relayout mid-walk used to swap entries (#54).
         await openTimeline(page)
         const region = timelineRegion(page)
-        const seen = new Set<string>()
-        const pointTimes: number[] = []
-        const spanTimes: number[] = []
+        const labelled = new Set<string>()
+        const barred = new Set<string>()
+        const cardTimes: number[] = []
+        const barTimes: number[] = []
         await page.keyboard.press('Tab')
         for await (const f of tabThrough(page)) {
             if (f.name === 'Hineinzoomen') break
@@ -75,24 +83,22 @@ for (const [label, size] of [
                                 (el) => (el as HTMLElement).dataset.entryId!
                             )
                         )
-                    shown.forEach((id) => seen.add(id))
+                    shown.forEach((id) => labelled.add(id))
                     await page.keyboard.press('ArrowDown')
                 }
                 await page.keyboard.press('Home')
-            } else if (f.ids.length === 1) {
-                seen.add(f.ids[0]!)
+            } else if (f.ids.length === 1 && !isZoomMarker(f)) {
+                if (f.inCards) labelled.add(f.ids[0]!)
+                if (f.inSpans) barred.add(f.ids[0]!)
             }
-            if (
-                f.inPoints &&
-                f.t !== null &&
-                !f.name.startsWith('Hineinzoomen:')
-            )
-                pointTimes.push(f.t)
-            if (f.inSpans && f.t !== null) spanTimes.push(f.t)
+            if (f.inCards && f.t !== null && !isZoomMarker(f))
+                cardTimes.push(f.t)
+            if (f.inSpans && f.t !== null) barTimes.push(f.t)
         }
-        expect([...seen].sort()).toEqual(entries.map((e) => e.id).sort())
-        expect(pointTimes).toEqual([...pointTimes].sort((a, b) => a - b))
-        expect(spanTimes).toEqual([...spanTimes].sort((a, b) => a - b))
+        expect([...labelled].sort()).toEqual(entries.map((e) => e.id).sort())
+        expect([...barred].sort()).toEqual(SPAN_IDS)
+        expect(cardTimes).toEqual([...cardTimes].sort((a, b) => a - b))
+        expect(barTimes).toEqual([...barTimes].sort((a, b) => a - b))
         // overflow: clip — focusing off-screen entries never scrolls the timeline box itself.
         expect(
             await region.evaluate((el) => [el.scrollLeft, el.scrollTop])

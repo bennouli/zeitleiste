@@ -8,7 +8,7 @@ import {
     type Cluster,
     type ClusterNode,
 } from '@/lib/cluster'
-import { isSpan, type Entry } from '@/lib/entry'
+import type { Entry } from '@/lib/entry'
 import {
     placeItems,
     type BlockedInterval,
@@ -79,13 +79,12 @@ export function useEntryLayout(
     geometry: LayoutGeometry,
     key: unknown
 ): EntryLayout {
-    const points = useMemo(() => entries.filter((e) => !isSpan(e)), [entries])
     const tree = useMemo(
         () =>
             buildClusterTree(
-                points.map((e) => ({ id: e.id, t: entryAnchor(e) }))
+                entries.map((e) => ({ id: e.id, t: entryAnchor(e) }))
             ),
-        [points]
+        [entries]
     )
     const parents = useMemo(() => parentMap(tree), [tree])
 
@@ -94,34 +93,34 @@ export function useEntryLayout(
     const previous = cache
         ? new Map(cache.layout.items.map((i) => [i.id, i.slot]))
         : null
-    const layout = layoutEntries(points, geometry, tree, parents, previous)
+    const layout = layoutEntries(entries, geometry, tree, parents, previous)
     setCache({ key, tree, layout })
     return layout
 }
 
 /**
- * Lays out points as cards and groups. Points closer than CLUSTER_MIN_GAP_PX always form a
- * group (they would sit on one spot). Groups are placed first and passed on as preceding items, so
- * placeItems chooses each card's side knowing the groups around it; only cards that fit nowhere
- * are merged into groups by climbing the cluster tree, and a cluster that can't be merged further
- * is shown as a bare marker on the axis.
+ * Lays out entries, points and spans alike, as cards and groups at their anchor (a span's start).
+ * Entries closer than CLUSTER_MIN_GAP_PX always form a group (they would sit on one spot).
+ * Groups are placed first and passed on as preceding items, so placeItems chooses each card's side
+ * knowing the groups around it; only cards that fit nowhere are merged into groups by climbing the
+ * cluster tree, and a cluster that can't be merged further is shown as a bare marker on the axis.
  * `previous` slots are kept where they still fit, so cards don't flip sides needlessly.
  */
 function layoutEntries(
-    points: Entry[],
+    entries: Entry[],
     geometry: LayoutGeometry,
     tree: Cluster | null,
     parents: ReadonlyMap<string, ClusterNode>,
     previous: ReadonlyMap<string, Slot> | null
 ): EntryLayout {
-    if (points.length === 0 || geometry.width <= 0)
+    if (entries.length === 0 || geometry.width <= 0)
         return { items: [], groups: [] }
-    const byId = new Map(points.map((e) => [e.id, e]))
+    const byId = new Map(entries.map((e) => [e.id, e]))
     let cut = cutTree(tree, minGapFromPx(CLUSTER_MIN_GAP_PX, geometry.msPerPx))
     let markerOnly: ReadonlySet<string> = new Set<string>()
 
     // Every round either shrinks the cut or turns a cluster into a bare marker, so this terminates.
-    const lastRound = 2 * points.length + 1
+    const lastRound = 2 * entries.length + 1
     for (let round = 0; round <= lastRound; round++) {
         const placement = placeCut(cut, markerOnly, geometry, byId, previous)
         const overflow = new Set([
