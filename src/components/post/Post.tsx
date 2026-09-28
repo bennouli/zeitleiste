@@ -3,6 +3,7 @@
 import { usePostControls } from '@/components/PostContext'
 import { CATEGORY_LABEL, REGION_LABEL, type Entry } from '@/lib/entry'
 import { formatEntryDate } from '@/lib/format'
+import { X } from 'lucide-react'
 
 /** Splits a plain-text post body into paragraphs at blank lines. */
 function paragraphs(body: string): string[] {
@@ -56,18 +57,7 @@ export function Post({ entry }: { entry: Entry }) {
                 title="Schließen"
                 className="absolute top-5.5 right-0 size-7 text-fg-muted hover:text-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
             >
-                <svg
-                    aria-hidden="true"
-                    width="28"
-                    height="28"
-                    viewBox="0 0 28 28"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="1.25"
-                    strokeLinecap="round"
-                >
-                    <path d="M8 8l12 12M20 8L8 20" />
-                </svg>
+                <X aria-hidden="true" size={28} strokeWidth={1.25} />
             </button>
         </article>
     )
