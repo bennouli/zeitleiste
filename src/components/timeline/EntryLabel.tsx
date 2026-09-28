@@ -2,7 +2,13 @@ import type { Entry } from '@/lib/entry'
 import { formatEntryDate } from '@/lib/format'
 import type { Side } from '@/lib/placement'
 import clsx from 'clsx'
-import { LABEL_MAX_WIDTH_PX, POST_SEPARATOR, POST_SUFFIX } from './labelMetrics'
+import { ChevronRight } from 'lucide-react'
+import {
+    LABEL_MAX_WIDTH_PX,
+    POST_CHEVRON_SIZE_PX,
+    POST_SEPARATOR,
+    POST_SUFFIX,
+} from './labelMetrics'
 
 export type EntryLabelProps = {
     entry: Entry
@@ -42,29 +48,16 @@ export function EntryLabel({ entry, side, open = false }: EntryLabelProps) {
                             <span className="underline underline-offset-3">
                                 {POST_SUFFIX}
                             </span>
-                            <Chevron />
+                            <ChevronRight
+                                aria-hidden="true"
+                                size={POST_CHEVRON_SIZE_PX}
+                                strokeWidth={2.5}
+                                className="relative top-px ml-0.5 inline-block align-baseline"
+                            />
                         </span>
                     </span>
                 )}
             </span>
         </span>
-    )
-}
-
-/** Points right; as tall as the date line's capitals. */
-function Chevron() {
-    return (
-        <svg
-            aria-hidden="true"
-            viewBox="0 0 8 8"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.5"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            className="ml-1 inline-block size-1.75 align-baseline"
-        >
-            <path d="M2.5 1l3 3-3 3" />
-        </svg>
     )
 }

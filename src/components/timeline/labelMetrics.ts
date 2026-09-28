@@ -8,8 +8,10 @@ export const LABEL_HEIGHT_PX = 34
 /** Appended to the date line of an entry with a post, after `POST_SEPARATOR` and before the chevron. */
 export const POST_SUFFIX = 'Beitrag'
 export const POST_SEPARATOR = ' · '
-/** The chevron after `POST_SUFFIX`: 4 px margin, 7 px wide. */
-const POST_CHEVRON_WIDTH_PX = 11
+/** The chevron icon after `POST_SUFFIX`, as tall as the date line. */
+export const POST_CHEVRON_SIZE_PX = 10
+/** The chevron with its 2 px margin. */
+const POST_CHEVRON_WIDTH_PX = POST_CHEVRON_SIZE_PX + 2
 
 /** Advance of one title glyph (EB Garamond 17 px): the widest sample title measures 9.0 px per character. */
 const TITLE_CHAR_WIDTH_PX = 9

@@ -47,7 +47,8 @@ Tokens in the `@theme static` block of `globals.css`. `text-<name>` sets the siz
 Offsets use the spacing scale in 0.25 steps of `--spacing` (`gap-0.75` = 3 px, `top-5.5` = 22 px). Geometry that feeds layout math (row
 offsets, label width cap, dot sizes) lives in the timeline's JS constants and is applied through `style`.
 
-Icons are inline SVG in `currentColor`, never text glyphs (arrows, chevrons, bullets as characters).
+Icons come from `lucide-react` (pinned, `currentColor`), never text glyphs (arrows, chevrons, bullets as characters) and never hand-drawn
+SVG. `GroupStack`'s hand-drawn arrows move to it in #40.
 
 ## Colours
 

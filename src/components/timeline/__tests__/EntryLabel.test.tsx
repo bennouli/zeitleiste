@@ -2,6 +2,7 @@ import { sampleEntry } from '@/test/entries'
 import { render, screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 import { EntryLabel } from '../EntryLabel'
+import { POST_CHEVRON_SIZE_PX } from '../labelMetrics'
 
 const point = sampleEntry('dekabristenaufstand')
 const withPost = sampleEntry('oktoberrevolution')
@@ -52,7 +53,7 @@ describe('EntryLabel', () => {
         expect(suffix).toHaveClass('underline', 'underline-offset-3')
         expect(suffix.parentElement).toHaveClass('font-medium', 'text-fg')
         const chevron = suffix.parentElement!.querySelector('svg')
-        expect(chevron).toHaveAttribute('stroke', 'currentColor')
+        expect(chevron).toHaveAttribute('width', String(POST_CHEVRON_SIZE_PX))
         expect(chevron).toHaveAttribute('aria-hidden', 'true')
         expect(suffix.closest('[aria-hidden="true"]')).not.toBeNull()
         expect(suffix.parentElement).toHaveTextContent(/^Beitrag$/)
