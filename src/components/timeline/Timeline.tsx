@@ -137,6 +137,7 @@ export function Timeline({
                 aria-describedby={helpId}
                 data-view-start={width > 0 ? viewport.start : undefined}
                 data-view-end={width > 0 ? viewport.end : undefined}
+                data-settled-height={height}
                 className={clsx(
                     // clip, not hidden: a clipped box is no scroll container, so focusing an off-screen card can't scroll it.
                     'relative flex w-full touch-pan-y flex-col overflow-clip bg-surface text-fg select-none',

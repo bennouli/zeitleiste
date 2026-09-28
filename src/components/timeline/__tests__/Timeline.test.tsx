@@ -153,6 +153,13 @@ describe('Timeline', () => {
         )
     })
 
+    it('exposes the height the layout was computed for once it has settled', () => {
+        const { region } = renderTimeline()
+        expect(region.dataset.settledHeight).toBe('0')
+        flush()
+        expect(region.dataset.settledHeight).toBe(String(HEIGHT))
+    })
+
     it('keeps ticking past today up to the end of the view', () => {
         const { region, container } = renderTimeline()
         const today = Date.UTC(2026, 8, 27)

@@ -19,7 +19,16 @@ export function timelineRegion(page: Page): Locator {
 
 export async function openTimeline(page: Page, path = '/') {
     await page.goto(path)
-    await expect(timelineRegion(page)).toHaveAttribute('data-view-start', /\d/)
+    const region = timelineRegion(page)
+    await expect(region).toHaveAttribute('data-view-start', /\d/)
+    // The layout is first computed for height 0 and redone once the height has settled (about 0.5 s later).
+    await expect
+        .poll(() =>
+            region.evaluate(
+                (el) => Number(el.dataset.settledHeight) === el.clientHeight
+            )
+        )
+        .toBe(true)
 }
 
 export function describeFocus(page: Page): Promise<Focused> {
