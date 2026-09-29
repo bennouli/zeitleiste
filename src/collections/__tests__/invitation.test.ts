@@ -1,7 +1,7 @@
 import { Effect, Exit } from 'effect'
 import { APIError, type Payload } from 'payload'
 import { describe, expect, it, vi } from 'vitest'
-import { acceptInvitation } from '../invitation'
+import { acceptInvitation, resendInvitation } from '../invitation'
 
 const now = new Date('2026-09-10T12:00:00Z')
 const TRANSACTION_ID = 'tx-1'
@@ -106,5 +106,97 @@ describe('acceptInvitation', () => {
             acceptInvitation(asPayload, acceptance)
         )
         expect(failureTag(exit)).toEqual(['InvitationAcceptFailed'])
+    })
+})
+
+const pendingInvitee = { id: 9, email: 'late@example.test' }
+
+const fakeInviter = (
+    invitee: object | null,
+    sendEmail: () => Promise<unknown>
+) => {
+    const db = {
+        beginTransaction: vi.fn().mockResolvedValue(TRANSACTION_ID),
+        commitTransaction: vi.fn().mockResolvedValue(undefined),
+        rollbackTransaction: vi.fn().mockResolvedValue(undefined),
+    }
+    const payload = {
+        db,
+        config: { serverURL: 'https://zeitleiste.example' },
+        findByID: vi.fn().mockResolvedValue(invitee),
+        update: vi.fn().mockResolvedValue({}),
+        forgotPassword: vi.fn().mockResolvedValue('tok123'),
+        sendEmail: vi.fn(sendEmail),
+    }
+    return { db, payload, asPayload: payload as unknown as Payload }
+}
+
+describe('resendInvitation', () => {
+    it('stamps invitedAt and mails a fresh link in one transaction', async () => {
+        const { db, payload, asPayload } = fakeInviter(
+            pendingInvitee,
+            async () => ({})
+        )
+        const exit = await Effect.runPromiseExit(
+            resendInvitation(asPayload, '9', now)
+        )
+        expect(Exit.isSuccess(exit)).toBe(true)
+        expect(payload.update).toHaveBeenCalledWith(
+            expect.objectContaining({
+                id: 9,
+                data: { invitedAt: now.toISOString() },
+                req: { transactionID: TRANSACTION_ID },
+            })
+        )
+        expect(payload.forgotPassword).toHaveBeenCalledWith(
+            expect.objectContaining({
+                data: { email: 'late@example.test' },
+                disableEmail: true,
+                req: { transactionID: TRANSACTION_ID },
+            })
+        )
+        expect(payload.sendEmail).toHaveBeenCalledWith(
+            expect.objectContaining({
+                to: 'late@example.test',
+                html: expect.stringContaining(
+                    'https://zeitleiste.example/einladung/tok123'
+                ),
+            })
+        )
+        expect(db.commitTransaction).toHaveBeenCalledWith(TRANSACTION_ID)
+    })
+
+    it('rolls back the new token and date when the mail fails', async () => {
+        const bounce = new Error('smtp down')
+        const { db, asPayload } = fakeInviter(pendingInvitee, () =>
+            Promise.reject(bounce)
+        )
+        const exit = await Effect.runPromiseExit(
+            resendInvitation(asPayload, '9', now)
+        )
+        expect(failureTag(exit)).toEqual(['InvitationMailFailed'])
+        expect(db.rollbackTransaction).toHaveBeenCalledWith(TRANSACTION_ID)
+        expect(db.commitTransaction).not.toHaveBeenCalled()
+    })
+
+    it('reports an unknown user', async () => {
+        const { asPayload } = fakeInviter(null, async () => ({}))
+        const exit = await Effect.runPromiseExit(
+            resendInvitation(asPayload, '9', now)
+        )
+        expect(failureTag(exit)).toEqual(['InvitationUserMissing'])
+    })
+
+    it('refuses an accepted invitation', async () => {
+        const accepted = {
+            ...pendingInvitee,
+            invitationAcceptedAt: '2026-09-02T00:00:00Z',
+        }
+        const { payload, asPayload } = fakeInviter(accepted, async () => ({}))
+        const exit = await Effect.runPromiseExit(
+            resendInvitation(asPayload, '9', now)
+        )
+        expect(failureTag(exit)).toEqual(['InvitationAlreadyAccepted'])
+        expect(payload.sendEmail).not.toHaveBeenCalled()
     })
 })

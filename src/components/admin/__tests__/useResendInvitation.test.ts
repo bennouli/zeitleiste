@@ -85,7 +85,8 @@ describe('useResendInvitation', () => {
 
     it('reports a failed request', async () => {
         const scene: Scene = { role: 'admin', id: 7 }
-        vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false }))
+        const fetchMock = vi.fn().mockResolvedValue({ ok: false })
+        vi.stubGlobal('fetch', fetchMock)
         showScene(scene)
         const { result } = renderHook(useResendInvitation)
         act(() => result.current.resend())

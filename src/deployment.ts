@@ -18,7 +18,7 @@ export const deploymentOrigins = (env: unknown): Deployment => {
             ? httpsOrigin(VERCEL_PROJECT_PRODUCTION_URL)
             : undefined
     const serverURL = decodeOrigin(
-        filled(SERVER_URL) ??
+        nonBlank(SERVER_URL) ??
             productionOrigin ??
             httpsOrigin(VERCEL_URL) ??
             LOCAL_ORIGIN
@@ -57,10 +57,10 @@ const Origin = Schema.String.check(
 
 const decodeOrigin = Schema.decodeUnknownSync(Origin)
 
-const filled = (value: string | undefined) =>
+const nonBlank = (value: string | undefined) =>
     value === undefined || value.trim() === '' ? undefined : value.trim()
 
 const httpsOrigin = (host: string | undefined) => {
-    const filledHost = filled(host)
-    return filledHost === undefined ? undefined : `https://${filledHost}`
+    const nonBlankHost = nonBlank(host)
+    return nonBlankHost === undefined ? undefined : `https://${nonBlankHost}`
 }

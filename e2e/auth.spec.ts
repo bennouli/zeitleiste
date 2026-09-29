@@ -5,6 +5,7 @@ import {
     type Page,
 } from '@playwright/test'
 import type { Payload } from 'payload'
+import { MS_PER_DAY } from '../src/lib/time'
 import { localPayload } from './payload'
 
 const RUN = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
@@ -15,7 +16,7 @@ const EDITOR = { email: emailFor('editor'), password: 'editor-pass-1' }
 const UNUSABLE =
     'Die Einladung ist abgelaufen oder wurde schon verwendet. Bitte um eine neue Einladung.'
 const ACCEPTED = 'Dein Passwort ist gespeichert. Du kannst dich jetzt anmelden.'
-const EIGHT_DAYS_MS = 8 * 24 * 60 * 60 * 1000
+const EIGHT_DAYS_MS = 8 * MS_PER_DAY
 
 let payload: Payload
 
@@ -216,10 +217,8 @@ test('editors cannot create, delete or re-invite users, nor make themselves admi
     })
     expect(reinvite.status()).toBe(403)
 
-    await request.patch(`/api/users/${editor.id}`, {
-        data: { role: 'admin' },
-        headers,
-    })
+    const promotion = { role: 'admin' }
+    await request.patch(`/api/users/${editor.id}`, { data: promotion, headers })
     expect((await userByEmail(EDITOR.email)).role).toBe('editor')
 })
 
@@ -269,8 +268,9 @@ test('a reset link sets a new password once', async ({ page, request }) => {
     expect(answered.status(), await answered.text()).toBe(200)
     expect((await apiLogin(request, renewed)).status()).toBe(200)
 
+    const reuse = { token, password: 'editor-pass-3' }
     const reused = await request.post('/api/users/reset-password', {
-        data: { token, password: 'editor-pass-3' },
+        data: reuse,
     })
     expect(reused.status()).toBe(403)
     expect((await apiLogin(request, renewed)).status()).toBe(200)
@@ -290,8 +290,9 @@ test('a reset link does not let an invitee past the invitation', async ({
     })
     const token = await freshToken(invitee.email)
 
+    const earlyReset = { token, password: invitee.password }
     const reset = await request.post('/api/users/reset-password', {
-        data: { token, password: invitee.password },
+        data: earlyReset,
     })
     expect(reset.ok()).toBe(false)
     expect((await apiLogin(request, invitee)).status()).toBe(401)
