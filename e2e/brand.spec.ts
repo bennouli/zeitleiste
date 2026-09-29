@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test'
+import { messages } from '../src/i18n/messages'
 import { openTimeline, timelineRegion } from './timeline'
 
 const BRAND = 'Liniya'
@@ -34,3 +35,18 @@ test(`the admin's page titles end in ${BRAND}`, async ({ page }) => {
 
     await expect(page).toHaveTitle(new RegExp(`\\S – ${BRAND}$`))
 })
+
+for (const lang of ['de', 'en'] as const) {
+    test(`/${lang} describes itself as ${BRAND}`, async ({ page }) => {
+        await page.goto(`/${lang}`)
+
+        await expect(page.locator('meta[name="description"]')).toHaveAttribute(
+            'content',
+            messages[lang].site.description
+        )
+        await expect(page.locator('meta[name="description"]')).toHaveAttribute(
+            'content',
+            new RegExp(`^${BRAND}: `)
+        )
+    })
+}

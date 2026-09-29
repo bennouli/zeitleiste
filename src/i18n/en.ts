@@ -6,7 +6,7 @@ const entries = (count: number) => (count === 1 ? 'entry' : 'entries')
 export const en = {
     site: {
         name: APP_NAME,
-        description: 'Interactive timeline: Russia and the West since 1700',
+        description: `${APP_NAME}: Russia and the West since 1700, an interactive timeline`,
         heading: `${APP_NAME}: Russia and the West`,
         postTitle: (title) => `${title} – ${APP_NAME}`,
     },
@@ -16,6 +16,7 @@ export const en = {
         back: 'Back to the timeline',
     },
     timeline: {
+        regionLabel: 'Timeline',
         help: 'Zoom with plus and minus, move through time with the left and right arrow keys.',
         zoomIn: 'Zoom in',
         zoomOut: 'Zoom out',

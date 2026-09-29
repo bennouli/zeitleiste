@@ -7,8 +7,7 @@ const entriesDative = (count: number) => (count === 1 ? 'Eintrag' : 'Einträgen'
 export const de = {
     site: {
         name: APP_NAME,
-        description:
-            'Interaktive Zeitleiste: Russland und der Westen seit 1700',
+        description: `${APP_NAME}: Russland und der Westen seit 1700, eine interaktive Zeitleiste`,
         heading: `${APP_NAME}: Russland und der Westen`,
         postTitle: (title) => `${title} – ${APP_NAME}`,
     },
@@ -18,6 +17,7 @@ export const de = {
         back: 'Zur Zeitleiste',
     },
     timeline: {
+        regionLabel: 'Zeitleiste',
         help: 'Mit Plus und Minus zoomen, mit den Pfeiltasten links und rechts in der Zeit verschieben.',
         zoomIn: 'Hineinzoomen',
         zoomOut: 'Herauszoomen',

@@ -60,7 +60,7 @@ function renderTimeline(
             {...props}
         />
     )
-    const region = screen.getByRole('region', { name: 'Liniya' })
+    const region = screen.getByRole('region', { name: 'Zeitleiste' })
     return { ...utils, region, onOpenEntry }
 }
 

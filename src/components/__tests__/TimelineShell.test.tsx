@@ -27,7 +27,7 @@ vi.mock('@/components/timeline/Timeline', () => ({
     }: TimelineProps) => (
         <section
             role="region"
-            aria-label="Liniya"
+            aria-label="Zeitleiste"
             tabIndex={0}
             data-testid="timeline"
             data-collapsed={String(collapsed)}
@@ -302,7 +302,7 @@ describe('TimelineShell', () => {
         rerenderAt('/de/post/oktoberrevolution', okt)
         const entriesWithoutOkt = entries.filter((e) => e.id !== okt.id)
         rerenderAt('/de', null, entriesWithoutOkt)
-        expect(screen.getByRole('region', { name: 'Liniya' })).toHaveFocus()
+        expect(screen.getByRole('region', { name: 'Zeitleiste' })).toHaveFocus()
     })
 
     it('moves focus to the post heading when a post opens from the timeline', async () => {
