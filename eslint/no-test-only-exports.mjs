@@ -1,7 +1,7 @@
 import { readdirSync, readFileSync, statSync } from 'node:fs'
 import { dirname, join, resolve, sep } from 'node:path'
 
-const SOURCE_EXTENSIONS = ['.ts', '.tsx']
+const SOURCE_EXTENSIONS = ['.ts', '.tsx', '.js']
 const COMMENT_PATTERN = /\/\*[\s\S]*?\*\/|(^|[^:'"`])\/\/.*$/gm
 const IMPORT_PATTERN =
     /(?:import|export)\s+(?:type\s+)?(?:(\w+)\s*,?\s*)?(?:\{([^}]*)\}|(\*\s+as\s+\w+|\*))?\s*from\s*['"]([^'"]+)['"]|import\(\s*['"]([^'"]+)['"]\s*\)/g

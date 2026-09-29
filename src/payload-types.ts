@@ -133,6 +133,12 @@ export interface UserAuthOperations {
  */
 export interface User {
   id: number;
+  /**
+   * Das Passwort beim Anlegen ist nur ein Platzhalter: Wer eingeladen wird, legt über den Link in der Einladung ein eigenes fest. Bis dahin ist keine Anmeldung möglich.
+   */
+  role: 'admin' | 'editor';
+  invitedAt?: string | null;
+  invitationAcceptedAt?: string | null;
   updatedAt: string;
   createdAt: string;
   email: string;
@@ -342,6 +348,9 @@ export interface PayloadMigration {
  * via the `definition` "users_select".
  */
 export interface UsersSelect<T extends boolean = true> {
+  role?: T;
+  invitedAt?: T;
+  invitationAcceptedAt?: T;
   updatedAt?: T;
   createdAt?: T;
   email?: T;

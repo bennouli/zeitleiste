@@ -9,6 +9,7 @@ import { Posts } from './collections/Posts'
 import { Subjects } from './collections/Subjects'
 import { Tags } from './collections/Tags'
 import { Users } from './collections/Users'
+import { deploymentOrigins } from './deployment'
 import { emailAdapter } from './email'
 
 const PayloadEnv = Schema.Struct({
@@ -17,9 +18,12 @@ const PayloadEnv = Schema.Struct({
 })
 
 const payloadEnv = Schema.decodeUnknownSync(PayloadEnv)(process.env)
+const { serverURL, cookieOrigins } = deploymentOrigins(process.env)
 const dirname = path.dirname(fileURLToPath(import.meta.url))
 
 export default buildConfig({
+    serverURL,
+    csrf: [...cookieOrigins],
     admin: {
         user: Users.slug,
         importMap: {
