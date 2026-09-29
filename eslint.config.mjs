@@ -65,6 +65,24 @@ const eslintConfig = defineConfig([
         },
     },
     {
+        files: ['src/app/**/*.{ts,tsx}', 'src/components/**/*.{ts,tsx}'],
+        ignores: TESTS,
+        rules: {
+            'no-restricted-imports': [
+                'error',
+                {
+                    patterns: [
+                        {
+                            group: ['@/data/entries', '**/data/entries'],
+                            message:
+                                'The site reads entries from the content management (@/lib/entries); the sample file only feeds the seed and the tests.',
+                        },
+                    ],
+                },
+            ],
+        },
+    },
+    {
         files: ['src/lib/**/*.ts'],
         ignores: TESTS,
         rules: {

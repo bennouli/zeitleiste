@@ -164,6 +164,7 @@ const createEntry = Effect.fn('createEntry')(function* (
             collection: 'entries',
             locale: LOCALE,
             req,
+            context: { disableRevalidate: true },
             data: {
                 ...seedEntry.fields,
                 tags: seedEntry.tagNames.map((name) => tagIds.get(name)!),
@@ -204,6 +205,7 @@ function createPost(payload: Payload, req: Transaction, seedEntry: SeedEntry) {
             collection: 'posts',
             locale: LOCALE,
             req,
+            context: { disableRevalidate: true },
             data: { body },
         })
     ).pipe(Effect.map((post) => post.id))
@@ -228,6 +230,7 @@ const linkPartOf = Effect.fn('linkPartOf')(function* (
                             id: createdEntryIds.get(part.fields.slug)!,
                             locale: LOCALE,
                             req,
+                            context: { disableRevalidate: true },
                             data: { partOf },
                         })
                 )
