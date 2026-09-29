@@ -11,7 +11,7 @@ export function slugify(text: string): string {
         .toLowerCase()
         .replace(/[äöüß]/g, (letter) => GERMAN_LETTERS[letter] ?? letter)
         .normalize('NFKD')
-        .replace(/[̀-ͯ]/g, '')
+        .replace(/\p{M}/gu, '')
         .replace(/[^a-z0-9]+/g, '-')
         .replace(/^-+|-+$/g, '')
 }

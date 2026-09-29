@@ -18,8 +18,7 @@ export function slugField(source: string): TextField {
         },
         hooks: {
             beforeValidate: [
-                ({ value, data }) =>
-                    value || slugify(String(data?.[source] ?? '')) || value,
+                ({ value, data }) => filledSlug(value, data?.[source]),
             ],
         },
         validate: (value, args) =>
@@ -28,3 +27,12 @@ export function slugField(source: string): TextField {
                 : text(value, args),
     }
 }
+
+/** The slug as given; while empty, the slug of the source text, if it has one. */
+function filledSlug(slug: unknown, sourceText: unknown): unknown {
+    if (slug) return slug
+    const generated = typeof sourceText === 'string' ? slugify(sourceText) : ''
+    return generated || slug
+}
+
+export const PRIVATE_UNDER_TESTS = { filledSlug }

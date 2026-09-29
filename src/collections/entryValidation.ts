@@ -30,19 +30,18 @@ const FIRST_OF: Record<Exclude<Precision, 'day'>, string> = {
 }
 
 /**
- * A year precision needs 1 January, a month precision the first of a month:
- * a finer date would be dropped silently when the timeline renders it.
+ * A year precision needs 1 January, a month precision the first of a month.
  * A missing or malformed date or precision is left to the field's own check.
  */
 export function precisionProblem(
     date: unknown,
     precision: unknown
 ): string | undefined {
-    const day = calendarDate(date)
+    const calendar = calendarDate(date)
     const unit = precisionFrom(precision)
-    if (!day || !unit || unit === 'day') return undefined
+    if (!calendar || !unit || unit === 'day') return undefined
     const coarserThanDate =
-        day.day !== 1 || (unit === 'year' && day.month !== 1)
+        calendar.day !== 1 || (unit === 'year' && calendar.month !== 1)
     return coarserThanDate ? FIRST_OF[unit] : undefined
 }
 
@@ -83,12 +82,12 @@ function precisionFrom(value: unknown): Precision | undefined {
 
 /** The date cut to its precision; day precision when none is given yet. */
 function toHDate(date: unknown, precision: unknown): HDate | undefined {
-    const day = calendarDate(date)
-    if (!day) return undefined
+    const calendar = calendarDate(date)
+    if (!calendar) return undefined
     const unit = precisionFrom(precision) ?? 'day'
-    if (unit === 'year') return { year: day.year }
-    if (unit === 'month') return { year: day.year, month: day.month }
-    return day
+    if (unit === 'year') return { year: calendar.year }
+    if (unit === 'month') return { year: calendar.year, month: calendar.month }
+    return calendar
 }
 
 /** An entry cannot be part of itself; `value` is the id or the populated document. */
