@@ -5,6 +5,7 @@ import path from 'path'
 import { buildConfig } from 'payload'
 import { fileURLToPath } from 'url'
 import { Entries } from './collections/Entries'
+import { Posts } from './collections/Posts'
 import { Subjects } from './collections/Subjects'
 import { Tags } from './collections/Tags'
 import { Users } from './collections/Users'
@@ -24,7 +25,7 @@ export default buildConfig({
             baseDir: path.resolve(dirname),
         },
     },
-    collections: [Users, Entries, Subjects, Tags],
+    collections: [Users, Entries, Posts, Subjects, Tags],
     localization: {
         locales: ['de', 'en'],
         defaultLocale: 'de',

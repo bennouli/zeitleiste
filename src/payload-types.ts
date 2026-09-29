@@ -69,6 +69,7 @@ export interface Config {
   collections: {
     users: User;
     entries: Entry;
+    posts: Post;
     subjects: Subject;
     tags: Tag;
     'payload-kv': PayloadKv;
@@ -76,10 +77,15 @@ export interface Config {
     'payload-preferences': PayloadPreference;
     'payload-migrations': PayloadMigration;
   };
-  collectionsJoins: {};
+  collectionsJoins: {
+    posts: {
+      entry: 'entries';
+    };
+  };
   collectionsSelect: {
     users: UsersSelect<false> | UsersSelect<true>;
     entries: EntriesSelect<false> | EntriesSelect<true>;
+    posts: PostsSelect<false> | PostsSelect<true>;
     subjects: SubjectsSelect<false> | SubjectsSelect<true>;
     tags: TagsSelect<false> | TagsSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
@@ -179,6 +185,7 @@ export interface Entry {
   subject?: (number | null) | Subject;
   tags?: (number | Tag)[] | null;
   partOf?: (number | null) | Entry;
+  post?: (number | null) | Post;
   updatedAt: string;
   createdAt: string;
   _status?: ('draft' | 'published') | null;
@@ -217,6 +224,35 @@ export interface Tag {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "posts".
+ */
+export interface Post {
+  id: number;
+  body: {
+    root: {
+      type: string;
+      children: {
+        type: any;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  };
+  entry?: {
+    docs?: (number | Entry)[];
+    hasNextPage?: boolean;
+    totalDocs?: number;
+  };
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-kv".
  */
 export interface PayloadKv {
@@ -246,6 +282,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'entries';
         value: number | Entry;
+      } | null)
+    | ({
+        relationTo: 'posts';
+        value: number | Post;
       } | null)
     | ({
         relationTo: 'subjects';
@@ -342,9 +382,20 @@ export interface EntriesSelect<T extends boolean = true> {
   subject?: T;
   tags?: T;
   partOf?: T;
+  post?: T;
   updatedAt?: T;
   createdAt?: T;
   _status?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "posts_select".
+ */
+export interface PostsSelect<T extends boolean = true> {
+  body?: T;
+  entry?: T;
+  updatedAt?: T;
+  createdAt?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
