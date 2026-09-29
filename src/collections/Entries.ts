@@ -23,6 +23,7 @@ import {
     type EntryDateParts,
     type Side,
 } from './entryDates'
+import { revalidateEntryChange, revalidateEntryDelete } from './revalidate'
 import { germanSlugField } from './slugField'
 
 const SIDE_LABEL: Record<Side, string> = { start: 'Beginn', end: 'Ende' }
@@ -112,6 +113,10 @@ export const Entries: CollectionConfig = {
     },
     versions: {
         drafts: true,
+    },
+    hooks: {
+        afterChange: [revalidateEntryChange],
+        afterDelete: [revalidateEntryDelete],
     },
     fields: [
         {

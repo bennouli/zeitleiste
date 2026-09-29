@@ -12,6 +12,7 @@ import {
     UnorderedListFeature,
 } from '@payloadcms/richtext-lexical'
 import type { CollectionConfig } from 'payload'
+import { revalidatePostChange, revalidatePostDelete } from './revalidate'
 
 const postEditor = lexicalEditor({
     features: [
@@ -36,6 +37,10 @@ export const Posts: CollectionConfig = {
     },
     access: {
         read: ({ req }) => Boolean(req.user),
+    },
+    hooks: {
+        afterChange: [revalidatePostChange],
+        afterDelete: [revalidatePostDelete],
     },
     fields: [
         {
