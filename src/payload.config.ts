@@ -8,6 +8,7 @@ import { Entries } from './collections/Entries'
 import { Subjects } from './collections/Subjects'
 import { Tags } from './collections/Tags'
 import { Users } from './collections/Users'
+import { emailAdapter } from './email'
 
 const PayloadEnv = Schema.Struct({
     DATABASE_URL: Schema.NonEmptyString,
@@ -30,6 +31,7 @@ export default buildConfig({
         defaultLocale: 'de',
     },
     editor: lexicalEditor(),
+    email: emailAdapter(process.env),
     secret: payloadEnv.PAYLOAD_SECRET,
     typescript: {
         outputFile: path.resolve(dirname, 'payload-types.ts'),
