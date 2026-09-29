@@ -15,6 +15,8 @@ export type PlaceableItem = {
     x1: number
     /** Chronological position, e.g. the anchor time; items are placed in this order. */
     order: number
+    /** Side the default strategy offers first; without one it alternates. */
+    preferredSide?: Side
 }
 
 export type PlacementOptions = {
@@ -26,7 +28,7 @@ export type PlacementOptions = {
     blocked?: readonly BlockedInterval[]
     /** Items an earlier call placed, e.g. group stacks; they count as preceding items. */
     placedElsewhere?: readonly PlacedSide[]
-    /** Candidate order for an item without a usable previous slot, default alternateSides. */
+    /** Candidate order for an item without a usable previous slot, default preferredSideFirst. */
     sideStrategy?: SideStrategy
 }
 
@@ -130,7 +132,15 @@ function candidateSlots(maxLevels: number, side: Side): Slot[] {
     )
 }
 
-/** Default strategy: the side opposite the preceding item (above for the first), then the other. */
+/** Default strategy: the item's preferred side, then the other; alternateSides for an item without one. */
+function preferredSideFirst(request: SlotRequest): Slot[] {
+    const { item, maxLevels } = request
+    return item.preferredSide === undefined
+        ? alternateSides(request)
+        : candidateSlots(maxLevels, item.preferredSide)
+}
+
+/** The side opposite the preceding item (above for the first), then the other. */
 function alternateSides({ precedingSide, maxLevels }: SlotRequest): Slot[] {
     const firstSide =
         precedingSide === undefined ? 'above' : oppositeOf(precedingSide)
@@ -167,7 +177,7 @@ function cloneSlot(slot: Slot): Slot {
  * Places items in chronological order. `previous` slots are kept when the item still fits there
  * (hysteresis); if not, the item first tries the other rows on its previous side before changing
  * sides. Only an item without a usable previous slot gets its candidate order from
- * `options.sideStrategy` (default alternateSides).
+ * `options.sideStrategy` (default preferredSideFirst).
  */
 export function placeItems(
     items: readonly PlaceableItem[],
@@ -180,7 +190,7 @@ export function placeItems(
         Math.max(0, Math.floor(options.maxLevels ?? DEFAULT_MAX_LEVELS))
     )
     const rows = buildRows(maxLevels, gap, options.blocked ?? [])
-    const sideStrategy = options.sideStrategy ?? alternateSides
+    const sideStrategy = options.sideStrategy ?? preferredSideFirst
     const placedElsewhere = [...(options.placedElsewhere ?? [])].sort(
         (a, b) => a.order - b.order
     )
@@ -256,5 +266,6 @@ export const PRIVATE_UNDER_TESTS = {
     usedLevels,
     candidateSlots,
     alternateSides,
+    preferredSideFirst,
     buildRows,
 }

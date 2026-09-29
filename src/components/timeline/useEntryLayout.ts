@@ -9,11 +9,13 @@ import {
     type ClusterNode,
 } from '@/lib/cluster'
 import type { Entry } from '@/lib/entry'
+import { compareIds } from '@/lib/order'
 import {
     placeItems,
     type BlockedInterval,
     type PlaceableItem,
     type PlacedSide,
+    type Side,
     type Slot,
 } from '@/lib/placement'
 import { entryAnchor } from '@/lib/time'
@@ -87,15 +89,33 @@ export function useEntryLayout(
         [entries]
     )
     const parents = useMemo(() => parentMap(tree), [tree])
+    const preferredSides = useMemo(() => alternatingSides(entries), [entries])
 
     const [cache, setCache] = useState<LayoutCache | null>(null)
     if (cache && cache.key === key && cache.tree === tree) return cache.layout
     const previous = cache
         ? new Map(cache.layout.items.map((i) => [i.id, i.slot]))
         : null
-    const layout = layoutEntries(entries, geometry, tree, parents, previous)
+    const layout = layoutEntries(
+        entries,
+        geometry,
+        tree,
+        parents,
+        preferredSides,
+        previous
+    )
     setCache({ key, tree, layout })
     return layout
+}
+
+/** Every entry's side when all of them alternate in chronological order, the first above. */
+function alternatingSides(entries: readonly Entry[]): Map<string, Side> {
+    const chronological = entries
+        .map((e) => ({ id: e.id, t: entryAnchor(e) }))
+        .sort((a, b) => a.t - b.t || compareIds(a.id, b.id))
+    return new Map(
+        chronological.map(({ id }, i) => [id, i % 2 === 0 ? 'above' : 'below'])
+    )
 }
 
 /**
@@ -104,13 +124,16 @@ export function useEntryLayout(
  * Groups are placed first and passed on as preceding items, so placeItems chooses each card's side
  * knowing the groups around it; only cards that fit nowhere are merged into groups by climbing the
  * cluster tree, and a cluster that can't be merged further is shown as a bare marker on the axis.
- * `previous` slots are kept where they still fit, so cards don't flip sides needlessly.
+ * `previous` slots are kept where they still fit, else the card tries the rest of its previous side.
+ * A card without a previous slot first tries its side in `preferredSides`, which does not depend
+ * on what else is visible.
  */
 function layoutEntries(
     entries: Entry[],
     geometry: LayoutGeometry,
     tree: Cluster | null,
     parents: ReadonlyMap<string, ClusterNode>,
+    preferredSides: ReadonlyMap<string, Side>,
     previous: ReadonlyMap<string, Slot> | null
 ): EntryLayout {
     if (entries.length === 0 || geometry.width <= 0)
@@ -122,7 +145,14 @@ function layoutEntries(
     // Every round either shrinks the cut or turns a cluster into a bare marker, so this terminates.
     const lastRound = 2 * entries.length + 1
     for (let round = 0; round <= lastRound; round++) {
-        const placement = placeCut(cut, markerOnly, geometry, byId, previous)
+        const placement = placeCut(
+            cut,
+            markerOnly,
+            geometry,
+            byId,
+            preferredSides,
+            previous
+        )
         const overflow = new Set([
             ...placement.overflow,
             ...markerCollisions(cut, markerOnly, geometry.timeToX),
@@ -152,6 +182,7 @@ function placeCut(
     markerOnly: ReadonlySet<string>,
     geometry: LayoutGeometry,
     byId: ReadonlyMap<string, Entry>,
+    preferredSides: ReadonlyMap<string, Side>,
     previous: ReadonlyMap<string, Slot> | null
 ): CutPlacement {
     const { timeToX, maxLevels, groupLevels, gapPx } = geometry
@@ -168,6 +199,7 @@ function placeCut(
             x0: extent.x0,
             x1: extent.x1,
             order: cluster.t,
+            preferredSide: preferredSides.get(cluster.id),
         }
     }
     const placeable = cut.filter((cluster) => !markerOnly.has(cluster.id))
@@ -334,6 +366,7 @@ function mergeInto(cut: readonly Cluster[], parent: ClusterNode): Cluster[] {
 }
 
 export const PRIVATE_UNDER_TESTS = {
+    alternatingSides,
     layoutEntries,
     parentMap,
     markerCollisions,
