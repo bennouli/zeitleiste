@@ -4,14 +4,13 @@ import {
     MS_PER_DAY,
     MS_PER_YEAR,
     PRIVATE_UNDER_TESTS,
-    endOf,
     entryAnchor,
     entryRange,
     startOf,
     todayMs,
 } from '../time'
 
-const { midOf, compareHDate } = PRIVATE_UNDER_TESTS
+const { endOf, midOf, compareHDate } = PRIVATE_UNDER_TESTS
 
 const TODAY = Date.UTC(2026, 8, 27)
 

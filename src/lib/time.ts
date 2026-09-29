@@ -15,7 +15,7 @@ export function startOf(d: HDate): number {
 }
 
 /** End (exclusive) of that unit = start of the next unit, e.g. {1917,11} → 1 Dec 1917. */
-export function endOf(d: HDate): number {
+function endOf(d: HDate): number {
     switch (precisionOf(d)) {
         case 'year':
             return utc(d.year + 1, 0, 1)
@@ -56,6 +56,7 @@ function compareHDate(a: HDate, b: HDate): number {
 }
 
 export const PRIVATE_UNDER_TESTS = {
+    endOf,
     midOf,
     compareHDate,
 }

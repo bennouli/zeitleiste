@@ -11,6 +11,7 @@ import type {
 import { checkbox, number, relationship } from 'payload/shared'
 import {
     datePartsOf,
+    datePartsOnSave,
     dayProblem,
     endAtOf,
     endBeforeStartProblem,
@@ -83,7 +84,9 @@ function derivedTimestamp(
         admin: { hidden: true },
         hooks: {
             beforeChange: [
-                ({ siblingData }) => derive(datePartsOf(siblingData)) ?? null,
+                ({ previousSiblingDoc, siblingData }) =>
+                    derive(datePartsOnSave(previousSiblingDoc, siblingData)) ??
+                    null,
             ],
         },
     }

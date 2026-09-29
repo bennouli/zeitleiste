@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
     datePartsOf,
+    datePartsOnSave,
     dayProblem,
     endAtOf,
     endBeforeStartProblem,
@@ -20,14 +21,17 @@ const hitlerStalinPakt: EntryDateParts = {
 
 describe('wholeNumberProblem', () => {
     it('accepts whole numbers and leaves empty values to required', () => {
-        expect(wholeNumberProblem(1917)).toBeUndefined()
+        const year = 1917
+        expect(wholeNumberProblem(year)).toBeUndefined()
         expect(wholeNumberProblem(null)).toBeUndefined()
         expect(wholeNumberProblem(undefined)).toBeUndefined()
     })
 
     it('rejects fractions and non-numbers', () => {
-        expect(wholeNumberProblem(1917.5)).toMatch(/ganze Zahlen/)
-        expect(wholeNumberProblem('1917')).toMatch(/ganze Zahlen/)
+        const fraction = 1917.5
+        const text = '1917'
+        expect(wholeNumberProblem(fraction)).toMatch(/ganze Zahlen/)
+        expect(wholeNumberProblem(text)).toMatch(/ganze Zahlen/)
     })
 })
 
@@ -174,22 +178,16 @@ describe('startAtOf / endAtOf', () => {
         expect(startAtOf(hitlerStalinPakt)).toBe('1939-08-23T00:00:00.000Z')
     })
 
-    it('derives the end as the exclusive end of its unit, as the timeline draws it', () => {
+    it('derives the end from the first instant of its unit, missing month or day as 1', () => {
         const yearEnd: EntryDateParts = { startYear: 1914, endYear: 1918 }
-        const monthEnd: EntryDateParts = {
-            startYear: 1812,
-            endYear: 1812,
-            endMonth: 12,
-        }
         const dayEnd: EntryDateParts = {
             startYear: 1939,
             endYear: 1945,
             endMonth: 5,
             endDay: 8,
         }
-        expect(endAtOf(yearEnd)).toBe('1919-01-01T00:00:00.000Z')
-        expect(endAtOf(monthEnd)).toBe('1813-01-01T00:00:00.000Z')
-        expect(endAtOf(dayEnd)).toBe('1945-05-09T00:00:00.000Z')
+        expect(endAtOf(yearEnd)).toBe('1918-01-01T00:00:00.000Z')
+        expect(endAtOf(dayEnd)).toBe('1945-05-08T00:00:00.000Z')
     })
 
     it('keeps years below 100 as given', () => {
@@ -225,7 +223,36 @@ describe('partOfProblem', () => {
 
 describe('datePartsOf', () => {
     it('reads no parts from sibling data that is not an object', () => {
+        const text = '1917'
         expect(datePartsOf(null)).toEqual({})
-        expect(datePartsOf('1917')).toEqual({})
+        expect(datePartsOf(text)).toEqual({})
+    })
+})
+
+describe('datePartsOnSave', () => {
+    const stored: EntryDateParts = {
+        startYear: 1939,
+        startMonth: 9,
+        startDay: 1,
+        endYear: 1945,
+    }
+
+    it('keeps the stored parts when an update sends none, so the timestamps survive', () => {
+        const titleOnly = { title: 'Zweiter Weltkrieg' }
+        const parts = datePartsOnSave(stored, titleOnly)
+        expect(startAtOf(parts)).toBe('1939-09-01T00:00:00.000Z')
+        expect(endAtOf(parts)).toBe('1945-01-01T00:00:00.000Z')
+    })
+
+    it('lets sent parts override, and a part sent as null clear, the stored one', () => {
+        const moved = { startDay: 3, endYear: null }
+        const parts = datePartsOnSave(stored, moved)
+        expect(startAtOf(parts)).toBe('1939-09-03T00:00:00.000Z')
+        expect(endAtOf(parts)).toBeUndefined()
+    })
+
+    it('reads only the request on create, when nothing is stored', () => {
+        const created = { startYear: 1740 }
+        expect(datePartsOnSave(undefined, created)).toEqual(created)
     })
 })

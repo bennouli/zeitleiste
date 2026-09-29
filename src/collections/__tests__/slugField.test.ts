@@ -10,8 +10,10 @@ describe('slugOf', () => {
     })
 
     it('has no slug for a missing, non-text or empty source', () => {
+        const year = 1917
+        const dashOnly = ' – '
         expect(slugOf(undefined)).toBeUndefined()
-        expect(slugOf(1917)).toBeUndefined()
-        expect(slugOf(' – ')).toBeUndefined()
+        expect(slugOf(year)).toBeUndefined()
+        expect(slugOf(dashOnly)).toBeUndefined()
     })
 })

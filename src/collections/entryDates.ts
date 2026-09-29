@@ -1,5 +1,5 @@
 import { daysInMonth, endsBeforeStart, type HDate } from '@/lib/entry'
-import { endOf, startOf } from '@/lib/time'
+import { startOf } from '@/lib/time'
 
 /**
  * The date parts of an entry as a validator or hook receives them: raw input
@@ -22,6 +22,21 @@ export function datePartsOf(siblingData: unknown): EntryDateParts {
     return typeof siblingData === 'object' && siblingData !== null
         ? siblingData
         : {}
+}
+
+/**
+ * The date parts a save ends with: the stored parts, overridden by what the
+ * request sends. An update that leaves out the parts keeps the stored ones;
+ * a part sent as null clears it.
+ */
+export function datePartsOnSave(
+    storedSiblingDoc: unknown,
+    incomingSiblingData: unknown
+): EntryDateParts {
+    return {
+        ...datePartsOf(storedSiblingDoc),
+        ...datePartsOf(incomingSiblingData),
+    }
 }
 
 /** Year, month or day must be a whole number; an empty value is left to `required`. */
@@ -79,14 +94,11 @@ export function startAtOf(parts: EntryDateParts): string | undefined {
     return start && new Date(startOf(start)).toISOString()
 }
 
-/**
- * Exclusive end of the entry's last unit as an ISO timestamp, the same instant
- * the timeline draws a span to; undefined for a point in time or an ongoing entry.
- */
+/** Start of the entry's last unit as an ISO timestamp, missing month or day as 1; undefined for a point in time or an ongoing entry. */
 export function endAtOf(parts: EntryDateParts): string | undefined {
     const end = hDateOf(parts, 'end')
     return end && parts.ongoing !== true
-        ? new Date(endOf(end)).toISOString()
+        ? new Date(startOf(end)).toISOString()
         : undefined
 }
 
