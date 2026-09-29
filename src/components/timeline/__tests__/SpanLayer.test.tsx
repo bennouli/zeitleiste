@@ -108,16 +108,16 @@ describe('SpanLayer', () => {
             boxOf(barEl(container, id))
         )
         expect(boxes.map((b) => [b.top, b.bottom - b.top])).toEqual([
-            [-3, 7],
-            [8, 3],
-            [14, 3],
+            [-4, 9],
+            [7, 6],
+            [15, 6],
         ])
     })
 
     it('draws a bar in its frozen lane', () => {
         const frozen = new Map([['kalter-krieg', 4]])
         const { container } = renderLayer({ lanes: frozen })
-        expect(px(barEl(container, 'kalter-krieg').style.top)).toBe(26)
+        expect(px(barEl(container, 'kalter-krieg').style.top)).toBe(31)
     })
 
     it('keeps overlapping spans in separate lanes without touching', () => {
@@ -143,11 +143,11 @@ describe('SpanLayer', () => {
         const { container } = renderLayer({ spans: mixed })
         expect(barEl(container, 'laufend')).toHaveClass(
             'bg-linear-to-r',
-            'from-fg/35',
+            'from-bar',
             'from-60%',
-            'to-fg/10'
+            'to-bar-faint'
         )
-        expect(barEl(container, 'vorbei')).toHaveClass('bg-fg/35')
+        expect(barEl(container, 'vorbei')).toHaveClass('bg-bar')
         expect(barEl(container, 'vorbei')).not.toHaveClass('bg-linear-to-r')
     })
 

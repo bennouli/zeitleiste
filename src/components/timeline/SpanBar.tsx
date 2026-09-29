@@ -53,8 +53,8 @@ export function SpanBarView({
                     'absolute',
                     'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus',
                     ongoing
-                        ? 'bg-linear-to-r from-fg/35 from-60% to-fg/10 hover:from-fg/55 focus-visible:from-fg/55'
-                        : 'bg-fg/35 hover:bg-fg/55 focus-visible:bg-fg/55'
+                        ? 'bg-linear-to-r from-bar from-60% to-bar-faint hover:from-bar-strong focus-visible:from-bar-strong'
+                        : 'bg-bar hover:bg-bar-strong focus-visible:bg-bar-strong'
                 )}
                 style={{
                     left: bar.x0,

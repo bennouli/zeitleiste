@@ -107,6 +107,9 @@
     --fg-muted: var(--ink-muted);
     --fg-soft: var(--ink-soft);
     --border: oklch(from var(--fg) l c h / 25%);
+    --bar: oklch(from var(--fg) l c h / 35%);
+    --bar-strong: oklch(from var(--fg) l c h / 55%);
+    --bar-faint: oklch(from var(--fg) l c h / 10%);
     --accent: var(--ink);
     --accent-fg: var(--paper);
     --russia: var(--ink);
@@ -122,6 +125,9 @@
         --fg: var(--ink-dark);
         --fg-muted: var(--ink-muted-dark);
         --fg-soft: var(--ink-soft-dark);
+        --bar: oklch(from var(--fg) l c h / 55%);
+        --bar-strong: oklch(from var(--fg) l c h / 75%);
+        --bar-faint: oklch(from var(--fg) l c h / 15%);
         --accent: var(--ink-dark);
         --accent-fg: var(--paper-dark);
         --russia: var(--ink-dark);
@@ -141,6 +147,9 @@
     --color-fg-muted: var(--fg-muted);
     --color-fg-soft: var(--fg-soft);
     --color-border: var(--border);
+    --color-bar: var(--bar);
+    --color-bar-strong: var(--bar-strong);
+    --color-bar-faint: var(--bar-faint);
     --color-accent: var(--accent);
     --color-accent-fg: var(--accent-fg);
     --color-russia: var(--russia);

@@ -39,11 +39,11 @@ test('spans lie on the axis at every zoom; nothing is reserved below it', async 
         const axis = await axisLineBox(page)
         const axisCentre = axis.y + axis.height / 2
         const boxes = await barBoxes(page)
-        const onAxis = boxes.filter((b) => b.height === 7)
+        const onAxis = boxes.filter((b) => b.height === 9)
         expect(onAxis.length).toBeGreaterThan(0)
         for (const b of onAxis) expect(b.y + b.height / 2).toBe(axisCentre)
         for (const b of boxes) {
-            expect(b.y).toBeGreaterThanOrEqual(axisCentre - 3.5)
+            expect(b.y).toBeGreaterThanOrEqual(axisCentre - 4.5)
             expect(b.y).toBeLessThan(axis.y + 60)
         }
         await zoomIn(page)

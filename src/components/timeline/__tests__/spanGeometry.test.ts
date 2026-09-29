@@ -119,15 +119,15 @@ describe('isOngoing', () => {
 })
 
 describe('laneBox', () => {
-    it('centres lane 0 (7 px) on the 1 px axis line', () => {
-        expect(laneBox(0)).toEqual({ top: -3, height: 7 })
+    it('centres lane 0 (9 px) on the 1 px axis line', () => {
+        expect(laneBox(0)).toEqual({ top: -4, height: 9 })
     })
 
-    it('hangs lane n ≥ 1 (3 px) at 8 px + (n − 1) · 6 px below the axis line', () => {
+    it('hangs lane n ≥ 1 (6 px) at 7 px + (n − 1) · 8 px below the axis line', () => {
         expect([1, 2, 3].map(laneBox)).toEqual([
-            { top: 8, height: 3 },
-            { top: 14, height: 3 },
-            { top: 20, height: 3 },
+            { top: 7, height: 6 },
+            { top: 15, height: 6 },
+            { top: 23, height: 6 },
         ])
     })
 
