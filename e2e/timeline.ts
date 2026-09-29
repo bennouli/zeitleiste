@@ -17,7 +17,7 @@ export function timelineRegion(page: Page): Locator {
     return page.getByRole('region', { name: 'Zeitleiste' })
 }
 
-export async function openTimeline(page: Page, path = '/') {
+export async function openTimeline(page: Page, path = '/de') {
     await page.goto(path)
     const region = timelineRegion(page)
     await expect(region).toHaveAttribute('data-view-start', /\d/)

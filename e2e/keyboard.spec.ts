@@ -142,13 +142,13 @@ test('Enter opens a post, focus lands in it, Escape returns to the start page an
     expect(postCard?.name).toMatch(/, Beitrag$/)
     const id = postCard!.ids[0]!
     await page.keyboard.press('Enter')
-    await expect(page).toHaveURL(new RegExp(`/post/${id}$`))
+    await expect(page).toHaveURL(new RegExp(`/de/post/${id}$`))
     const heading = page.getByRole('article').getByRole('heading', { level: 2 })
     await expect(heading).toBeFocused()
     await expect(heading).toHaveText(entries.find((e) => e.id === id)!.title)
 
     await page.keyboard.press('Escape')
-    await expect(page).toHaveURL(/\/$/)
+    await expect(page).toHaveURL(/\/de$/)
     await expect(page.getByRole('article')).toHaveCount(0)
     await expect.poll(async () => (await describeFocus(page)).ids).toContain(id)
 })

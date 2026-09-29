@@ -16,27 +16,43 @@ vi.mock('next/navigation', () => ({
     },
 }))
 
+const loadPost = vi.hoisted(() => vi.fn())
+
 vi.mock('@/lib/entries', () => ({
     loadEntries: () => Effect.succeed(entries),
-    loadPost: (slug: string) => Effect.succeed(findEntry(entries, slug)),
+    loadPost,
 }))
 
-const params = (slug: string) => ({ params: Promise.resolve({ slug }) })
+loadPost.mockImplementation((slug: string) =>
+    Effect.succeed(findEntry(entries, slug))
+)
+
+const params = (slug: string, lang = 'de') => ({
+    params: Promise.resolve({ lang, slug }),
+})
 const noPost = entries.find((e) => !e.post)!
 
 describe('post page', () => {
     it('prebuilds the published posts and renders later ones on request', async () => {
-        expect(await generateStaticParams()).toEqual(
+        const localeParams = { params: { lang: 'en' } }
+        expect(await generateStaticParams(localeParams)).toEqual(
             postSlugs(entries).map((slug) => ({ slug }))
         )
         expect(dynamicParams).toBe(true)
     })
 
-    it('renders the post', async () => {
-        render(await PostPage(params('oktoberrevolution')))
+    it('renders the post in the locale of the address', async () => {
+        const englishParams = params('oktoberrevolution', 'en')
+        render(await PostPage(englishParams))
         expect(
             screen.getByRole('heading', { level: 2, name: 'Oktoberrevolution' })
         ).toBeInTheDocument()
+        expect(loadPost).toHaveBeenLastCalledWith('oktoberrevolution', 'en')
+    })
+
+    it('is a 404 under an address without a known locale', async () => {
+        const unknownParams = params('oktoberrevolution', 'xx')
+        await expect(PostPage(unknownParams)).rejects.toThrow('NEXT_NOT_FOUND')
     })
 
     it('is a 404 for unknown slugs and entries without a post', async () => {

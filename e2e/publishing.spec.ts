@@ -123,7 +123,7 @@ test('an unpublished entry leaves the timeline and its post is not found', async
     })
     const title = `E2E Zurückgezogen ${RUN}`
     const entry = await createDoc(request, 'entries', entryData(title, post.id))
-    const postPath = `/post/${entry.slug}`
+    const postPath = `/de/post/${entry.slug}`
     const shown = await page.goto(postPath)
     expect(shown?.status()).toBe(200)
     await expect(

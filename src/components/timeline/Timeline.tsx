@@ -4,7 +4,15 @@ import { isSpan, type Entry } from '@/lib/entry'
 import { entryAnchor, MS_PER_YEAR, startOf, todayMs } from '@/lib/time'
 import { msPerPx, timeToX, type Bounds } from '@/lib/viewport'
 import clsx from 'clsx'
-import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
+import {
+    useCallback,
+    useEffect,
+    useId,
+    useMemo,
+    useRef,
+    useState,
+    type ReactNode,
+} from 'react'
 import { Axis } from './Axis'
 import { bandGeometry, SLOT_HEIGHT_PX } from './bandGeometry'
 import { CardLayer } from './CardLayer'
@@ -36,6 +44,8 @@ export type TimelineProps = {
     /** Entry to center and highlight, e.g. the open post's entry. */
     focusEntryId: string | null
     onOpenEntry: (id: string) => void
+    /** Controls set in the top bar after the wordmark, such as the language switch. */
+    besideWordmark?: ReactNode
 }
 
 const HEIGHT_SETTLE_MS = COLLAPSE_ANIMATION_MS + 50
@@ -46,6 +56,7 @@ export function Timeline({
     collapsed,
     focusEntryId,
     onOpenEntry,
+    besideWordmark,
 }: TimelineProps) {
     const [today] = useState(todayMs)
     const { width, height: liveHeight, ref, elRef } = useElementSize()
@@ -193,12 +204,15 @@ export function Timeline({
                         <div data-layer="below" className="min-h-0 flex-1" />
                     </>
                 )}
-                <p
-                    aria-hidden="true"
-                    className="pointer-events-none absolute top-5.5 left-8 z-20 small-caps text-label-lg font-medium tracking-wordmark text-fg"
-                >
-                    Zeitleiste
-                </p>
+                <div className="pointer-events-none absolute top-5.5 left-8 z-20 flex items-baseline gap-4">
+                    <p
+                        aria-hidden="true"
+                        className="small-caps text-label-lg font-medium tracking-wordmark text-fg"
+                    >
+                        Zeitleiste
+                    </p>
+                    {besideWordmark}
+                </div>
                 <ZoomControls
                     canZoomIn={controls.canZoomIn}
                     canZoomOut={controls.canZoomOut}

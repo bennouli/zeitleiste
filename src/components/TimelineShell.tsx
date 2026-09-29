@@ -1,8 +1,11 @@
 'use client'
 
+import { useI18n } from '@/components/I18nContext'
+import { LanguageSwitch } from '@/components/LanguageSwitch'
 import { PostContext } from '@/components/PostContext'
 import { findFocusTarget } from '@/components/timeline/entryFocus'
 import { Timeline } from '@/components/timeline/Timeline'
+import { isStartPath, startHref } from '@/i18n/paths'
 import { isTypingTarget, prefersReducedMotion } from '@/lib/dom'
 import type { Entry } from '@/lib/entry'
 import { findEntry, postHref, slugFromPathname } from '@/lib/posts'
@@ -104,10 +107,11 @@ export function TimelineShell({
 }) {
     const pathname = usePathname()
     const router = useRouter()
+    const { locale } = useI18n()
     const pathSlug = slugFromPathname(pathname)
     const openSlug =
         pathSlug !== null && findEntry(entries, pathSlug) ? pathSlug : null
-    const isStartPage = !pathname || pathname === '/'
+    const isStartPage = isStartPath(pathname)
     const pageKey = openSlug ?? (isStartPage ? null : pathname)
 
     const postRef = useRef<HTMLDivElement>(null)
@@ -117,8 +121,8 @@ export function TimelineShell({
     const openerRef = useRef<Opener | null>(null)
 
     const close = useCallback(
-        () => router.push('/', { scroll: false }),
-        [router]
+        () => router.push(startHref(locale), { scroll: false }),
+        [router, locale]
     )
 
     const openEntry = useCallback(
@@ -126,9 +130,9 @@ export function TimelineShell({
             if (id === openSlug || !findEntry(entries, id)) return
             const focusedEl = focusedTimelineElement()
             if (focusedEl) openerRef.current = { el: focusedEl, id }
-            router.push(postHref(id), { scroll: false })
+            router.push(postHref(id, locale), { scroll: false })
         },
-        [entries, openSlug, router]
+        [entries, openSlug, router, locale]
     )
 
     useEffect(() => {
@@ -181,6 +185,7 @@ export function TimelineShell({
                     collapsed={pageKey !== null}
                     focusEntryId={openSlug}
                     onOpenEntry={openEntry}
+                    besideWordmark={<LanguageSwitch />}
                 />
                 <div id="post" ref={postRef}>
                     {children}

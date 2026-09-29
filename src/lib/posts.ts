@@ -1,3 +1,5 @@
+import type { Locale } from '@/i18n/locales'
+import { startHref } from '@/i18n/paths'
 import type { Entry } from './entry'
 
 /** Slugs (entry ids) of all entries that have a post. */
@@ -31,6 +33,6 @@ export function slugFromPathname(
 }
 
 /** The address of the post with this slug. */
-export function postHref(slug: string): string {
-    return `/post/${encodeURIComponent(slug)}`
+export function postHref(slug: string, locale: Locale): string {
+    return `${startHref(locale)}/post/${encodeURIComponent(slug)}`
 }

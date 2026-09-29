@@ -2,9 +2,9 @@ import { expect, test } from '@playwright/test'
 import { openTimeline } from './timeline'
 import { firstFamily, webFontFamily } from './webFont'
 
-const POST_PATH = '/post/oktoberrevolution'
+const POST_PATH = '/de/post/oktoberrevolution'
 
-const PAGES = ['/', POST_PATH] as const
+const PAGES = ['/de', POST_PATH] as const
 
 const FONT_DELAY_MS = 1000
 
@@ -25,7 +25,7 @@ const SERIF_ITALIC = {
 }
 
 const FONTS_BY_PAGE = [
-    { path: '/', fonts: [SERIF, SANS] },
+    { path: '/de', fonts: [SERIF, SANS] },
     { path: POST_PATH, fonts: [SERIF, SANS, SERIF_ITALIC] },
 ] as const
 

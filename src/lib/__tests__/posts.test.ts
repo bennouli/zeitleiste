@@ -71,8 +71,10 @@ describe('slugFromPathname', () => {
 })
 
 describe('postHref', () => {
-    it('builds the post address and round-trips', () => {
-        expect(postHref('oktoberrevolution')).toBe('/post/oktoberrevolution')
-        expect(slugFromPathname(postHref('a b'))).toBe('a b')
+    it('builds the post address under the locale and round-trips', () => {
+        expect(postHref('oktoberrevolution', 'en')).toBe(
+            '/en/post/oktoberrevolution'
+        )
+        expect(slugFromPathname(postHref('a b', 'de'))).toBe('a b')
     })
 })
