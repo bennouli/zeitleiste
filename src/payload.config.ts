@@ -4,6 +4,9 @@ import { Schema } from 'effect'
 import path from 'path'
 import { buildConfig } from 'payload'
 import { fileURLToPath } from 'url'
+import { Entries } from './collections/Entries'
+import { Subjects } from './collections/Subjects'
+import { Tags } from './collections/Tags'
 import { Users } from './collections/Users'
 
 const PayloadEnv = Schema.Struct({
@@ -21,7 +24,11 @@ export default buildConfig({
             baseDir: path.resolve(dirname),
         },
     },
-    collections: [Users],
+    collections: [Users, Entries, Subjects, Tags],
+    localization: {
+        locales: ['de', 'en'],
+        defaultLocale: 'de',
+    },
     editor: lexicalEditor(),
     secret: payloadEnv.PAYLOAD_SECRET,
     typescript: {
