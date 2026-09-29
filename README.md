@@ -25,6 +25,13 @@ pnpm dev
 The timeline runs at http://localhost:3000, the admin at http://localhost:3000/admin. On the first visit the admin asks you to create the
 first user.
 
+### Email
+
+Invitations and password resets go out through Scaleway Transactional Email over SMTP (`smtp.tem.scaleway.com`, port 587, STARTTLS).
+`SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS` and `EMAIL_FROM` are set in Vercel for Production and Preview (`.env.example` says what
+each one is). Locally they stay unset: every email is printed to the terminal instead, and the server warns once at startup. The four
+`SMTP_*` are set together or not at all; a partial set stops the server at boot.
+
 ### Databases
 
 Postgres on Neon, one project with three branches. Branches persist; they are reset, never recreated.

@@ -21,6 +21,7 @@
     },
     "dependencies": {
         "@payloadcms/db-postgres": "3.90.2",
+        "@payloadcms/email-nodemailer": "3.90.2",
         "@payloadcms/next": "3.90.2",
         "@payloadcms/richtext-lexical": "3.90.2",
         "clsx": "^2.1.1",
@@ -30,6 +31,7 @@
         "graphql": "16.14.2",
         "lucide-react": "1.48.0",
         "next": "16.3.6",
+        "nodemailer": "9.1.1",
         "payload": "3.90.2",
         "react": "19.2.8",
         "react-dom": "19.2.8"
@@ -45,6 +47,7 @@
         "@types/d3-scale": "^4.0.9",
         "@types/d3-time": "^3.0.4",
         "@types/node": "^24.19.0",
+        "@types/nodemailer": "8.0.2",
         "@types/react": "^19",
         "@types/react-dom": "^19",
         "@vitejs/plugin-react": "^6.1.1",
