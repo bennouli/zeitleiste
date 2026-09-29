@@ -110,6 +110,7 @@
     --bar: oklch(from var(--fg) l c h / 35%);
     --bar-strong: oklch(from var(--fg) l c h / 55%);
     --bar-faint: oklch(from var(--fg) l c h / 10%);
+    --axis-line: var(--fg);
     --accent: var(--ink);
     --accent-fg: var(--paper);
     --russia: var(--ink);
@@ -128,6 +129,7 @@
         --bar: oklch(from var(--fg) l c h / 55%);
         --bar-strong: oklch(from var(--fg) l c h / 75%);
         --bar-faint: oklch(from var(--fg) l c h / 15%);
+        --axis-line: oklch(from var(--fg) l c h / 35%);
         --accent: var(--ink-dark);
         --accent-fg: var(--paper-dark);
         --russia: var(--ink-dark);
@@ -150,6 +152,7 @@
     --color-bar: var(--bar);
     --color-bar-strong: var(--bar-strong);
     --color-bar-faint: var(--bar-faint);
+    --color-axis-line: var(--axis-line);
     --color-accent: var(--accent);
     --color-accent-fg: var(--accent-fg);
     --color-russia: var(--russia);

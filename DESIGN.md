@@ -84,6 +84,7 @@ tokens pick the light or the dark primitive.
 | `--bar`                                            | `--fg` at 35 %          | `--fg` at 55 %                | Span bars.                                                                     |
 | `--bar-strong`                                     | `--fg` at 55 %          | `--fg` at 75 %                | Span bar on hover and keyboard focus.                                          |
 | `--bar-faint`                                      | `--fg` at 10 %          | `--fg` at 15 %                | Fading end of an ongoing span.                                                 |
+| `--axis-line`                                      | `--fg`                  | `--fg` at 35 %                | Horizontal axis line; ticks and the today mark stay `--fg`.                    |
 | `--focus`                                          | `--focus-blue`          | `--focus-blue-dark` (lighter) | Focus ring: the one colour, because focus must never be missed.                |
 
 The other ink steps are Tailwind opacity modifiers on `fg`, so they follow the theme with `--fg`:
@@ -98,8 +99,9 @@ The other ink steps are Tailwind opacity modifiers on `fg`, so they follow the t
 - **Why warm paper:** pure white under a serif reads as a screen form; the paper tone makes long posts calmer.
 - **Dark mode** follows the OS setting; the semantic layer switches to the `-dark` primitives: paper becomes near black, ink becomes the
   light paper tone. `--border` is a relative colour of `--fg` and follows without being redefined. The span-bar tokens are redefined with
-  higher alphas in dark mode: at the light alphas the bars nearly vanish on the dark paper. The dark paper uses the prototype's hex
-  `#0f0e0c` (`oklch(0.164 0.004 84.6)`), not the rounder `oklch(0.14 …)` quoted with it.
+  higher alphas in dark mode: at the light alphas the bars nearly vanish on the dark paper. The axis line drops to 35 % in dark mode, below
+  the bars, so a bar on it stays readable; the ticks keep full ink. The dark paper uses the prototype's hex `#0f0e0c`
+  (`oklch(0.164 0.004 84.6)`), not the rounder `oklch(0.14 …)` quoted with it.
 - Components use semantic tokens only (`pnpm check:tokens`).
 - **Contrast** (axe, Chromium): ink-muted on paper is 5.08 : 1 light and 7.15 : 1 dark, above the 4.5 : 1 small-text threshold; ink on paper
   is 15.7 : 1 and 16.5 : 1. The focus blue is about 3.2 : 1 against light paper, above the 3 : 1 for non-text.
