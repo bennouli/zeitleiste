@@ -1,72 +1,96 @@
-import {
-    ENTRY_TYPE_LABEL,
-    ENTRY_TYPES,
-    PRECISIONS,
-    type Precision,
-} from '@/lib/entry'
+import { ENTRY_TYPE_LABEL, ENTRY_TYPES } from '@/lib/entry'
 import type {
+    CheckboxFieldValidation,
     CollectionConfig,
     DateField,
+    NumberField,
+    NumberFieldValidation,
     RelationshipFieldValidation,
-    SelectField,
+    RowField,
 } from 'payload'
-import { date, relationship, select } from 'payload/shared'
+import { checkbox, number, relationship } from 'payload/shared'
 import {
-    endPrecisionProblem,
-    endProblem,
-    entryDatesOf,
+    datePartsOf,
+    dayProblem,
+    endAtOf,
+    endBeforeStartProblem,
+    endYearProblem,
+    ongoingProblem,
     partOfProblem,
-    precisionProblem,
-    type EntryDates,
-} from './entryValidation'
-import { slugField } from './slugField'
+    startAtOf,
+    wholeNumberProblem,
+    type EntryDateParts,
+    type Side,
+} from './entryDates'
+import { germanSlugField } from './slugField'
 
-const PRECISION_LABEL: Record<Precision, string> = {
-    year: 'Jahr',
-    month: 'Monat',
-    day: 'Tag',
-}
+const SIDE_LABEL: Record<Side, string> = { start: 'Beginn', end: 'Ende' }
 
-const PRECISION_OPTIONS = PRECISIONS.map((value) => ({
-    label: PRECISION_LABEL[value],
-    value,
-}))
-
-const DATE_ADMIN: DateField['admin'] = {
-    date: { pickerAppearance: 'dayOnly', displayFormat: 'd. MMM yyyy' },
-}
-
-const atPrecision: SelectField = {
-    name: 'atPrecision',
-    type: 'select',
-    label: 'Genauigkeit',
-    required: true,
-    options: PRECISION_OPTIONS,
-    validate: (value, args) =>
-        precisionProblem(entryDatesOf(args.siblingData).at, value) ??
-        select(value, args),
-}
-
-const endedAtPrecision: SelectField = {
-    name: 'endedAtPrecision',
-    type: 'select',
-    label: 'Genauigkeit des Endes',
-    options: PRECISION_OPTIONS,
-    admin: {
-        condition: (_, siblingData) => Boolean(siblingData.endedAt),
-    },
-    validate: (value, args) => {
-        const dates: EntryDates = {
-            ...entryDatesOf(args.siblingData),
-            endedAtPrecision: value,
-        }
+/** Payload's number check, after the date-part rules that apply to this field. */
+function numberAfter(
+    ...problems: ((parts: EntryDateParts) => string | undefined)[]
+): NumberFieldValidation {
+    return (value, args) => {
+        const parts = datePartsOf(args.siblingData)
         return (
-            endPrecisionProblem(dates) ??
-            precisionProblem(dates.endedAt, dates.endedAtPrecision) ??
-            select(value, args)
+            wholeNumberProblem(value) ??
+            problems.map((problem) => problem(parts)).find(Boolean) ??
+            number(value, args)
         )
-    },
+    }
 }
+
+function datePartsRow(side: Side): RowField {
+    const year: NumberField = {
+        name: `${side}Year`,
+        type: 'number',
+        label: `${SIDE_LABEL[side]}: Jahr`,
+        required: side === 'start',
+        min: 1,
+        validate:
+            side === 'start'
+                ? numberAfter()
+                : numberAfter(endYearProblem, endBeforeStartProblem),
+    }
+    const month: NumberField = {
+        name: `${side}Month`,
+        type: 'number',
+        label: `${SIDE_LABEL[side]}: Monat`,
+        min: 1,
+        max: 12,
+        validate: numberAfter(),
+    }
+    const day: NumberField = {
+        name: `${side}Day`,
+        type: 'number',
+        label: `${SIDE_LABEL[side]}: Tag`,
+        min: 1,
+        max: 31,
+        validate: numberAfter((parts) => dayProblem(parts, side)),
+    }
+    return { type: 'row', fields: [year, month, day] }
+}
+
+/** A stored timestamp derived from the date parts on every save; never edited. */
+function derivedTimestamp(
+    name: string,
+    derive: (parts: EntryDateParts) => string | undefined
+): DateField {
+    return {
+        name,
+        type: 'date',
+        index: true,
+        admin: { hidden: true },
+        hooks: {
+            beforeChange: [
+                ({ siblingData }) => derive(datePartsOf(siblingData)) ?? null,
+            ],
+        },
+    }
+}
+
+const notOngoingWithEnd: CheckboxFieldValidation = (value, args) =>
+    ongoingProblem(datePartsOf(args.siblingData)) ?? checkbox(value, args)
 
 const notPartOfItself: RelationshipFieldValidation = (value, args) =>
     partOfProblem(value, args.id) ?? relationship(value, args)
@@ -74,12 +98,14 @@ const notPartOfItself: RelationshipFieldValidation = (value, args) =>
 export const Entries: CollectionConfig = {
     slug: 'entries',
     labels: { singular: 'Eintrag', plural: 'Einträge' },
+    defaultSort: 'startAt',
     admin: {
         useAsTitle: 'title',
-        defaultColumns: ['title', 'at', 'type', '_status'],
+        defaultColumns: ['title', 'startYear', 'type', '_status'],
     },
     access: {
-        read: () => true,
+        read: ({ req }) =>
+            req.user ? true : { _status: { equals: 'published' } },
     },
     versions: {
         drafts: true,
@@ -92,7 +118,7 @@ export const Entries: CollectionConfig = {
             required: true,
             localized: true,
         },
-        slugField('title'),
+        germanSlugField('title'),
         {
             name: 'summary',
             type: 'textarea',
@@ -104,45 +130,20 @@ export const Entries: CollectionConfig = {
                     'Hinweis beim Überfahren und Vorspann des Beitrags.',
             },
         },
-        {
-            type: 'row',
-            fields: [
-                {
-                    name: 'at',
-                    type: 'date',
-                    label: 'Beginn',
-                    required: true,
-                    admin: DATE_ADMIN,
-                },
-                atPrecision,
-            ],
-        },
-        {
-            type: 'row',
-            fields: [
-                {
-                    name: 'endedAt',
-                    type: 'date',
-                    label: 'Ende',
-                    admin: DATE_ADMIN,
-                    validate: (value, args) =>
-                        endProblem({
-                            ...entryDatesOf(args.siblingData),
-                            endedAt: value,
-                        }) ?? date(value, args),
-                },
-                endedAtPrecision,
-            ],
-        },
+        datePartsRow('start'),
+        datePartsRow('end'),
         {
             name: 'ongoing',
             type: 'checkbox',
             label: 'Dauert an',
+            validate: notOngoingWithEnd,
             admin: {
                 description:
                     'Die Spanne reicht bis heute; schließt ein Ende aus.',
             },
         },
+        derivedTimestamp('startAt', startAtOf),
+        derivedTimestamp('endAt', endAtOf),
         {
             name: 'type',
             type: 'select',

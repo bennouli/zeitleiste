@@ -1,6 +1,8 @@
 import { entries } from '@/data/entries'
 import { describe, expect, it } from 'vitest'
-import { SLUG_PATTERN, slugify } from '../slug'
+import { slugify } from '../slug'
+
+const SLUG_PATTERN = /^[a-z0-9]+(-[a-z0-9]+)*$/
 
 describe('slugify', () => {
     it('spells out umlauts and ß', () => {

@@ -1,5 +1,5 @@
 import * as migration_20260928_191803_initial from './20260928_191803_initial'
-import * as migration_20260929_064237_entries from './20260929_064237_entries'
+import * as migration_20260929_072911_entries from './20260929_072911_entries'
 
 export const migrations = [
     {
@@ -8,8 +8,8 @@ export const migrations = [
         name: '20260928_191803_initial',
     },
     {
-        up: migration_20260929_064237_entries.up,
-        down: migration_20260929_064237_entries.down,
-        name: '20260929_064237_entries',
+        up: migration_20260929_072911_entries.up,
+        down: migration_20260929_072911_entries.down,
+        name: '20260929_072911_entries',
     },
 ]

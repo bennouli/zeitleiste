@@ -3,24 +3,25 @@ import { MigrateDownArgs, MigrateUpArgs, sql } from '@payloadcms/db-postgres'
 export async function up({ db }: MigrateUpArgs): Promise<void> {
     await db.execute(sql`
    CREATE TYPE "public"."_locales" AS ENUM('de', 'en');
-  CREATE TYPE "public"."enum_entries_at_precision" AS ENUM('year', 'month', 'day');
-  CREATE TYPE "public"."enum_entries_ended_at_precision" AS ENUM('year', 'month', 'day');
   CREATE TYPE "public"."enum_entries_type" AS ENUM('war', 'revolution', 'power', 'event');
   CREATE TYPE "public"."enum_entries_status" AS ENUM('draft', 'published');
-  CREATE TYPE "public"."enum__entries_v_version_at_precision" AS ENUM('year', 'month', 'day');
-  CREATE TYPE "public"."enum__entries_v_version_ended_at_precision" AS ENUM('year', 'month', 'day');
   CREATE TYPE "public"."enum__entries_v_version_type" AS ENUM('war', 'revolution', 'power', 'event');
   CREATE TYPE "public"."enum__entries_v_version_status" AS ENUM('draft', 'published');
   CREATE TYPE "public"."enum__entries_v_published_locale" AS ENUM('de', 'en');
   CREATE TYPE "public"."enum_tags_kind" AS ENUM('actor', 'place');
   CREATE TABLE "entries" (
   	"id" serial PRIMARY KEY NOT NULL,
+  	"generate_slug" boolean DEFAULT true,
   	"slug" varchar,
-  	"at" timestamp(3) with time zone,
-  	"at_precision" "enum_entries_at_precision",
-  	"ended_at" timestamp(3) with time zone,
-  	"ended_at_precision" "enum_entries_ended_at_precision",
+  	"start_year" numeric,
+  	"start_month" numeric,
+  	"start_day" numeric,
+  	"end_year" numeric,
+  	"end_month" numeric,
+  	"end_day" numeric,
   	"ongoing" boolean,
+  	"start_at" timestamp(3) with time zone,
+  	"end_at" timestamp(3) with time zone,
   	"type" "enum_entries_type",
   	"subject_id" integer,
   	"part_of_id" integer,
@@ -48,12 +49,17 @@ export async function up({ db }: MigrateUpArgs): Promise<void> {
   CREATE TABLE "_entries_v" (
   	"id" serial PRIMARY KEY NOT NULL,
   	"parent_id" integer,
+  	"version_generate_slug" boolean DEFAULT true,
   	"version_slug" varchar,
-  	"version_at" timestamp(3) with time zone,
-  	"version_at_precision" "enum__entries_v_version_at_precision",
-  	"version_ended_at" timestamp(3) with time zone,
-  	"version_ended_at_precision" "enum__entries_v_version_ended_at_precision",
+  	"version_start_year" numeric,
+  	"version_start_month" numeric,
+  	"version_start_day" numeric,
+  	"version_end_year" numeric,
+  	"version_end_month" numeric,
+  	"version_end_day" numeric,
   	"version_ongoing" boolean,
+  	"version_start_at" timestamp(3) with time zone,
+  	"version_end_at" timestamp(3) with time zone,
   	"version_type" "enum__entries_v_version_type",
   	"version_subject_id" integer,
   	"version_part_of_id" integer,
@@ -85,7 +91,8 @@ export async function up({ db }: MigrateUpArgs): Promise<void> {
   
   CREATE TABLE "subjects" (
   	"id" serial PRIMARY KEY NOT NULL,
-  	"slug" varchar NOT NULL,
+  	"generate_slug" boolean DEFAULT true,
+  	"slug" varchar,
   	"updated_at" timestamp(3) with time zone DEFAULT now() NOT NULL,
   	"created_at" timestamp(3) with time zone DEFAULT now() NOT NULL
   );
@@ -100,7 +107,8 @@ export async function up({ db }: MigrateUpArgs): Promise<void> {
   
   CREATE TABLE "tags" (
   	"id" serial PRIMARY KEY NOT NULL,
-  	"slug" varchar NOT NULL,
+  	"generate_slug" boolean DEFAULT true,
+  	"slug" varchar,
   	"kind" "enum_tags_kind" NOT NULL,
   	"updated_at" timestamp(3) with time zone DEFAULT now() NOT NULL,
   	"created_at" timestamp(3) with time zone DEFAULT now() NOT NULL
@@ -130,6 +138,8 @@ export async function up({ db }: MigrateUpArgs): Promise<void> {
   ALTER TABLE "subjects_locales" ADD CONSTRAINT "subjects_locales_parent_id_fk" FOREIGN KEY ("_parent_id") REFERENCES "public"."subjects"("id") ON DELETE cascade ON UPDATE no action;
   ALTER TABLE "tags_locales" ADD CONSTRAINT "tags_locales_parent_id_fk" FOREIGN KEY ("_parent_id") REFERENCES "public"."tags"("id") ON DELETE cascade ON UPDATE no action;
   CREATE UNIQUE INDEX "entries_slug_idx" ON "entries" USING btree ("slug");
+  CREATE INDEX "entries_start_at_idx" ON "entries" USING btree ("start_at");
+  CREATE INDEX "entries_end_at_idx" ON "entries" USING btree ("end_at");
   CREATE INDEX "entries_subject_idx" ON "entries" USING btree ("subject_id");
   CREATE INDEX "entries_part_of_idx" ON "entries" USING btree ("part_of_id");
   CREATE INDEX "entries_updated_at_idx" ON "entries" USING btree ("updated_at");
@@ -142,6 +152,8 @@ export async function up({ db }: MigrateUpArgs): Promise<void> {
   CREATE INDEX "entries_rels_tags_id_idx" ON "entries_rels" USING btree ("tags_id");
   CREATE INDEX "_entries_v_parent_idx" ON "_entries_v" USING btree ("parent_id");
   CREATE INDEX "_entries_v_version_version_slug_idx" ON "_entries_v" USING btree ("version_slug");
+  CREATE INDEX "_entries_v_version_version_start_at_idx" ON "_entries_v" USING btree ("version_start_at");
+  CREATE INDEX "_entries_v_version_version_end_at_idx" ON "_entries_v" USING btree ("version_end_at");
   CREATE INDEX "_entries_v_version_version_subject_idx" ON "_entries_v" USING btree ("version_subject_id");
   CREATE INDEX "_entries_v_version_version_part_of_idx" ON "_entries_v" USING btree ("version_part_of_id");
   CREATE INDEX "_entries_v_version_version_updated_at_idx" ON "_entries_v" USING btree ("version_updated_at");
@@ -210,12 +222,8 @@ export async function down({ db }: MigrateDownArgs): Promise<void> {
   ALTER TABLE "payload_locked_documents_rels" DROP COLUMN "subjects_id";
   ALTER TABLE "payload_locked_documents_rels" DROP COLUMN "tags_id";
   DROP TYPE "public"."_locales";
-  DROP TYPE "public"."enum_entries_at_precision";
-  DROP TYPE "public"."enum_entries_ended_at_precision";
   DROP TYPE "public"."enum_entries_type";
   DROP TYPE "public"."enum_entries_status";
-  DROP TYPE "public"."enum__entries_v_version_at_precision";
-  DROP TYPE "public"."enum__entries_v_version_ended_at_precision";
   DROP TYPE "public"."enum__entries_v_version_type";
   DROP TYPE "public"."enum__entries_v_version_status";
   DROP TYPE "public"."enum__entries_v_published_locale";

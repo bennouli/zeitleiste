@@ -228,41 +228,70 @@
           "primaryKey": true,
           "notNull": true
         },
+        "generate_slug": {
+          "name": "generate_slug",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false,
+          "default": true
+        },
         "slug": {
           "name": "slug",
           "type": "varchar",
           "primaryKey": false,
           "notNull": false
         },
-        "at": {
-          "name": "at",
-          "type": "timestamp(3) with time zone",
+        "start_year": {
+          "name": "start_year",
+          "type": "numeric",
           "primaryKey": false,
           "notNull": false
         },
-        "at_precision": {
-          "name": "at_precision",
-          "type": "enum_entries_at_precision",
-          "typeSchema": "public",
+        "start_month": {
+          "name": "start_month",
+          "type": "numeric",
           "primaryKey": false,
           "notNull": false
         },
-        "ended_at": {
-          "name": "ended_at",
-          "type": "timestamp(3) with time zone",
+        "start_day": {
+          "name": "start_day",
+          "type": "numeric",
           "primaryKey": false,
           "notNull": false
         },
-        "ended_at_precision": {
-          "name": "ended_at_precision",
-          "type": "enum_entries_ended_at_precision",
-          "typeSchema": "public",
+        "end_year": {
+          "name": "end_year",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "end_month": {
+          "name": "end_month",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "end_day": {
+          "name": "end_day",
+          "type": "numeric",
           "primaryKey": false,
           "notNull": false
         },
         "ongoing": {
           "name": "ongoing",
           "type": "boolean",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "start_at": {
+          "name": "start_at",
+          "type": "timestamp(3) with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "end_at": {
+          "name": "end_at",
+          "type": "timestamp(3) with time zone",
           "primaryKey": false,
           "notNull": false
         },
@@ -320,6 +349,36 @@
             }
           ],
           "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "entries_start_at_idx": {
+          "name": "entries_start_at_idx",
+          "columns": [
+            {
+              "expression": "start_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "entries_end_at_idx": {
+          "name": "entries_end_at_idx",
+          "columns": [
+            {
+              "expression": "end_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
           "concurrently": false,
           "method": "btree",
           "with": {}
@@ -661,41 +720,70 @@
           "primaryKey": false,
           "notNull": false
         },
+        "version_generate_slug": {
+          "name": "version_generate_slug",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false,
+          "default": true
+        },
         "version_slug": {
           "name": "version_slug",
           "type": "varchar",
           "primaryKey": false,
           "notNull": false
         },
-        "version_at": {
-          "name": "version_at",
-          "type": "timestamp(3) with time zone",
+        "version_start_year": {
+          "name": "version_start_year",
+          "type": "numeric",
           "primaryKey": false,
           "notNull": false
         },
-        "version_at_precision": {
-          "name": "version_at_precision",
-          "type": "enum__entries_v_version_at_precision",
-          "typeSchema": "public",
+        "version_start_month": {
+          "name": "version_start_month",
+          "type": "numeric",
           "primaryKey": false,
           "notNull": false
         },
-        "version_ended_at": {
-          "name": "version_ended_at",
-          "type": "timestamp(3) with time zone",
+        "version_start_day": {
+          "name": "version_start_day",
+          "type": "numeric",
           "primaryKey": false,
           "notNull": false
         },
-        "version_ended_at_precision": {
-          "name": "version_ended_at_precision",
-          "type": "enum__entries_v_version_ended_at_precision",
-          "typeSchema": "public",
+        "version_end_year": {
+          "name": "version_end_year",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "version_end_month": {
+          "name": "version_end_month",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "version_end_day": {
+          "name": "version_end_day",
+          "type": "numeric",
           "primaryKey": false,
           "notNull": false
         },
         "version_ongoing": {
           "name": "version_ongoing",
           "type": "boolean",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "version_start_at": {
+          "name": "version_start_at",
+          "type": "timestamp(3) with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "version_end_at": {
+          "name": "version_end_at",
+          "type": "timestamp(3) with time zone",
           "primaryKey": false,
           "notNull": false
         },
@@ -793,6 +881,36 @@
           "columns": [
             {
               "expression": "version_slug",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "_entries_v_version_version_start_at_idx": {
+          "name": "_entries_v_version_version_start_at_idx",
+          "columns": [
+            {
+              "expression": "version_start_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "_entries_v_version_version_end_at_idx": {
+          "name": "_entries_v_version_version_end_at_idx",
+          "columns": [
+            {
+              "expression": "version_end_at",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -1222,11 +1340,18 @@
           "primaryKey": true,
           "notNull": true
         },
+        "generate_slug": {
+          "name": "generate_slug",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false,
+          "default": true
+        },
         "slug": {
           "name": "slug",
           "type": "varchar",
           "primaryKey": false,
-          "notNull": true
+          "notNull": false
         },
         "updated_at": {
           "name": "updated_at",
@@ -1408,11 +1533,18 @@
           "primaryKey": true,
           "notNull": true
         },
+        "generate_slug": {
+          "name": "generate_slug",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false,
+          "default": true
+        },
         "slug": {
           "name": "slug",
           "type": "varchar",
           "primaryKey": false,
-          "notNull": true
+          "notNull": false
         },
         "kind": {
           "name": "kind",
@@ -2258,24 +2390,6 @@
         "en"
       ]
     },
-    "public.enum_entries_at_precision": {
-      "name": "enum_entries_at_precision",
-      "schema": "public",
-      "values": [
-        "year",
-        "month",
-        "day"
-      ]
-    },
-    "public.enum_entries_ended_at_precision": {
-      "name": "enum_entries_ended_at_precision",
-      "schema": "public",
-      "values": [
-        "year",
-        "month",
-        "day"
-      ]
-    },
     "public.enum_entries_type": {
       "name": "enum_entries_type",
       "schema": "public",
@@ -2292,24 +2406,6 @@
       "values": [
         "draft",
         "published"
-      ]
-    },
-    "public.enum__entries_v_version_at_precision": {
-      "name": "enum__entries_v_version_at_precision",
-      "schema": "public",
-      "values": [
-        "year",
-        "month",
-        "day"
-      ]
-    },
-    "public.enum__entries_v_version_ended_at_precision": {
-      "name": "enum__entries_v_version_ended_at_precision",
-      "schema": "public",
-      "values": [
-        "year",
-        "month",
-        "day"
       ]
     },
     "public.enum__entries_v_version_type": {
@@ -2357,6 +2453,6 @@
     "tables": {},
     "columns": {}
   },
-  "id": "dc009f33-4810-4345-b9d8-2d76e90bdcf9",
+  "id": "fc764f15-5726-4c85-a75b-ec0c6f676a24",
   "prevId": "00000000-0000-0000-0000-000000000000"
 }

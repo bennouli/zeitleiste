@@ -1,38 +1,24 @@
-import { SLUG_PATTERN, slugify } from '@/lib/slug'
-import type { TextField } from 'payload'
-import { text } from 'payload/shared'
+import { slugify } from '@/lib/slug'
+import { slugField, type Field } from 'payload'
 
-/** A unique slug, filled from `source` while empty and left alone once set. */
-export function slugField(source: string): TextField {
-    return {
-        name: 'slug',
-        type: 'text',
-        label: 'Slug',
-        required: true,
-        unique: true,
-        index: true,
-        admin: {
-            position: 'sidebar',
-            description:
-                'Wird beim ersten Speichern erzeugt, wenn das Feld leer ist; danach frei änderbar.',
-        },
-        hooks: {
-            beforeValidate: [
-                ({ value, data }) => filledSlug(value, data?.[source]),
-            ],
-        },
-        validate: (value, args) =>
-            value && !SLUG_PATTERN.test(value)
-                ? 'Nur Kleinbuchstaben a–z und Ziffern, getrennt durch einzelne Bindestriche.'
-                : text(value, args),
-    }
+/**
+ * Payload's slug field, generated from `source` with German transliteration
+ * until the editor unlocks it. Not `required`: the helper fills the slug in a
+ * hook that runs after the required check, so a required slug fails every
+ * save that leaves it to the helper.
+ */
+export function germanSlugField(source: string): Field {
+    return slugField({
+        useAsSlug: source,
+        required: false,
+        slugify: ({ valueToSlugify }) => slugOf(valueToSlugify),
+    })
 }
 
-/** The slug as given; while empty, the slug of the source text, if it has one. */
-function filledSlug(slug: unknown, sourceText: unknown): unknown {
-    if (slug) return slug
-    const generated = typeof sourceText === 'string' ? slugify(sourceText) : ''
-    return generated || slug
+/** The slug of a source value; none for a missing or empty source, so drafts without a title don't all claim ''. */
+function slugOf(sourceValue: unknown): string | undefined {
+    const slug = typeof sourceValue === 'string' ? slugify(sourceValue) : ''
+    return slug || undefined
 }
 
-export const PRIVATE_UNDER_TESTS = { filledSlug }
+export const PRIVATE_UNDER_TESTS = { slugOf }

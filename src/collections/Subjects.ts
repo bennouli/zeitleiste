@@ -1,5 +1,5 @@
 import type { CollectionConfig } from 'payload'
-import { slugField } from './slugField'
+import { germanSlugField } from './slugField'
 
 export const Subjects: CollectionConfig = {
     slug: 'subjects',
@@ -20,7 +20,7 @@ export const Subjects: CollectionConfig = {
             unique: true,
             localized: true,
         },
-        slugField('name'),
+        germanSlugField('name'),
         {
             name: 'summary',
             type: 'textarea',

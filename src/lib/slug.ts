@@ -15,6 +15,3 @@ export function slugify(text: string): string {
         .replace(/[^a-z0-9]+/g, '-')
         .replace(/^-+|-+$/g, '')
 }
-
-/** Lowercase a–z and digits in groups separated by single hyphens. */
-export const SLUG_PATTERN = /^[a-z0-9]+(-[a-z0-9]+)*$/

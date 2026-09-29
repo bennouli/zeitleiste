@@ -155,21 +155,26 @@ export interface Entry {
   id: number;
   title: string;
   /**
-   * Wird beim ersten Speichern erzeugt, wenn das Feld leer ist; danach frei änderbar.
+   * When enabled, the slug will auto-generate from the title field on save and autosave.
    */
-  slug: string;
+  generateSlug?: boolean | null;
+  slug?: string | null;
   /**
    * Hinweis beim Überfahren und Vorspann des Beitrags.
    */
   summary: string;
-  at: string;
-  atPrecision: 'year' | 'month' | 'day';
-  endedAt?: string | null;
-  endedAtPrecision?: ('year' | 'month' | 'day') | null;
+  startYear: number;
+  startMonth?: number | null;
+  startDay?: number | null;
+  endYear?: number | null;
+  endMonth?: number | null;
+  endDay?: number | null;
   /**
    * Die Spanne reicht bis heute; schließt ein Ende aus.
    */
   ongoing?: boolean | null;
+  startAt?: string | null;
+  endAt?: string | null;
   type: 'war' | 'revolution' | 'power' | 'event';
   subject?: (number | null) | Subject;
   tags?: (number | Tag)[] | null;
@@ -186,9 +191,10 @@ export interface Subject {
   id: number;
   name: string;
   /**
-   * Wird beim ersten Speichern erzeugt, wenn das Feld leer ist; danach frei änderbar.
+   * When enabled, the slug will auto-generate from the title field on save and autosave.
    */
-  slug: string;
+  generateSlug?: boolean | null;
+  slug?: string | null;
   summary?: string | null;
   updatedAt: string;
   createdAt: string;
@@ -201,9 +207,10 @@ export interface Tag {
   id: number;
   name: string;
   /**
-   * Wird beim ersten Speichern erzeugt, wenn das Feld leer ist; danach frei änderbar.
+   * When enabled, the slug will auto-generate from the title field on save and autosave.
    */
-  slug: string;
+  generateSlug?: boolean | null;
+  slug?: string | null;
   kind: 'actor' | 'place';
   updatedAt: string;
   createdAt: string;
@@ -319,13 +326,18 @@ export interface UsersSelect<T extends boolean = true> {
  */
 export interface EntriesSelect<T extends boolean = true> {
   title?: T;
+  generateSlug?: T;
   slug?: T;
   summary?: T;
-  at?: T;
-  atPrecision?: T;
-  endedAt?: T;
-  endedAtPrecision?: T;
+  startYear?: T;
+  startMonth?: T;
+  startDay?: T;
+  endYear?: T;
+  endMonth?: T;
+  endDay?: T;
   ongoing?: T;
+  startAt?: T;
+  endAt?: T;
   type?: T;
   subject?: T;
   tags?: T;
@@ -340,6 +352,7 @@ export interface EntriesSelect<T extends boolean = true> {
  */
 export interface SubjectsSelect<T extends boolean = true> {
   name?: T;
+  generateSlug?: T;
   slug?: T;
   summary?: T;
   updatedAt?: T;
@@ -351,6 +364,7 @@ export interface SubjectsSelect<T extends boolean = true> {
  */
 export interface TagsSelect<T extends boolean = true> {
   name?: T;
+  generateSlug?: T;
   slug?: T;
   kind?: T;
   updatedAt?: T;

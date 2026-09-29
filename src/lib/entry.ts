@@ -7,8 +7,7 @@ export type HDate = {
     day?: number
 }
 
-export const PRECISIONS = ['year', 'month', 'day'] as const
-export type Precision = (typeof PRECISIONS)[number]
+export type Precision = 'year' | 'month' | 'day'
 
 export const ENTRY_TYPES = ['war', 'revolution', 'power', 'event'] as const
 export type EntryType = (typeof ENTRY_TYPES)[number]
@@ -55,6 +54,16 @@ export function endsBeforeStart(start: HDate, end: HDate): boolean {
     if (end.month !== start.month) return end.month < start.month
     if (end.day === undefined || start.day === undefined) return false
     return end.day < start.day
+}
+
+/** Days in a month of the proleptic Gregorian calendar; `month` is 1–12. */
+export function daysInMonth(year: number, month: number): number {
+    if (month === 2) return isLeapYear(year) ? 29 : 28
+    return [4, 6, 9, 11].includes(month) ? 30 : 31
+}
+
+function isLeapYear(year: number): boolean {
+    return (year % 4 === 0 && year % 100 !== 0) || year % 400 === 0
 }
 
 export const ENTRY_TYPE_LABEL: Record<EntryType, string> = {

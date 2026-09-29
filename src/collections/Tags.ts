@@ -1,5 +1,5 @@
 import type { CollectionConfig } from 'payload'
-import { slugField } from './slugField'
+import { germanSlugField } from './slugField'
 
 export const Tags: CollectionConfig = {
     slug: 'tags',
@@ -20,7 +20,7 @@ export const Tags: CollectionConfig = {
             unique: true,
             localized: true,
         },
-        slugField('name'),
+        germanSlugField('name'),
         {
             name: 'kind',
             type: 'select',
