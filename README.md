@@ -32,6 +32,19 @@ Invitations and password resets go out through Scaleway Transactional Email over
 each one is). Locally they stay unset: every email is printed to the terminal instead, and the server warns once at startup. The four
 `SMTP_*` are set together or not at all; a partial set stops the server at boot.
 
+Links in these emails start with `SERVER_URL`. Unset, it is `https://$VERCEL_PROJECT_PRODUCTION_URL` in Vercel production,
+`https://$VERCEL_URL` in previews and `http://localhost:3000` locally. Payload accepts login cookies only from that origin (and, on Vercel,
+from the deployment and branch URLs), so a dev server on another port needs `SERVER_URL=http://localhost:<port>`.
+
+### Accounts
+
+Admins invite editors in `/admin` → Benutzer → create: email, role and a throwaway password (the create form requires one; nobody can log in
+with it). The invitee gets an email with a link to `/einladung/<token>`, valid for 7 days, and sets their own password there. Until then
+login is refused; an admin can send the invitation again from the user's page. There is no self-registration. Forgotten passwords are reset
+through "Forgot password?" on the login page.
+
+On an empty database the first account is created at `/admin/create-first-user` and becomes an admin.
+
 ### Databases
 
 Postgres on Neon, one project with three branches. Branches persist; they are reset, never recreated.

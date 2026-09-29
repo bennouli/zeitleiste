@@ -24,6 +24,7 @@
         "@payloadcms/email-nodemailer": "3.90.2",
         "@payloadcms/next": "3.90.2",
         "@payloadcms/richtext-lexical": "3.90.2",
+        "@payloadcms/ui": "3.90.2",
         "clsx": "^2.1.1",
         "d3-scale": "^4.0.2",
         "d3-time": "^3.1.0",
