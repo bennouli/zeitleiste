@@ -1,5 +1,6 @@
 'use client'
 
+import { useI18n } from '@/components/I18nContext'
 import { usePostControls } from '@/components/PostContext'
 import { type Entry } from '@/lib/entry'
 import { entryMetaParts } from '@/lib/format'
@@ -10,6 +11,7 @@ import { PostRichText } from './PostRichText'
 /** The post of an entry, shown below the collapsed timeline. */
 export function Post({ entry }: { entry: Entry }) {
     const { close } = usePostControls()
+    const { locale, t } = useI18n()
     const titleId = `post-title-${entry.id}`
 
     return (
@@ -19,7 +21,7 @@ export function Post({ entry }: { entry: Entry }) {
         >
             <div className="mx-auto flex max-w-reading flex-col gap-4.5 pt-9 pb-16 font-serif">
                 <p className="pr-8 small-caps text-meta font-medium tracking-meta text-fg-muted">
-                    {entryMetaParts(entry).map((part, i) => (
+                    {entryMetaParts(entry, locale).map((part, i) => (
                         <Fragment key={i}>
                             {i > 0 && (
                                 <>
@@ -48,8 +50,8 @@ export function Post({ entry }: { entry: Entry }) {
             <button
                 type="button"
                 onClick={close}
-                aria-label="Beitrag schließen"
-                title="Schließen"
+                aria-label={t.post.close}
+                title={t.post.closeShort}
                 className="absolute top-5.5 right-0 size-7 text-fg-muted hover:text-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
             >
                 <X

@@ -1,3 +1,4 @@
+import { inLocale } from '@/test/i18n'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
@@ -47,5 +48,22 @@ describe('ZoomControls', () => {
         expect(onZoomIn).not.toHaveBeenCalled()
         await user.click(zoomOut)
         expect(onZoomOut).toHaveBeenCalledOnce()
+    })
+
+    it('names the buttons in the language of the page', () => {
+        const english = inLocale('en')
+        render(
+            <ZoomControls
+                canZoomIn
+                canZoomOut
+                onZoomIn={vi.fn()}
+                onZoomOut={vi.fn()}
+            />,
+            { wrapper: english }
+        )
+        const names = screen
+            .getAllByRole('button')
+            .map((b) => b.getAttribute('aria-label'))
+        expect(names).toEqual(['Zoom out', 'Zoom in'])
     })
 })

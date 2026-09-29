@@ -1,5 +1,6 @@
 import { Post } from '@/components/post/Post'
 import type { Locale } from '@/i18n/locales'
+import { messages } from '@/i18n/messages'
 import { routeLocale } from '@/i18n/routeLocale'
 import { loadEntries, loadPost } from '@/lib/entries'
 import { postSlugs } from '@/lib/posts'
@@ -37,7 +38,8 @@ export async function generateStaticParams({
 export async function generateMetadata(props: Props): Promise<Metadata> {
     const entry = await postOfRoute(props)
     if (!entry) return {}
-    return { title: `${entry.title} – Zeitleiste`, description: entry.summary }
+    const { site } = messages[routeLocale((await props.params).lang)]
+    return { title: site.postTitle(entry.title), description: entry.summary }
 }
 
 export default async function PostPage(props: Props) {

@@ -1,3 +1,4 @@
+import { useI18n } from '@/components/I18nContext'
 import type { Entry } from '@/lib/entry'
 import { formatEntryDate } from '@/lib/format'
 import type { Side } from '@/lib/placement'
@@ -7,7 +8,6 @@ import {
     LABEL_MAX_WIDTH_PX,
     POST_CHEVRON_SIZE_PX,
     POST_SEPARATOR,
-    POST_SUFFIX,
 } from './labelMetrics'
 
 export type EntryLabelProps = {
@@ -20,6 +20,7 @@ export type EntryLabelProps = {
 
 /** An entry set as type: its serif title and a small-caps date line. Presentational; the caller makes it focusable. */
 export function EntryLabel({ entry, side, open = false }: EntryLabelProps) {
+    const { locale, t } = useI18n()
     return (
         <span
             className={clsx(
@@ -40,13 +41,13 @@ export function EntryLabel({ entry, side, open = false }: EntryLabelProps) {
                 {entry.title}
             </span>
             <span className="block small-caps text-label leading-3 tracking-date whitespace-nowrap text-fg-muted">
-                {formatEntryDate(entry, 'short')}
+                {formatEntryDate(entry, 'short', locale)}
                 {entry.post && (
                     <span aria-hidden="true">
                         {POST_SEPARATOR}
                         <span className="font-medium text-fg">
                             <span className="underline underline-offset-3">
-                                {POST_SUFFIX}
+                                {t.post.label}
                             </span>
                             <ChevronRight
                                 aria-hidden="true"

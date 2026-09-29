@@ -1,18 +1,18 @@
 export type TodayAlign = 'left' | 'center' | 'right'
 
-/** Half the estimated width of the "Heute" label. */
+/** Half the estimated width of the today label ("Heute", "Today"). */
 const TODAY_LABEL_HALF_WIDTH_PX = 24
-/** Free space kept between a tick label and the "Heute" label. */
+/** Free space kept between a tick label and the today label. */
 const LABEL_CLEARANCE_PX = 8
 
-/** Where "Heute" sits relative to today's x, so it never leaves the timeline. */
+/** Where the today label sits relative to today's x, so it never leaves the timeline. */
 export function todayAlignment(todayX: number, width: number): TodayAlign {
     if (todayX > width - TODAY_LABEL_HALF_WIDTH_PX) return 'right'
     if (todayX < TODAY_LABEL_HALF_WIDTH_PX) return 'left'
     return 'center'
 }
 
-/** Whether a tick label centred on `tickX`, `labelWidthPx` wide, would run into the "Heute" label. */
+/** Whether a tick label centred on `tickX`, `labelWidthPx` wide, would run into the today label. */
 export function overlapsTodayLabel(
     tickX: number,
     labelWidthPx: number,

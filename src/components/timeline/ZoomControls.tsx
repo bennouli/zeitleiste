@@ -1,5 +1,6 @@
 'use client'
 
+import { useI18n } from '@/components/I18nContext'
 import clsx from 'clsx'
 import { Minus, Plus } from 'lucide-react'
 
@@ -27,6 +28,7 @@ export function ZoomControls({
     onZoomIn,
     onZoomOut,
 }: ZoomControlsProps) {
+    const { t } = useI18n()
     return (
         <div
             className="absolute top-4 right-7 z-20 flex gap-3.5"
@@ -35,7 +37,7 @@ export function ZoomControls({
             <button
                 type="button"
                 className={buttonClass}
-                aria-label="Herauszoomen"
+                aria-label={t.timeline.zoomOut}
                 aria-disabled={!canZoomOut}
                 onClick={canZoomOut ? onZoomOut : undefined}
             >
@@ -44,7 +46,7 @@ export function ZoomControls({
             <button
                 type="button"
                 className={buttonClass}
-                aria-label="Hineinzoomen"
+                aria-label={t.timeline.zoomIn}
                 aria-disabled={!canZoomIn}
                 onClick={canZoomIn ? onZoomIn : undefined}
             >

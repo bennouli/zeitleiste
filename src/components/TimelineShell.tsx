@@ -107,7 +107,7 @@ export function TimelineShell({
 }) {
     const pathname = usePathname()
     const router = useRouter()
-    const { locale } = useI18n()
+    const { locale, t } = useI18n()
     const pathSlug = slugFromPathname(pathname)
     const openSlug =
         pathSlug !== null && findEntry(entries, pathSlug) ? pathSlug : null
@@ -179,7 +179,7 @@ export function TimelineShell({
     return (
         <PostContext value={controls}>
             <main>
-                <h1 className="sr-only">Zeitleiste: Russland und der Westen</h1>
+                <h1 className="sr-only">{t.site.heading}</h1>
                 <Timeline
                     entries={entries}
                     collapsed={pageKey !== null}

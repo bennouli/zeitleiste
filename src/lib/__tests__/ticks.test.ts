@@ -49,7 +49,7 @@ describe.each([360, 1920])('ticks at %ipx', (width) => {
             '%s: sorted, unique, labels do not overlap',
             (_n, span) => {
                 const [start, end] = range(span)
-                const { ticks: ts } = ticks(start, end, width)
+                const { ticks: ts } = ticks(start, end, width, 'de')
                 expect(ts.length).toBeGreaterThanOrEqual(2)
                 for (let i = 1; i < ts.length; i++) {
                     const a = ts[i - 1]!
@@ -73,7 +73,7 @@ describe.each([360, 1920])('ticks at %ipx', (width) => {
         it('has exactly one tick beyond each edge', (): void => {
             for (const [, span] of SPANS) {
                 const [start, end] = range(span)
-                const ts = ticks(start, end, width).ticks
+                const ts = ticks(start, end, width, 'de').ticks
                 expect(ts.filter((t) => t.t < start)).toHaveLength(1)
                 expect(ts.filter((t) => t.t > end)).toHaveLength(1)
             }
@@ -81,7 +81,7 @@ describe.each([360, 1920])('ticks at %ipx', (width) => {
 
         it('picks finer units for narrower spans', () => {
             const units = SPANS.map(
-                ([, span]) => ticks(...range(span), width).unit
+                ([, span]) => ticks(...range(span), width, 'de').unit
             )
             for (let i = 1; i < units.length; i++) {
                 expect(fineness(units[i]!)).toBeGreaterThanOrEqual(
@@ -94,20 +94,27 @@ describe.each([360, 1920])('ticks at %ipx', (width) => {
 
     it('shows twenty-year steps or coarser for 300 years and months or finer for 3 months', () => {
         expect(
-            fineness(ticks(END - 300 * MS_PER_YEAR, END, width).unit)
+            fineness(ticks(END - 300 * MS_PER_YEAR, END, width, 'de').unit)
         ).toBeLessThanOrEqual(fineness('twenty-years'))
         expect(
-            fineness(ticks(END - 91 * MS_PER_DAY, END, width).unit)
+            fineness(ticks(END - 91 * MS_PER_DAY, END, width, 'de').unit)
         ).toBeGreaterThanOrEqual(fineness('month'))
     })
 })
 
 describe('ticks: units by zoom', () => {
     it('uses centuries for 300 years at 360px', () => {
-        expect(ticks(END - 300 * MS_PER_YEAR, END, 360).unit).toBe('century')
+        expect(ticks(END - 300 * MS_PER_YEAR, END, 360, 'de').unit).toBe(
+            'century'
+        )
     })
     it('uses days when a few weeks span a wide screen', () => {
-        const r = ticks(Date.UTC(1917, 10, 1), Date.UTC(1917, 10, 15), 1920)
+        const r = ticks(
+            Date.UTC(1917, 10, 1),
+            Date.UTC(1917, 10, 15),
+            1920,
+            'de'
+        )
         expect(r.unit).toBe('day')
         expect(r.ticks.map((t) => t.label)).toContain('7. Nov.')
     })
@@ -117,7 +124,7 @@ describe('ticks: labels', () => {
     it('labels yearly ticks for 1914–1922', () => {
         const start = Date.UTC(1914, 0, 1)
         const end = Date.UTC(1922, 0, 1)
-        const r = ticks(start, end, 960)
+        const r = ticks(start, end, 960, 'de')
         expect(r.unit).toBe('year')
         const inside = r.ticks
             .filter((t) => t.t >= start && t.t <= end)
@@ -138,7 +145,12 @@ describe('ticks: labels', () => {
     })
 
     it('uses German month abbreviations with year when there is room', () => {
-        const r = ticks(Date.UTC(1917, 0, 1), Date.UTC(1917, 11, 31), 1920)
+        const r = ticks(
+            Date.UTC(1917, 0, 1),
+            Date.UTC(1917, 11, 31),
+            1920,
+            'de'
+        )
         expect(r.unit).toBe('month')
         const labels = r.ticks.map((t) => t.label)
         for (const l of [
@@ -155,7 +167,7 @@ describe('ticks: labels', () => {
 
     it('falls back to short month labels with the year on January', () => {
         // 1 year across 950px: February is ≥ 72px wide, but 'Sept. 1917'/'Okt. 1917' need ~79px over 30 days.
-        const r = ticks(Date.UTC(1917, 0, 1), Date.UTC(1918, 0, 1), 950)
+        const r = ticks(Date.UTC(1917, 0, 1), Date.UTC(1918, 0, 1), 950, 'de')
         expect(r.unit).toBe('month')
         const labels = r.ticks.map((t) => t.label)
         expect(labels).toContain('1917')
@@ -165,7 +177,12 @@ describe('ticks: labels', () => {
     })
 
     it('labels the first of the month with month and year at day steps', () => {
-        const r = ticks(Date.UTC(1917, 9, 20), Date.UTC(1917, 10, 10), 1920)
+        const r = ticks(
+            Date.UTC(1917, 9, 20),
+            Date.UTC(1917, 10, 10),
+            1920,
+            'de'
+        )
         expect(r.unit).toBe('day')
         const first = r.ticks.find((t) => t.t === Date.UTC(1917, 10, 1))
         expect(first).toEqual({
@@ -179,7 +196,7 @@ describe('ticks: labels', () => {
     })
 
     it('places week ticks on the 1st, 8th, 15th and 22nd', () => {
-        const r = ticks(Date.UTC(1917, 5, 1), Date.UTC(1917, 8, 1), 1920)
+        const r = ticks(Date.UTC(1917, 5, 1), Date.UTC(1917, 8, 1), 1920, 'de')
         expect(r.unit).toBe('week')
         for (const t of r.ticks)
             expect([1, 8, 15, 22]).toContain(new Date(t.t).getUTCDate())
@@ -188,7 +205,7 @@ describe('ticks: labels', () => {
 
 describe('ticks: major flags', () => {
     it('marks centuries as major at decade steps', () => {
-        const r = ticks(Date.UTC(1850, 0, 1), Date.UTC(1950, 0, 1), 1300)
+        const r = ticks(Date.UTC(1850, 0, 1), Date.UTC(1950, 0, 1), 1300, 'de')
         expect(r.unit).toBe('decade')
         for (const t of r.ticks) {
             expect(t.major).toBe(new Date(t.t).getUTCFullYear() % 100 === 0)
@@ -197,7 +214,7 @@ describe('ticks: major flags', () => {
     })
 
     it('marks January as major at month steps', () => {
-        const r = ticks(Date.UTC(1916, 6, 1), Date.UTC(1917, 6, 1), 1920)
+        const r = ticks(Date.UTC(1916, 6, 1), Date.UTC(1917, 6, 1), 1920, 'de')
         expect(r.unit).toBe('month')
         for (const t of r.ticks)
             expect(t.major).toBe(new Date(t.t).getUTCMonth() === 0)
@@ -211,7 +228,7 @@ describe('ticks: major flags', () => {
             [300, 1920, 'twenty-years', 100],
         ]
         for (const [span, width, unit, mod] of cases) {
-            const r = ticks(END - span * MS_PER_YEAR, END, width)
+            const r = ticks(END - span * MS_PER_YEAR, END, width, 'de')
             expect(r.unit).toBe(unit)
             for (const t of r.ticks)
                 expect(t.major).toBe(new Date(t.t).getUTCFullYear() % mod === 0)
@@ -223,7 +240,7 @@ describe('ticks: major flags', () => {
             [Date.UTC(1917, 5, 1), Date.UTC(1917, 8, 1)],
             [Date.UTC(1917, 9, 20), Date.UTC(1917, 10, 10)],
         ] as const) {
-            const r = ticks(s, e, 1920)
+            const r = ticks(s, e, 1920, 'de')
             expect(['week', 'day']).toContain(r.unit)
             for (const t of r.ticks)
                 expect(t.major).toBe(new Date(t.t).getUTCDate() === 1)
@@ -232,7 +249,7 @@ describe('ticks: major flags', () => {
 
     it('labels quarters in short form with the year on January', () => {
         // 3 years across 700px: long quarter labels do not fit, short ones do.
-        const r = ticks(Date.UTC(1916, 0, 1), Date.UTC(1919, 0, 1), 700, {
+        const r = ticks(Date.UTC(1916, 0, 1), Date.UTC(1919, 0, 1), 700, 'de', {
             minLabelGapPx: 50,
         })
         expect(r.unit).toBe('quarter')
@@ -251,7 +268,7 @@ describe('ticks: major flags', () => {
     })
 
     it('marks decades as major at year steps', () => {
-        const r = ticks(Date.UTC(1914, 0, 1), Date.UTC(1922, 0, 1), 960)
+        const r = ticks(Date.UTC(1914, 0, 1), Date.UTC(1922, 0, 1), 960, 'de')
         expect(r.ticks.filter((t) => t.major).map((t) => t.label)).toEqual([
             '1920',
         ])
@@ -260,37 +277,41 @@ describe('ticks: major flags', () => {
 
 describe('ticks: edge cases', () => {
     it('returns no ticks for an empty or inverted range or zero width', () => {
-        expect(ticks(END, END, 1000).ticks).toEqual([])
-        expect(ticks(END, END - MS_PER_YEAR, 1000).ticks).toEqual([])
-        expect(ticks(END - MS_PER_YEAR, END, 0).ticks).toEqual([])
-        expect(ticks(NaN, END, 1000).ticks).toEqual([])
+        expect(ticks(END, END, 1000, 'de').ticks).toEqual([])
+        expect(ticks(END, END - MS_PER_YEAR, 1000, 'de').ticks).toEqual([])
+        expect(ticks(END - MS_PER_YEAR, END, 0, 'de').ticks).toEqual([])
+        expect(ticks(NaN, END, 1000, 'de').ticks).toEqual([])
     })
 
     it('falls back to centuries when nothing fits', () => {
-        const r = ticks(END - 300 * MS_PER_YEAR, END, 100)
+        const r = ticks(END - 300 * MS_PER_YEAR, END, 100, 'de')
         expect(r.unit).toBe('century')
         expect(r.ticks.length).toBeGreaterThan(0)
     })
 
     it('is deterministic', () => {
-        expect(ticks(END - 3 * MS_PER_YEAR, END, 800)).toEqual(
-            ticks(END - 3 * MS_PER_YEAR, END, 800)
+        expect(ticks(END - 3 * MS_PER_YEAR, END, 800, 'de')).toEqual(
+            ticks(END - 3 * MS_PER_YEAR, END, 800, 'de')
         )
     })
 
     it('replaces invalid options with the defaults', () => {
         const start = Date.UTC(1700, 0, 1)
-        const def = ticks(start, END, 1920)
+        const def = ticks(start, END, 1920, 'de')
         for (const bad of [NaN, 0, -5, Infinity]) {
-            expect(ticks(start, END, 1920, { minLabelGapPx: bad })).toEqual(def)
-            expect(ticks(start, END, 1920, { charWidthPx: bad })).toEqual(def)
+            expect(
+                ticks(start, END, 1920, 'de', { minLabelGapPx: bad })
+            ).toEqual(def)
+            expect(ticks(start, END, 1920, 'de', { charWidthPx: bad })).toEqual(
+                def
+            )
         }
     })
 
     it('keeps one tick outside each edge when the edges fall on ticks', () => {
         const start = Date.UTC(1914, 0, 1)
         const end = Date.UTC(1922, 0, 1)
-        const ts = ticks(start, end, 960).ticks
+        const ts = ticks(start, end, 960, 'de').ticks
         expect(ts.filter((t) => t.t < start)).toHaveLength(1)
         expect(ts.filter((t) => t.t > end)).toHaveLength(1)
     })
@@ -303,7 +324,7 @@ describe('ticks: edge cases', () => {
                 span > 20 * MS_PER_DAY;
                 span *= 0.97
             ) {
-                const r = ticks(END - span, END, width)
+                const r = ticks(END - span, END, width, 'de')
                 expect(fineness(r.unit)).toBeGreaterThanOrEqual(prev)
                 prev = fineness(r.unit)
                 for (let i = 1; i < r.ticks.length; i++) {
@@ -322,16 +343,19 @@ describe('ticks: edge cases', () => {
     })
 
     it('respects custom options', () => {
-        const wide = ticks(END - 10 * MS_PER_YEAR, END, 1920, {
+        const wide = ticks(END - 10 * MS_PER_YEAR, END, 1920, 'de', {
             minLabelGapPx: 300,
         })
-        const tight = ticks(END - 10 * MS_PER_YEAR, END, 1920, {
+        const tight = ticks(END - 10 * MS_PER_YEAR, END, 1920, 'de', {
             minLabelGapPx: 20,
         })
         expect(fineness(wide.unit)).toBeLessThan(fineness(tight.unit))
-        const en = ticks(Date.UTC(1917, 0, 1), Date.UTC(1917, 11, 31), 1920, {
-            locale: 'en',
-        })
+        const en = ticks(
+            Date.UTC(1917, 0, 1),
+            Date.UTC(1917, 11, 31),
+            1920,
+            'en'
+        )
         expect(en.ticks.map((t) => t.label)).toContain('Nov 1917')
     })
 })
@@ -345,18 +369,20 @@ describe('ticks: month threshold', () => {
 
     it('keeps whole years while a year spans less than the threshold', () => {
         const [start, end] = rangeAtYearWidth(400)
-        expect(ticks(start, end, WIDTH, MONTH_THRESHOLD).unit).toBe('year')
+        expect(ticks(start, end, WIDTH, 'de', MONTH_THRESHOLD).unit).toBe(
+            'year'
+        )
     })
 
     it('steps by months once a year spans more than the threshold', () => {
         const [start, end] = rangeAtYearWidth(440)
-        const { unit } = ticks(start, end, WIDTH, MONTH_THRESHOLD)
+        const { unit } = ticks(start, end, WIDTH, 'de', MONTH_THRESHOLD)
         expect(fineness(unit)).toBeGreaterThan(fineness('year'))
     })
 
     it('shows month steps below the threshold without the option', () => {
         const [start, end] = rangeAtYearWidth(400)
-        expect(fineness(ticks(start, end, WIDTH).unit)).toBeGreaterThan(
+        expect(fineness(ticks(start, end, WIDTH, 'de').unit)).toBeGreaterThan(
             fineness('year')
         )
     })

@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test'
+import { messages } from '../src/i18n/messages'
 import { timelineRegion } from './timeline'
 
 const UNKNOWN_PATHS = [
@@ -20,7 +21,7 @@ for (const { path, lang } of UNKNOWN_PATHS) {
         await expect(page.locator('html')).toHaveAttribute('lang', lang)
         await expect(timelineRegion(page)).toBeVisible()
         await expect(
-            page.getByRole('heading', { name: 'Seite nicht gefunden' })
+            page.getByRole('heading', { name: messages[lang].notFound.heading })
         ).toBeVisible()
     })
 }

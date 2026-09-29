@@ -1,9 +1,9 @@
 'use client'
 
+import { useI18n } from '@/components/I18nContext'
 import { KeyRound } from 'lucide-react'
 import Link from 'next/link'
 import { useActionState, useId } from 'react'
-import { INVITATION_TEXT } from './invitationText'
 
 export type AcceptInvitationStatus =
     'idle' | 'missing' | 'mismatch' | 'unusable' | 'failed' | 'accepted'
@@ -15,10 +15,11 @@ type AcceptInvitationFormProps = {
     ) => Promise<AcceptInvitationStatus>
 }
 
-const FORM_ERROR: Partial<Record<AcceptInvitationStatus, string>> = {
-    missing: INVITATION_TEXT.missing,
-    mismatch: INVITATION_TEXT.mismatch,
-    failed: INVITATION_TEXT.failed,
+const FORM_ERRORS = ['missing', 'mismatch', 'failed'] as const
+type FormError = (typeof FORM_ERRORS)[number]
+
+function isFormError(status: AcceptInvitationStatus): status is FormError {
+    return FORM_ERRORS.some((error) => error === status)
 }
 
 const inputClass =
@@ -30,28 +31,29 @@ const actionClass =
 export function AcceptInvitationForm({ action }: AcceptInvitationFormProps) {
     const [status, formAction, pending] = useActionState(action, 'idle')
     const errorId = useId()
+    const invitationText = useI18n().t.invitation
 
     if (status === 'accepted')
         return (
             <div role="status">
-                <p>{INVITATION_TEXT.accepted}</p>
+                <p>{invitationText.accepted}</p>
                 <p className="mt-6">
                     <Link href="/admin/login" className={actionClass}>
-                        {INVITATION_TEXT.login}
+                        {invitationText.login}
                     </Link>
                 </p>
             </div>
         )
 
     if (status === 'unusable')
-        return <p role="alert">{INVITATION_TEXT.unusable}</p>
+        return <p role="alert">{invitationText.unusable}</p>
 
-    const formError = FORM_ERROR[status]
+    const formError = isFormError(status) ? invitationText[status] : undefined
     return (
         <form action={formAction} className="flex flex-col gap-4">
-            <p>{INVITATION_TEXT.intro}</p>
+            <p>{invitationText.intro}</p>
             <label className="small-caps text-label tracking-label">
-                {INVITATION_TEXT.password}
+                {invitationText.password}
                 <input
                     type="password"
                     name="password"
@@ -62,7 +64,7 @@ export function AcceptInvitationForm({ action }: AcceptInvitationFormProps) {
                 />
             </label>
             <label className="small-caps text-label tracking-label">
-                {INVITATION_TEXT.passwordRepeat}
+                {invitationText.passwordRepeat}
                 <input
                     type="password"
                     name="passwordRepeat"
@@ -85,8 +87,8 @@ export function AcceptInvitationForm({ action }: AcceptInvitationFormProps) {
                 >
                     <KeyRound aria-hidden size={18} strokeWidth={1.5} />
                     {pending
-                        ? INVITATION_TEXT.submitting
-                        : INVITATION_TEXT.submit}
+                        ? invitationText.submitting
+                        : invitationText.submit}
                 </button>
             </p>
         </form>

@@ -1,6 +1,7 @@
 import { PostContext } from '@/components/PostContext'
 import { expectNoAxeViolations } from '@/test/axe'
 import { sampleEntry } from '@/test/entries'
+import { inLocale } from '@/test/i18n'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
@@ -55,5 +56,14 @@ describe('Post', () => {
     it('has no detectable accessibility violations', async () => {
         const { container } = render(<Post entry={okt} />)
         await expectNoAxeViolations(container)
+    })
+
+    it('shows the date and type and names the close button in English', () => {
+        const english = inLocale('en')
+        render(<Post entry={okt} />, { wrapper: english })
+        expect(screen.getByText('7 November 1917')).toBeInTheDocument()
+        expect(
+            screen.getByRole('button', { name: 'Close post' })
+        ).toHaveAttribute('title', 'Close')
     })
 })

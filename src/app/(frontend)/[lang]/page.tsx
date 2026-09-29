@@ -1,9 +1,4 @@
 import { routeLocale } from '@/i18n/routeLocale'
-import type { Metadata } from 'next'
-
-export const metadata: Metadata = {
-    title: 'Zeitleiste',
-}
 
 type Props = {
     params: Promise<{ lang: string }>

@@ -2,11 +2,14 @@ import { LOCALES } from '@/i18n/locales'
 import { documentLocale } from '@/i18n/routeLocale'
 import type { Metadata } from 'next'
 import type { ReactNode } from 'react'
-import { Site } from '../Site'
+import { Site, siteMetadata } from '../Site'
 
-export const metadata: Metadata = {
-    title: 'Zeitleiste',
-    description: 'Interaktive Zeitleiste: Russland und der Westen seit 1700',
+type LayoutParams = { params: Promise<{ lang: string }> }
+
+export async function generateMetadata({
+    params,
+}: LayoutParams): Promise<Metadata> {
+    return siteMetadata(documentLocale((await params).lang))
 }
 
 export function generateStaticParams() {

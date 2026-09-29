@@ -1,5 +1,6 @@
 'use client'
 
+import { useI18n } from '@/components/I18nContext'
 import { ticks, type Tick } from '@/lib/ticks'
 import clsx from 'clsx'
 import { useMemo } from 'react'
@@ -15,12 +16,13 @@ const TICK_OPTIONS = { minYearWidthForMonthsPx: 420, charWidthPx: 7.7 }
 /** Ties with a focused card layer item (`focus-within:z-300`), which wins by DOM order. */
 const Z_AXIS_LABEL = 300
 
-/** Hairline axis across the full width, short ticks with small-caps labels, and the "Heute" mark. */
+/** Hairline axis across the full width, short ticks with small-caps labels, and the today mark. */
 export function Axis() {
     const { viewport, width, today, timeToX } = useTimeline()
+    const { locale, t } = useI18n()
     const result = useMemo(
-        () => ticks(viewport.start, viewport.end, width, TICK_OPTIONS),
-        [viewport.start, viewport.end, width]
+        () => ticks(viewport.start, viewport.end, width, locale, TICK_OPTIONS),
+        [viewport.start, viewport.end, width, locale]
     )
     const todayX = timeToX(today)
     const todayVisible = todayX >= -1 && todayX <= width + 1
@@ -104,7 +106,7 @@ export function Axis() {
                         )}
                         style={{ top: LABEL_TOP_PX, zIndex: Z_AXIS_LABEL }}
                     >
-                        Heute
+                        {t.timeline.today}
                     </span>
                 </div>
             )}

@@ -1,5 +1,6 @@
 'use client'
 
+import { useI18n } from '@/components/I18nContext'
 import { isTypingTarget } from '@/lib/dom'
 import type { Entry } from '@/lib/entry'
 import { formatPosition } from '@/lib/format'
@@ -37,7 +38,7 @@ export type GroupStackProps = {
     initialIndex?: number
     /** Member to reveal, e.g. the entry whose span bar was clicked. */
     reveal?: StackReveal
-    /** Accessible name of the group, e.g. "Gruppe: 1914–1922". */
+    /** Accessible name of the group. */
     label: string
     /** Called when the visible window changes (top index). */
     onIndexChange?: (topIndex: number) => void
@@ -153,6 +154,7 @@ export function GroupStack({
     side = 'below',
     className,
 }: GroupStackProps) {
+    const { locale } = useI18n()
     const slotCount = normalizeVisible(visibleCount)
     const maxIndex = Math.max(0, entries.length - slotCount)
     const [rawIndex, setRawIndex] = useState(() =>
@@ -275,7 +277,7 @@ export function GroupStack({
                     )}
                     style={{ height: GROUP_STACK_CONTROLS_HEIGHT_PX }}
                 >
-                    {formatPosition(topIndex, entries.length)}
+                    {formatPosition(topIndex, entries.length, locale)}
                 </p>
             )}
         </div>
@@ -502,14 +504,13 @@ type StepButtonProps = {
 }
 
 function StepButton({ direction, canStep, onStep }: StepButtonProps) {
+    const { t } = useI18n()
     const Icon = direction === -1 ? ArrowUp : ArrowDown
     return (
         <button
             type="button"
             aria-label={
-                direction === -1
-                    ? 'Einen Eintrag nach oben'
-                    : 'Einen Eintrag nach unten'
+                direction === -1 ? t.timeline.stackUp : t.timeline.stackDown
             }
             aria-disabled={!canStep}
             onClick={canStep ? () => onStep(direction) : undefined}

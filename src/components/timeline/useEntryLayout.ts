@@ -1,5 +1,6 @@
 'use client'
 
+import type { Locale } from '@/i18n/locales'
 import {
     buildClusterTree,
     cutTree,
@@ -52,6 +53,8 @@ export type LayoutGeometry = {
     /** Rows a group stack covers. */
     groupLevels: number
     gapPx: number
+    /** Language of the labels, whose widths the placement depends on. */
+    locale: Locale
 }
 
 type CardExtent = { x0: number; x1: number }
@@ -189,7 +192,10 @@ function placeCut(
     const extents = new Map(
         cut.map((cluster) => [
             cluster.id,
-            extentOf(timeToX(cluster.t), widthOf(cluster, byId)),
+            extentOf(
+                timeToX(cluster.t),
+                widthOf(cluster, byId, geometry.locale)
+            ),
         ])
     )
     const toPlaceable = (cluster: Cluster): PlaceableItem => {
@@ -240,10 +246,14 @@ function extentOf(x: number, widthPx: number): CardExtent {
 }
 
 /** A card is as wide as its label; a group stack as wide as its widest possible label. */
-function widthOf(cluster: Cluster, byId: ReadonlyMap<string, Entry>): number {
+function widthOf(
+    cluster: Cluster,
+    byId: ReadonlyMap<string, Entry>,
+    locale: Locale
+): number {
     return isGroup(cluster)
         ? LABEL_MAX_WIDTH_PX
-        : estimateLabelWidthPx(byId.get(cluster.id)!)
+        : estimateLabelWidthPx(byId.get(cluster.id)!, locale)
 }
 
 function markerCollisions(

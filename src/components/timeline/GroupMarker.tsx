@@ -1,5 +1,6 @@
 'use client'
 
+import { useI18n } from '@/components/I18nContext'
 import type { Entry } from '@/lib/entry'
 import { formatGroupMeta } from '@/lib/format'
 import type { Side } from '@/lib/placement'
@@ -11,7 +12,7 @@ import { useTooltipTrigger } from './useTooltipTrigger'
 export type GroupMarkerProps = {
     /** The group's members, chronological. */
     entries: Entry[]
-    /** Accessible label, e.g. "Hineinzoomen: Gruppe mit 7 Einträgen, 1914–1922". */
+    /** Accessible label: the zoom action and the group's name. */
     label: string
     /** The side of the axis the group's stack is on; the hover note opens on the other. */
     side: Side
@@ -74,11 +75,12 @@ export function GroupMarker({
 
 /** Hover note of a group: count and years, the zoom hint, the member titles. */
 function GroupTooltipContent({ entries }: { entries: Entry[] }) {
+    const { locale, t } = useI18n()
     return (
         <>
-            <TooltipMeta>{formatGroupMeta(entries)}</TooltipMeta>
+            <TooltipMeta>{formatGroupMeta(entries, locale)}</TooltipMeta>
             <TooltipTitle aria-hidden="true">
-                Gruppe · Klicken zum Hineinzoomen
+                {t.timeline.groupHint}
             </TooltipTitle>
             {entries.map((entry) => (
                 <TooltipBody key={entry.id}>{entry.title}</TooltipBody>

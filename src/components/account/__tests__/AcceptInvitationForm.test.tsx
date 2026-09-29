@@ -1,3 +1,4 @@
+import { de } from '@/i18n/de'
 import { expectNoAxeViolations } from '@/test/axe'
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
@@ -6,7 +7,8 @@ import {
     AcceptInvitationForm,
     type AcceptInvitationStatus,
 } from '../AcceptInvitationForm'
-import { INVITATION_TEXT } from '../invitationText'
+
+const INVITATION_TEXT = de.invitation
 
 const answering = (status: AcceptInvitationStatus) =>
     vi.fn().mockResolvedValue(status)

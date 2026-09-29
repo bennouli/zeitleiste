@@ -1,5 +1,6 @@
 'use client'
 
+import { useI18n } from '@/components/I18nContext'
 import { isSpan, type Entry } from '@/lib/entry'
 import { entryAnchor, MS_PER_YEAR, startOf, todayMs } from '@/lib/time'
 import { msPerPx, timeToX, type Bounds } from '@/lib/viewport'
@@ -59,6 +60,7 @@ export function Timeline({
     besideWordmark,
 }: TimelineProps) {
     const [today] = useState(todayMs)
+    const { locale, t } = useI18n()
     const { width, height: liveHeight, ref, elRef } = useElementSize()
     const bounds = useMemo(
         () => dataBounds(entries, today, width),
@@ -131,8 +133,9 @@ export function Timeline({
             maxLevels: bands.maxLevels,
             groupLevels: bands.groupLevels,
             gapPx: CARD_GAP_PX,
+            locale,
         },
-        `${layoutKey}|${bands.maxLevels}|${bands.groupLevels}`
+        `${layoutKey}|${bands.maxLevels}|${bands.groupLevels}|${locale}`
     )
 
     const open = (id: string) => {
@@ -151,7 +154,7 @@ export function Timeline({
             <section
                 ref={ref}
                 role="region"
-                aria-label="Zeitleiste"
+                aria-label={t.site.name}
                 tabIndex={0}
                 data-collapsed={collapsed ? 'true' : 'false'}
                 aria-describedby={helpId}
@@ -171,8 +174,7 @@ export function Timeline({
                 onFocus={onFocus}
             >
                 <p id={helpId} className="sr-only">
-                    Mit Plus und Minus zoomen, mit den Pfeiltasten links und
-                    rechts in der Zeit verschieben.
+                    {t.timeline.help}
                 </p>
                 {isMeasured && (
                     <>
@@ -209,7 +211,7 @@ export function Timeline({
                         aria-hidden="true"
                         className="small-caps text-label-lg font-medium tracking-wordmark text-fg"
                     >
-                        Zeitleiste
+                        {t.site.name}
                     </p>
                     {besideWordmark}
                 </div>

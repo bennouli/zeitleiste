@@ -1,4 +1,6 @@
+import type { Locale } from '@/i18n/locales'
 import { MS_PER_YEAR } from '@/lib/time'
+import { inLocale } from '@/test/i18n'
 import { render, screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 import { Axis, AXIS_LINE_THICKNESS_PX } from '../Axis'
@@ -8,7 +10,11 @@ const WIDTH = 1000
 const TODAY = Date.UTC(2026, 8, 27)
 
 /** Renders the axis with `today` at `todayX` and a year `yearWidthPx` wide. */
-function renderAxis(todayX: number, yearWidthPx: number) {
+function renderAxis(
+    todayX: number,
+    yearWidthPx: number,
+    locale: Locale = 'de'
+) {
     const span = (WIDTH / yearWidthPx) * MS_PER_YEAR
     const start = TODAY - (todayX / WIDTH) * span
     const viewport = { start, end: start + span }
@@ -28,7 +34,8 @@ function renderAxis(todayX: number, yearWidthPx: number) {
     return render(
         <TimelineContext value={ctx}>
             <Axis />
-        </TimelineContext>
+        </TimelineContext>,
+        { wrapper: inLocale(locale) }
     )
 }
 
@@ -95,6 +102,15 @@ describe('Axis', () => {
                 .querySelector('[data-tick-unit]')!
                 .getAttribute('data-tick-unit')
         ).not.toBe('year')
+    })
+
+    it('labels today and the months in the language of the page', () => {
+        const { container } = renderAxis(500, 440, 'en')
+        expect(screen.getByText('Today')).toBeInTheDocument()
+        const labels = [...container.querySelectorAll('[data-tick] span')].map(
+            (label) => label.textContent
+        )
+        expect(labels).toContain('Oct 2025')
     })
 
     it('sets "Heute" in small caps under a 16 px mark', () => {

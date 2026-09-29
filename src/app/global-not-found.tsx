@@ -1,8 +1,8 @@
 import { DEFAULT_LOCALE } from '@/i18n/locales'
 import NotFound from './(frontend)/[lang]/not-found'
-import { Site } from './(frontend)/Site'
+import { Site, siteMetadata } from './(frontend)/Site'
 
-export { metadata } from './(frontend)/[lang]/layout'
+export const metadata = siteMetadata(DEFAULT_LOCALE)
 
 export default function GlobalNotFound() {
     return (
