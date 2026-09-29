@@ -14,6 +14,7 @@ import { compareIds } from '@/lib/order'
 import {
     placeItems,
     type BlockedInterval,
+    type LevelsPerSide,
     type PlaceableItem,
     type PlacedSide,
     type Side,
@@ -48,10 +49,10 @@ export type LayoutGeometry = {
     timeToX: (t: number) => number
     msPerPx: number
     width: number
-    /** Rows per side that fit into the band. */
-    maxLevels: number
-    /** Rows a group stack covers. */
-    groupLevels: number
+    /** Rows on each side that fit into its band. */
+    maxLevels: LevelsPerSide
+    /** Rows a group stack covers on each side. */
+    groupLevels: LevelsPerSide
     gapPx: number
     locale: Locale
 }
@@ -216,12 +217,15 @@ function placeCut(
     const blocked: BlockedInterval[] = [...groupPlacement.slots].flatMap(
         ([id, slot]) => {
             const extent = extents.get(id)!
-            return Array.from({ length: groupLevels }, (_, level) => ({
-                ...slot,
-                level,
-                x0: extent.x0,
-                x1: extent.x1,
-            }))
+            return Array.from(
+                { length: groupLevels[slot.side] },
+                (_, level) => ({
+                    ...slot,
+                    level,
+                    x0: extent.x0,
+                    x1: extent.x1,
+                })
+            )
         }
     )
     const placedGroups: PlacedSide[] = groups.flatMap((group) => {

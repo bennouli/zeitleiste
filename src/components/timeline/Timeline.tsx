@@ -15,7 +15,7 @@ import {
     type ReactNode,
 } from 'react'
 import { Axis } from './Axis'
-import { bandGeometry, SLOT_HEIGHT_PX } from './bandGeometry'
+import { bandGeometry, SLOT_HEIGHT_PX, type BandGeometry } from './bandGeometry'
 import { CardLayer } from './CardLayer'
 import {
     AXIS_HEIGHT_PX,
@@ -136,7 +136,7 @@ export function Timeline({
             gapPx: CARD_GAP_PX,
             locale,
         },
-        `${layoutKey}|${bands.maxLevels}|${bands.groupLevels}|${locale}`
+        `${layoutKey}|${bandsKey(bands)}|${locale}`
     )
 
     const open = (id: string) => {
@@ -231,6 +231,13 @@ export function Timeline({
             </section>
         </TimelineContext>
     )
+}
+
+/** Changes whenever a row count or a stack's extent on either side changes. */
+function bandsKey({ maxLevels, groupLevels }: BandGeometry): string {
+    return [maxLevels, groupLevels]
+        .map((levels) => `${levels.above}/${levels.below}`)
+        .join('|')
 }
 
 /**

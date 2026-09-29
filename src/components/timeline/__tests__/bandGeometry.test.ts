@@ -1,3 +1,4 @@
+import type { LevelsPerSide } from '@/lib/placement'
 import { describe, expect, it } from 'vitest'
 import { AXIS_LINE_Y_PX } from '../Axis'
 import { bandGeometry, SLOT_HEIGHT_PX } from '../bandGeometry'
@@ -18,9 +19,16 @@ const TINY_HEIGHT = 100
 const EXPANDED = false
 const COLLAPSED = true
 const NO_INSET = 0
+const DESKTOP_HD_WIDTH = 1920
+const DESKTOP_HD_HEIGHT = 1080
 const HEIGHTS = [300, 500, 640, 800, 1100]
 /** Tall enough for a three-card stack without the inset, only for two with it. */
 const STACK_LIMITING_HEIGHT = 432
+
+const eachSide = (levels: number): LevelsPerSide => ({
+    above: levels,
+    below: levels,
+})
 
 /** The outermost row's far edge, measured from the axis line. */
 const farEdge = (levels: number) =>
@@ -36,9 +44,9 @@ describe('bandGeometry', () => {
         expect(
             bandGeometry(FULL_HEIGHT, DESKTOP_WIDTH, EXPANDED, NO_INSET)
         ).toEqual({
-            maxLevels: 6,
-            visibleCount: 3,
-            groupLevels: 3,
+            maxLevels: eachSide(6),
+            visibleCount: eachSide(3),
+            groupLevels: eachSide(3),
         })
     })
 
@@ -49,8 +57,8 @@ describe('bandGeometry', () => {
             COLLAPSED,
             NO_INSET
         )
-        expect(geometry.visibleCount).toBe(2)
-        expect(geometry.groupLevels).toBe(2)
+        expect(geometry.visibleCount).toEqual(eachSide(2))
+        expect(geometry.groupLevels).toEqual(eachSide(2))
     })
 
     it('shows one card per stack on a phone', () => {
@@ -60,8 +68,8 @@ describe('bandGeometry', () => {
             EXPANDED,
             NO_INSET
         )
-        expect(geometry.visibleCount).toBe(1)
-        expect(geometry.groupLevels).toBe(2)
+        expect(geometry.visibleCount).toEqual(eachSide(1))
+        expect(geometry.groupLevels).toEqual(eachSide(2))
     })
 
     it('treats the phone width limit itself as desktop', () => {
@@ -71,16 +79,16 @@ describe('bandGeometry', () => {
             EXPANDED,
             NO_INSET
         )
-        expect(geometry.visibleCount).toBe(3)
+        expect(geometry.visibleCount).toEqual(eachSide(3))
     })
 
     it('keeps one row and one card when the height fits nothing', () => {
         expect(
             bandGeometry(TINY_HEIGHT, DESKTOP_WIDTH, EXPANDED, NO_INSET)
         ).toEqual({
-            maxLevels: 1,
-            visibleCount: 1,
-            groupLevels: 2,
+            maxLevels: eachSide(1),
+            visibleCount: eachSide(1),
+            groupLevels: eachSide(2),
         })
     })
 
@@ -92,8 +100,12 @@ describe('bandGeometry', () => {
                 EXPANDED,
                 NO_INSET
             )
-            expect(farEdge(maxLevels)).toBeLessThanOrEqual(aboveReach(height))
-            expect(farEdge(maxLevels + 1)).toBeGreaterThan(aboveReach(height))
+            expect(farEdge(maxLevels.above)).toBeLessThanOrEqual(
+                aboveReach(height)
+            )
+            expect(farEdge(maxLevels.above + 1)).toBeGreaterThan(
+                aboveReach(height)
+            )
         }
     })
 
@@ -106,8 +118,8 @@ describe('bandGeometry', () => {
                 TOP_BAR_HEIGHT_PX
             )
             const reachBelowBar = aboveReach(height) - TOP_BAR_HEIGHT_PX
-            expect(farEdge(maxLevels)).toBeLessThanOrEqual(reachBelowBar)
-            expect(farEdge(maxLevels + 1)).toBeGreaterThan(reachBelowBar)
+            expect(farEdge(maxLevels.above)).toBeLessThanOrEqual(reachBelowBar)
+            expect(farEdge(maxLevels.above + 1)).toBeGreaterThan(reachBelowBar)
         }
     })
 
@@ -120,11 +132,46 @@ describe('bandGeometry', () => {
         )
         const stackFarEdge =
             CARD_FIRST_ROW_OFFSET_PX +
-            visibleCount * SLOT_HEIGHT_PX +
+            visibleCount.above * SLOT_HEIGHT_PX +
             GROUP_STACK_CONTROLS_HEIGHT_PX
-        expect(visibleCount).toBeGreaterThan(1)
+        expect(visibleCount.above).toBeGreaterThan(1)
         expect(stackFarEdge).toBeLessThanOrEqual(
             aboveReach(STACK_LIMITING_HEIGHT) - TOP_BAR_HEIGHT_PX
         )
+    })
+
+    it('leaves the rows and stacks below the axis as they are without an inset', () => {
+        const heights = [...HEIGHTS, STACK_LIMITING_HEIGHT]
+        for (const height of heights) {
+            const withInset = bandGeometry(
+                height,
+                DESKTOP_WIDTH,
+                EXPANDED,
+                TOP_BAR_HEIGHT_PX
+            )
+            const withoutInset = bandGeometry(
+                height,
+                DESKTOP_WIDTH,
+                EXPANDED,
+                NO_INSET
+            )
+            expect(withInset.maxLevels.below).toBe(withoutInset.maxLevels.below)
+            expect(withInset.visibleCount.below).toBe(
+                withoutInset.visibleCount.below
+            )
+            expect(withInset.groupLevels.below).toBe(
+                withoutInset.groupLevels.below
+            )
+        }
+    })
+
+    it('takes a row off the band above only, at a desktop window where the inset costs one', () => {
+        const { maxLevels } = bandGeometry(
+            DESKTOP_HD_HEIGHT,
+            DESKTOP_HD_WIDTH,
+            EXPANDED,
+            TOP_BAR_HEIGHT_PX
+        )
+        expect(maxLevels).toEqual({ above: 8, below: 9 })
     })
 })

@@ -1,3 +1,4 @@
+import type { LevelsPerSide } from '@/lib/placement'
 import { AXIS_LINE_Y_PX } from './Axis'
 import {
     AXIS_HEIGHT_PX,
@@ -24,17 +25,19 @@ const PHONE_WIDTH_PX = 640
 const MIN_BAND_LEVELS = 1
 
 export type BandGeometry = {
-    /** Card rows per side of the axis. */
-    maxLevels: number
-    /** Cards a group stack shows at once. */
-    visibleCount: number
-    /** Card rows a group stack covers. */
-    groupLevels: number
+    /** Card rows on each side of the axis. */
+    maxLevels: LevelsPerSide
+    /** Cards a group stack shows at once, on each side. */
+    visibleCount: LevelsPerSide
+    /** Card rows a group stack covers, on each side. */
+    groupLevels: LevelsPerSide
 }
+
+type BandSide = { [K in keyof BandGeometry]: number }
 
 /**
  * Splits the timeline's height into the card bands above and below the axis.
- * The top `topInsetPx` of the band above is kept free, and both sides share one row count.
+ * The top `topInsetPx` of the band above is kept free; the band below is unaffected by it.
  */
 export function bandGeometry(
     height: number,
@@ -44,10 +47,22 @@ export function bandGeometry(
 ): BandGeometry {
     const cardBandHeight = Math.max(0, (height - AXIS_HEIGHT_PX) / 2)
     const rowsReachPx =
-        cardBandHeight +
-        AXIS_LINE_TO_BAND_PX -
-        CARD_FIRST_ROW_OFFSET_PX -
-        topInsetPx
+        cardBandHeight + AXIS_LINE_TO_BAND_PX - CARD_FIRST_ROW_OFFSET_PX
+    const above = bandSide(rowsReachPx - topInsetPx, width, collapsed)
+    const below = bandSide(rowsReachPx, width, collapsed)
+    return {
+        maxLevels: { above: above.maxLevels, below: below.maxLevels },
+        visibleCount: { above: above.visibleCount, below: below.visibleCount },
+        groupLevels: { above: above.groupLevels, below: below.groupLevels },
+    }
+}
+
+/** Rows and stack size for a band whose rows may reach `rowsReachPx` past the first row's start. */
+function bandSide(
+    rowsReachPx: number,
+    width: number,
+    collapsed: boolean
+): BandSide {
     const maxLevels = Math.max(
         MIN_BAND_LEVELS,
         Math.floor((rowsReachPx - LABEL_HEIGHT_PX) / CARD_ROW_HEIGHT_PX) + 1
