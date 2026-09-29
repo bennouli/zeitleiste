@@ -3,6 +3,7 @@ import { Console, Data, Effect, Exit } from 'effect'
 import { getPayload, type Payload, type PayloadRequest } from 'payload'
 import { entries } from './entries'
 import {
+    missingKeys,
     seedEntryOf,
     tagKindOf,
     tagNamesOf,
@@ -26,7 +27,6 @@ class ReferenceMissing extends Data.TaggedError('ReferenceMissing')<{
 
 type Transaction = Pick<PayloadRequest, 'transactionID'>
 type IdByKey = ReadonlyMap<string, number>
-type Tally = { created: number; skipped: number }
 
 const LOCALE = 'de'
 
@@ -42,61 +42,47 @@ const seedSampleContent = Effect.fn('seedSampleContent')(function* (
     req: Transaction
 ) {
     const seedEntries = entries.map(seedEntryOf)
-    const tags = yield* createMissingTags(payload, req, tagNamesOf(seedEntries))
-    const subjectIds = yield* subjectIdsBySlug(payload, req)
-    const existingEntryIds = yield* entryIdsBySlug(payload, req)
-    const newEntries = seedEntries.filter(
-        (e) => !existingEntryIds.has(e.fields.slug)
+    const tagNames = tagNamesOf(seedEntries)
+    const storedTagIds = yield* tagIdsByName(payload, req)
+    const missingTagNames = missingKeys(tagNames, storedTagIds)
+    const createdTagIds = yield* Effect.forEach(missingTagNames, (name) =>
+        createTag(payload, req, name)
     )
-    const createdEntryIds = new Map<string, number>()
-    for (const seedEntry of newEntries) {
-        const subject = yield* idOfReference(seedEntry, 'subject', subjectIds)
-        const post = yield* createPost(payload, req, seedEntry)
-        const created = yield* payloadCall(
-            `create entry ${seedEntry.fields.slug}`,
-            () =>
-                payload.create({
-                    collection: 'entries',
-                    locale: LOCALE,
-                    req,
-                    data: {
-                        ...seedEntry.fields,
-                        tags: seedEntry.tagNames.map((name) =>
-                            tags.ids.get(name)!
-                        ),
-                        subject,
-                        post,
-                        _status: 'published',
-                    },
-                })
+    const tagIds = new Map([...storedTagIds, ...createdTagIds])
+    const subjectIds = yield* subjectIdsBySlug(payload, req)
+    const storedEntryIds = yield* entryIdsBySlug(payload, req)
+    const newSlugs = new Set(
+        missingKeys(
+            seedEntries.map((e) => e.fields.slug),
+            storedEntryIds
         )
-        createdEntryIds.set(seedEntry.fields.slug, created.id)
-    }
-    const allEntryIds = new Map([...existingEntryIds, ...createdEntryIds])
+    )
+    const newEntries = seedEntries.filter((e) => newSlugs.has(e.fields.slug))
+    const createdEntryIds = new Map(
+        yield* Effect.forEach(newEntries, (seedEntry) =>
+            createEntry(payload, req, seedEntry, tagIds, subjectIds)
+        )
+    )
     const partOfLinks = yield* linkPartOf(
         payload,
         req,
         newEntries,
         createdEntryIds,
-        allEntryIds
+        new Map([...storedEntryIds, ...createdEntryIds])
     )
-    return {
-        tags: tags.tally,
-        entries: {
-            created: newEntries.length,
-            skipped: seedEntries.length - newEntries.length,
-        },
-        posts: newEntries.filter((e) => e.postBody !== undefined).length,
-        partOfLinks,
-    }
+    return [
+        `tags: ${missingTagNames.length} created, ${tagNames.length - missingTagNames.length} skipped`,
+        `entries: ${newEntries.length} created, ${seedEntries.length - newEntries.length} skipped`,
+        `posts: ${newEntries.filter((e) => e.postBody !== undefined).length} created`,
+        `partOf links: ${partOfLinks} set`,
+    ].join('\n')
 })
 
-const createMissingTags = Effect.fn('createMissingTags')(function* (
+const tagIdsByName = Effect.fn('tagIdsByName')(function* (
     payload: Payload,
-    req: Transaction,
-    names: readonly string[]
+    req: Transaction
 ) {
-    const existing = yield* payloadCall('find tags', () =>
+    const storedTags = yield* payloadCall('find tags', () =>
         payload.find({
             collection: 'tags',
             locale: LOCALE,
@@ -105,31 +91,25 @@ const createMissingTags = Effect.fn('createMissingTags')(function* (
             req,
         })
     )
-    const ids = new Map(existing.docs.map((tag) => [tag.name, tag.id]))
-    const missing = names.filter((name) => !ids.has(name))
-    for (const name of missing) {
-        const created = yield* payloadCall(`create tag ${name}`, () =>
-            payload.create({
-                collection: 'tags',
-                locale: LOCALE,
-                req,
-                data: { name, kind: tagKindOf(name) },
-            })
-        )
-        ids.set(name, created.id)
-    }
-    const tally: Tally = {
-        created: missing.length,
-        skipped: names.length - missing.length,
-    }
-    return { ids, tally }
+    return new Map(storedTags.docs.map((tag) => [tag.name, tag.id]))
 })
+
+function createTag(payload: Payload, req: Transaction, name: string) {
+    return payloadCall(`create tag ${name}`, () =>
+        payload.create({
+            collection: 'tags',
+            locale: LOCALE,
+            req,
+            data: { name, kind: tagKindOf(name) },
+        })
+    ).pipe(Effect.map((tag) => [name, tag.id] as const))
+}
 
 const subjectIdsBySlug = Effect.fn('subjectIdsBySlug')(function* (
     payload: Payload,
     req: Transaction
 ) {
-    const subjects = yield* payloadCall('find subjects', () =>
+    const storedSubjects = yield* payloadCall('find subjects', () =>
         payload.find({
             collection: 'subjects',
             pagination: false,
@@ -137,14 +117,14 @@ const subjectIdsBySlug = Effect.fn('subjectIdsBySlug')(function* (
             req,
         })
     )
-    return idsBySlug(subjects.docs)
+    return idsBySlug(storedSubjects.docs)
 })
 
 const entryIdsBySlug = Effect.fn('entryIdsBySlug')(function* (
     payload: Payload,
     req: Transaction
 ) {
-    const existing = yield* payloadCall('find entries', () =>
+    const storedEntries = yield* payloadCall('find entries', () =>
         payload.find({
             collection: 'entries',
             pagination: false,
@@ -152,7 +132,7 @@ const entryIdsBySlug = Effect.fn('entryIdsBySlug')(function* (
             req,
         })
     )
-    return idsBySlug(existing.docs)
+    return idsBySlug(storedEntries.docs)
 })
 
 function idsBySlug(
@@ -163,11 +143,38 @@ function idsBySlug(
     )
 }
 
+const createEntry = Effect.fn('createEntry')(function* (
+    payload: Payload,
+    req: Transaction,
+    seedEntry: SeedEntry,
+    tagIds: IdByKey,
+    subjectIds: IdByKey
+) {
+    const { slug } = seedEntry.fields
+    const subject = yield* idOfReference(seedEntry, 'subject', subjectIds)
+    const post = yield* createPost(payload, req, seedEntry)
+    const entryDocument = yield* payloadCall(`create entry ${slug}`, () =>
+        payload.create({
+            collection: 'entries',
+            locale: LOCALE,
+            req,
+            data: {
+                ...seedEntry.fields,
+                tags: seedEntry.tagNames.map((name) => tagIds.get(name)!),
+                subject,
+                post,
+                _status: 'published',
+            },
+        })
+    )
+    return [slug, entryDocument.id] as const
+})
+
 function idOfReference(
     seedEntry: SeedEntry,
     field: 'subject' | 'partOf',
     ids: IdByKey
-) {
+): Effect.Effect<number | undefined, ReferenceMissing> {
     const slug =
         field === 'subject' ? seedEntry.subjectSlug : seedEntry.partOfSlug
     if (slug === undefined) return Effect.succeed(undefined)
@@ -201,23 +208,26 @@ const linkPartOf = Effect.fn('linkPartOf')(function* (
     req: Transaction,
     newEntries: readonly SeedEntry[],
     createdEntryIds: IdByKey,
-    allEntryIds: IdByKey
+    entryIds: IdByKey
 ) {
     const parts = newEntries.filter((e) => e.partOfSlug !== undefined)
-    for (const part of parts) {
-        const partOf = yield* idOfReference(part, 'partOf', allEntryIds)
-        yield* payloadCall(
-            `link ${part.fields.slug} to ${part.partOfSlug}`,
-            () =>
-                payload.update({
-                    collection: 'entries',
-                    id: createdEntryIds.get(part.fields.slug)!,
-                    locale: LOCALE,
-                    req,
-                    data: { partOf },
-                })
+    yield* Effect.forEach(parts, (part) =>
+        idOfReference(part, 'partOf', entryIds).pipe(
+            Effect.flatMap((partOf) =>
+                payloadCall(
+                    `link ${part.fields.slug} to ${part.partOfSlug}`,
+                    () =>
+                        payload.update({
+                            collection: 'entries',
+                            id: createdEntryIds.get(part.fields.slug)!,
+                            locale: LOCALE,
+                            req,
+                            data: { partOf },
+                        })
+                )
+            )
         )
-    }
+    )
     return parts.length
 })
 
@@ -251,17 +261,10 @@ const seed = Effect.gen(function* () {
     const payload = yield* payloadCall('start payload', () =>
         getPayload({ config })
     )
-    const counts = yield* inTransaction(payload, (req) =>
+    const summary = yield* inTransaction(payload, (req) =>
         seedSampleContent(payload, req)
     )
-    yield* Console.log(
-        [
-            `tags: ${counts.tags.created} created, ${counts.tags.skipped} skipped`,
-            `entries: ${counts.entries.created} created, ${counts.entries.skipped} skipped`,
-            `posts: ${counts.posts} created`,
-            `partOf links: ${counts.partOfLinks} set`,
-        ].join('\n')
-    )
+    yield* Console.log(summary)
 })
 
 await Effect.runPromise(seed)

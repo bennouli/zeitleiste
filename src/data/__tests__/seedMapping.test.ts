@@ -2,27 +2,29 @@ import type { Entry, HDate } from '@/lib/entry'
 import { describe, expect, it } from 'vitest'
 import { entries } from '../entries'
 import {
+    missingKeys,
     seedEntryOf,
     tagKindOf,
     tagNamesOf,
-    type EntryFields,
     type SeedEntry,
 } from '../seedMapping'
 
+type DatePart = number | null | undefined
+
 function dateOf(
-    year: number | undefined,
-    month: number | undefined,
-    day: number | undefined
+    year: DatePart,
+    month: DatePart,
+    day: DatePart
 ): HDate | undefined {
-    if (year === undefined) return undefined
+    if (year == null) return undefined
     return {
         year,
-        ...(month !== undefined && { month }),
-        ...(day !== undefined && { day }),
+        ...(month != null && { month }),
+        ...(day != null && { day }),
     }
 }
 
-function endOf(fields: EntryFields, ongoing: boolean): Entry['end'] {
+function endOf(fields: SeedEntry['fields'], ongoing: boolean): Entry['end'] {
     return ongoing
         ? 'ongoing'
         : dateOf(fields.endYear, fields.endMonth, fields.endDay)
@@ -30,7 +32,7 @@ function endOf(fields: EntryFields, ongoing: boolean): Entry['end'] {
 
 function entryOf(seedEntry: SeedEntry): Entry {
     const { fields } = seedEntry
-    const end = endOf(fields, seedEntry.fields.ongoing)
+    const end = endOf(fields, fields.ongoing === true)
     return {
         id: fields.slug,
         title: fields.title,
@@ -98,12 +100,13 @@ describe('seedEntryOf', () => {
         })
     })
 
-    it('uses the sample id as the slug', () => {
+    it('uses the sample id as the slug and keeps it from being regenerated', () => {
         const slugDifferingFromTitle = sampleEntry('katharina-die-grosse')
 
-        expect(seedEntryOf(slugDifferingFromTitle).fields.slug).toBe(
-            'katharina-die-grosse'
-        )
+        expect(seedEntryOf(slugDifferingFromTitle).fields).toMatchObject({
+            slug: 'katharina-die-grosse',
+            generateSlug: false,
+        })
     })
 
     it('keeps tag names in the editor’s order', () => {
@@ -162,5 +165,27 @@ describe('tagKindOf', () => {
             'actor',
             'actor',
         ])
+    })
+})
+
+describe('missingKeys', () => {
+    it('keeps the keys not stored, in their order', () => {
+        const keys = ['kubakrise', 'krimkrieg', 'sowjetunion']
+        const storedIds = new Map([['krimkrieg', 7]])
+
+        expect(missingKeys(keys, storedIds)).toEqual([
+            'kubakrise',
+            'sowjetunion',
+        ])
+    })
+
+    it('finds nothing missing once every key is stored', () => {
+        const keys = ['kubakrise', 'krimkrieg']
+        const storedIds = new Map([
+            ['kubakrise', 1],
+            ['krimkrieg', 2],
+        ])
+
+        expect(missingKeys(keys, storedIds)).toEqual([])
     })
 })
