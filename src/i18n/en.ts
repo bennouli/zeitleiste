@@ -1,13 +1,14 @@
+import { APP_NAME } from '@/lib/brand'
 import type { Messages } from './messages'
 
 const entries = (count: number) => (count === 1 ? 'entry' : 'entries')
 
 export const en = {
     site: {
-        name: 'Timeline',
-        description: 'Interactive timeline: Russia and the West since 1700',
-        heading: 'Timeline: Russia and the West',
-        postTitle: (title) => `${title} – Timeline`,
+        name: APP_NAME,
+        description: `${APP_NAME}: Russia and the West since 1700, an interactive timeline`,
+        heading: `${APP_NAME}: Russia and the West`,
+        postTitle: (title) => `${title} – ${APP_NAME}`,
     },
     notFound: {
         heading: 'Page not found',
@@ -15,6 +16,7 @@ export const en = {
         back: 'Back to the timeline',
     },
     timeline: {
+        regionLabel: 'Timeline',
         help: 'Zoom with plus and minus, move through time with the left and right arrow keys.',
         zoomIn: 'Zoom in',
         zoomOut: 'Zoom out',
@@ -41,7 +43,7 @@ export const en = {
     groupMeta: (count, years) => `${count} ${entries(count)} · ${years}`,
     position: (ordinal, count) => `${ordinal} of ${count}`,
     invitation: {
-        pageTitle: 'Accept invitation – Timeline',
+        pageTitle: `Accept invitation – ${APP_NAME}`,
         heading: 'Accept invitation',
         intro: 'Choose a password. Afterwards you sign in with your email address and this password.',
         password: 'Password',

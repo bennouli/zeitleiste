@@ -14,7 +14,9 @@ export type Focused = {
     outline: string
 }
 
-const TIMELINE_NAMES = Object.values(messages).map((t) => t.site.name)
+const TIMELINE_NAMES = Object.values(messages).map(
+    (t) => t.timeline.regionLabel
+)
 
 /** The timeline in either language. */
 export function timelineRegion(page: Page): Locator {

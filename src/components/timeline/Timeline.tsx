@@ -154,7 +154,7 @@ export function Timeline({
             <section
                 ref={ref}
                 role="region"
-                aria-label={t.site.name}
+                aria-label={t.timeline.regionLabel}
                 tabIndex={0}
                 data-collapsed={collapsed ? 'true' : 'false'}
                 aria-describedby={helpId}

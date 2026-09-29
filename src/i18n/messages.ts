@@ -5,7 +5,7 @@ import type { Locale } from './locales'
 
 export type Messages = {
     site: {
-        /** Wordmark, page title and the timeline's accessible name. */
+        /** Wordmark and page title. */
         name: string
         description: string
         heading: string
@@ -17,6 +17,8 @@ export type Messages = {
         back: string
     }
     timeline: {
+        /** The timeline region's accessible name: what it is, not the brand. */
+        regionLabel: string
         help: string
         zoomIn: string
         zoomOut: string

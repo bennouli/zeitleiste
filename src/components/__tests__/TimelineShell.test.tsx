@@ -104,7 +104,7 @@ describe('TimelineShell', () => {
         expect(tl).toHaveAttribute('data-focus', '')
         expect(screen.queryByRole('article')).not.toBeInTheDocument()
         expect(
-            screen.getByRole('heading', { level: 1, name: /Zeitleiste/ })
+            screen.getByRole('heading', { level: 1, name: /Liniya/ })
         ).toBeInTheDocument()
     })
 

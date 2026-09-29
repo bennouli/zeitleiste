@@ -15,7 +15,7 @@ const smtpEnv = {
     SMTP_USER: 'project-id',
     SMTP_PASS: 'secret-sentinel',
 }
-const defaultSender = { name: 'Zeitleiste', address: 'noreply@bennoselig.dev' }
+const defaultSender = { name: 'Liniya', address: 'noreply@bennoselig.dev' }
 
 afterEach(() => {
     vi.restoreAllMocks()
@@ -77,17 +77,17 @@ describe('EmailEnv', () => {
 
     it('parses EMAIL_FROM into name and address', () => {
         const env = {
-            EMAIL_FROM: 'Zeitleiste Staging <staging@bennoselig.dev>',
+            EMAIL_FROM: 'Liniya Staging <staging@bennoselig.dev>',
         }
         expect(decodeEmailEnv(env).sender).toEqual({
-            name: 'Zeitleiste Staging',
+            name: 'Liniya Staging',
             address: 'staging@bennoselig.dev',
         })
     })
 
     it.each([
         'noreply@bennoselig.dev',
-        'Zeitleiste <noreply>',
+        'Liniya <noreply>',
         '<noreply@bennoselig.dev>',
     ])('rejects EMAIL_FROM %s', (sender) => {
         const env = { EMAIL_FROM: sender }
@@ -100,7 +100,7 @@ describe('emailAdapter', () => {
         const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
         emailAdapter(smtpEnv)
         expect(nodemailerAdapter).toHaveBeenCalledWith({
-            defaultFromName: 'Zeitleiste',
+            defaultFromName: 'Liniya',
             defaultFromAddress: 'noreply@bennoselig.dev',
             transportOptions: {
                 host: 'smtp.tem.scaleway.com',
@@ -119,7 +119,7 @@ describe('emailAdapter', () => {
         emailAdapter(env)
         expect(nodemailerAdapter).toHaveBeenCalledWith(
             expect.objectContaining({
-                defaultFromName: 'Zeitleiste',
+                defaultFromName: 'Liniya',
                 defaultFromAddress: 'noreply@bennoselig.dev',
             })
         )
@@ -147,7 +147,7 @@ describe('terminal transport', () => {
     it('prints recipient, subject and text body', async () => {
         const info = vi.spyOn(console, 'info').mockImplementation(() => {})
         const message = {
-            from: 'Zeitleiste <noreply@bennoselig.dev>',
+            from: 'Liniya <noreply@bennoselig.dev>',
             to: 'editor@example.com',
             subject: 'Einladung',
             text: 'Hier ist dein Link',
@@ -164,7 +164,7 @@ describe('terminal transport', () => {
     it('prints the html body when there is no text', async () => {
         const info = vi.spyOn(console, 'info').mockImplementation(() => {})
         const message = {
-            from: 'Zeitleiste <noreply@bennoselig.dev>',
+            from: 'Liniya <noreply@bennoselig.dev>',
             to: 'editor@example.com',
             subject: 'Reset',
             html: '<a href="/admin/reset/token">Reset</a>',

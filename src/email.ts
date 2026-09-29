@@ -1,3 +1,4 @@
+import { APP_NAME } from '@/lib/brand'
 import { nodemailerAdapter } from '@payloadcms/email-nodemailer'
 import {
     Effect,
@@ -34,7 +35,7 @@ export const emailAdapter = (env: unknown) => {
     })
 }
 
-const DEFAULT_SENDER = 'Zeitleiste <noreply@bennoselig.dev>'
+const DEFAULT_SENDER = `${APP_NAME} <noreply@bennoselig.dev>`
 const MAILBOX = /^\s*(\S(?:.*\S)?)\s*<\s*([^\s<>@]+@[^\s<>@]+)\s*>\s*$/
 
 const isFilled = (value: string | undefined): value is string =>
@@ -65,8 +66,7 @@ const MailboxFromString = Schema.String.pipe(
                     ? Effect.fail(
                           new SchemaIssue.InvalidValue(
                               {
-                                  message:
-                                      'Expected a sender like "Zeitleiste <noreply@bennoselig.dev>"',
+                                  message: `Expected a sender like "${DEFAULT_SENDER}"`,
                               },
                               value,
                               options

@@ -1,3 +1,4 @@
+import { APP_NAME } from '@/lib/brand'
 import type { Messages } from './messages'
 
 const entries = (count: number) => (count === 1 ? 'Eintrag' : 'Einträge')
@@ -5,11 +6,10 @@ const entriesDative = (count: number) => (count === 1 ? 'Eintrag' : 'Einträgen'
 
 export const de = {
     site: {
-        name: 'Zeitleiste',
-        description:
-            'Interaktive Zeitleiste: Russland und der Westen seit 1700',
-        heading: 'Zeitleiste: Russland und der Westen',
-        postTitle: (title) => `${title} – Zeitleiste`,
+        name: APP_NAME,
+        description: `${APP_NAME}: Russland und der Westen seit 1700, eine interaktive Zeitleiste`,
+        heading: `${APP_NAME}: Russland und der Westen`,
+        postTitle: (title) => `${title} – ${APP_NAME}`,
     },
     notFound: {
         heading: 'Seite nicht gefunden',
@@ -17,6 +17,7 @@ export const de = {
         back: 'Zur Zeitleiste',
     },
     timeline: {
+        regionLabel: 'Zeitleiste',
         help: 'Mit Plus und Minus zoomen, mit den Pfeiltasten links und rechts in der Zeit verschieben.',
         zoomIn: 'Hineinzoomen',
         zoomOut: 'Herauszoomen',
@@ -43,7 +44,7 @@ export const de = {
     groupMeta: (count, years) => `${count} ${entries(count)} · ${years}`,
     position: (ordinal, count) => `${ordinal} von ${count}`,
     invitation: {
-        pageTitle: 'Einladung annehmen – Zeitleiste',
+        pageTitle: `Einladung annehmen – ${APP_NAME}`,
         heading: 'Einladung annehmen',
         intro: 'Lege ein Passwort fest. Danach meldest du dich mit deiner E-Mail-Adresse und diesem Passwort an.',
         password: 'Passwort',
