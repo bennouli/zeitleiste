@@ -11,7 +11,7 @@ const ENGLISH_PAGES = [
     },
 ] as const
 
-/** Titles, summaries, tags and post bodies stay German until the entries have English texts (#27). */
+/** Titles, summaries, tags and post bodies: the seed is German only, so /en shows them as the German fallback. */
 const CONTENT_TEXTS = entries
     .flatMap((entry) => [
         entry.title,
