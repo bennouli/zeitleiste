@@ -6,11 +6,12 @@ import {
     type ClusterNode,
 } from '@/lib/cluster'
 import { isSpan, type Entry } from '@/lib/entry'
-import type { Slot } from '@/lib/placement'
+import type { Side, Slot } from '@/lib/placement'
 import { entryAnchor, MS_PER_DAY, MS_PER_YEAR } from '@/lib/time'
 import { sampleEntry } from '@/test/entries'
 import { renderHook } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
+import { bandGeometry } from '../bandGeometry'
 import { estimateLabelWidthPx, LABEL_MAX_WIDTH_PX } from '../labelMetrics'
 import {
     PRIVATE_UNDER_TESTS,
@@ -20,8 +21,13 @@ import {
     type LayoutItem,
 } from '../useEntryLayout'
 
-const { layoutEntries, parentMap, markerCollisions, mergeInto } =
-    PRIVATE_UNDER_TESTS
+const {
+    alternatingSides,
+    layoutEntries,
+    parentMap,
+    markerCollisions,
+    mergeInto,
+} = PRIVATE_UNDER_TESTS
 
 const POINT = sampleEntry('dekabristenaufstand')
 const spans = entries.filter(isSpan)
@@ -84,7 +90,8 @@ function layout({
         pts.map((e) => ({ id: e.id, t: entryAnchor(e) }))
     )
     const parents = parentMap(tree)
-    return layoutEntries(pts, geometry, tree, parents, previous)
+    const preferredSides = alternatingSides(pts)
+    return layoutEntries(pts, geometry, tree, parents, preferredSides, previous)
 }
 
 function timeToXOf({
@@ -188,7 +195,7 @@ describe('layoutEntries', () => {
         }
     })
 
-    it('alternates consecutive single entries between the sides wherever the other side has room', () => {
+    it('puts every card on its side in the alternation of all entries wherever that side has room', () => {
         const EVENLY_SPACED: Entry[] = Array.from({ length: 12 }, (_, k) => ({
             ...POINT,
             id: `even${k}`,
@@ -212,33 +219,60 @@ describe('layoutEntries', () => {
         )
         for (const scenario of [evenlySpaced, ...initialViews]) {
             const entryLayout = layout(scenario)
+            const preferredSides = alternatingSides(scenario.pts)
             const timeToX = timeToXOf(scenario)
             const maxLevels = scenario.maxLevels ?? DEFAULT_LEVELS
-            const cardPairs = entryLayout.items
-                .slice(1)
-                .map((later, k) => [entryLayout.items[k]!, later] as const)
-                .filter(([a, b]) => a.kind === 'card' && b.kind === 'card')
-            expect(cardPairs.length).toBeGreaterThan(1)
-            for (const [earlier, later] of cardPairs) {
-                if (earlier.slot.side !== later.slot.side) continue
-                const otherSide =
-                    later.slot.side === 'above' ? 'below' : 'above'
-                const laterExtent = extent(later, timeToX)
+            const cards = entryLayout.items.filter((i) => i.kind === 'card')
+            expect(cards.length).toBeGreaterThan(1)
+            for (const card of cards) {
+                const preferredSide = preferredSides.get(card.id)
+                if (card.slot.side === preferredSide) continue
+                const cardExtent = extent(card, timeToX)
                 const isRowTaken = (level: number) =>
                     entryLayout.items.some(
                         (i) =>
                             i.kind !== 'marker' &&
-                            i.slot.side === otherSide &&
+                            i.slot.side === preferredSide &&
                             rowsOf(i, scenario.groupLevels).includes(level) &&
-                            isNear(extent(i, timeToX), laterExtent)
+                            isNear(extent(i, timeToX), cardExtent)
                     )
                 const levels = Array.from({ length: maxLevels }, (_, l) => l)
                 expect(
                     levels.every(isRowTaken),
-                    `${earlier.id} and ${later.id} share a side`
+                    `${card.id} left ${preferredSide} with room there`
                 ).toBe(true)
             }
         }
+    })
+
+    it('keeps every card of the sample entries on its side while zooming in and out at 1920 px', () => {
+        const zoomYears = [300, 100, 40, 10, 2]
+        const zoomInAndOut = [...zoomYears, ...zoomYears.toReversed()]
+        const sidesById = new Map<string, Set<Side>>()
+
+        let previous: Map<string, Slot> | null = null
+        for (const visibleYears of zoomInAndOut) {
+            const zoomed = layout({
+                ...desktopNear1918(visibleYears),
+                previous,
+            })
+            recordCardSides(sidesById, zoomed)
+            previous = new Map(zoomed.items.map((i) => [i.id, i.slot]))
+        }
+
+        expect(sidesById.size).toBeGreaterThan(zoomYears.length)
+        expect(idsOnBothSides(sidesById)).toEqual([])
+    })
+
+    it('gives every card of the sample entries the same side at each zoom level, with no previous layout', () => {
+        const zoomYears = [40, 10, 2]
+        const sidesById = new Map<string, Set<Side>>()
+
+        for (const visibleYears of zoomYears)
+            recordCardSides(sidesById, layout(desktopNear1918(visibleYears)))
+
+        expect(sidesById.size).toBeGreaterThan(zoomYears.length)
+        expect(idsOnBothSides(sidesById)).toEqual([])
     })
 
     it('groups the crowded years at the widest zoom and splits them when zoomed in', () => {
@@ -340,7 +374,14 @@ describe('layoutEntries', () => {
             const tree = buildClusterTree(
                 pts.map((e) => ({ id: e.id, t: entryAnchor(e) }))
             )
-            return layoutEntries(pts, onePxPerDay, tree, parentMap(tree), null)
+            return layoutEntries(
+                pts,
+                onePxPerDay,
+                tree,
+                parentMap(tree),
+                alternatingSides(pts),
+                null
+            )
         }
 
         const withSpan = layoutOf([span, early, late])
@@ -383,6 +424,26 @@ describe('useEntryLayout', () => {
         expect(spanCards.length).toBeGreaterThan(0)
         for (const card of spanCards)
             expect(card.t).toBe(entryAnchor(card.entries[0]!))
+    })
+})
+
+describe('alternatingSides', () => {
+    it('alternates all entries in chronological order, the first above, ties by id', () => {
+        const at = (id: string, year: number): Entry => ({
+            ...POINT,
+            id,
+            start: { year },
+            end: undefined,
+        })
+        const shuffled = [at('c', 1900), at('b', 1800), at('a', 1800)]
+
+        const sides = alternatingSides(shuffled)
+
+        expect(Object.fromEntries(sides)).toEqual({
+            a: 'above',
+            b: 'below',
+            c: 'above',
+        })
     })
 })
 
@@ -509,4 +570,33 @@ function findNode(cluster: Cluster, members: string[]): ClusterNode {
     )
     if (!found) throw new Error(`no node with members ${members.join()}`)
     return found
+}
+
+/** A 1920 × 1080 window's bands, `visibleYears` wide around 1918. */
+function desktopNear1918(visibleYears: number): LayoutScenario {
+    const { maxLevels, groupLevels } = bandGeometry(1080, 1920, false)
+    return {
+        ...WIDE_DESKTOP,
+        visibleYears,
+        centerT: Y1918,
+        maxLevels,
+        groupLevels,
+    }
+}
+
+function recordCardSides(
+    sidesById: Map<string, Set<Side>>,
+    entryLayout: EntryLayout
+): void {
+    for (const card of entryLayout.items.filter((i) => i.kind === 'card'))
+        sidesById.set(
+            card.id,
+            (sidesById.get(card.id) ?? new Set()).add(card.slot.side)
+        )
+}
+
+function idsOnBothSides(sidesById: ReadonlyMap<string, Set<Side>>): string[] {
+    return [...sidesById]
+        .filter(([, sides]) => sides.size > 1)
+        .map(([id]) => id)
 }

@@ -13,8 +13,13 @@ import {
     type SlotRequest,
 } from '../placement'
 
-const { usedLevels, candidateSlots, alternateSides, buildRows } =
-    PRIVATE_UNDER_TESTS
+const {
+    usedLevels,
+    candidateSlots,
+    alternateSides,
+    preferredSideFirst,
+    buildRows,
+} = PRIVATE_UNDER_TESTS
 
 function item(id: string, x0: number, x1: number, order = 0): PlaceableItem {
     return { id, x0, x1, order }
@@ -200,6 +205,19 @@ describe('placeItems', () => {
         expect(beforeAbove.slots.get('a')?.side).toBe('above')
         expect(aroundBelow.slots.get('a')?.side).toBe('above')
         expect(aroundBelow.slots.get('b')?.side).toBe('above')
+    })
+
+    it('puts an item on its preferred side against the alternation, crossing over only when that side is full', () => {
+        const preferAbove: PlaceableItem[] = [
+            { ...item('a', 0, 100, 0), preferredSide: 'above' },
+            { ...item('b', 200, 300, 1), preferredSide: 'above' },
+            { ...item('c', 250, 350, 2), preferredSide: 'above' },
+        ]
+        const oneRow: PlacementOptions = { maxLevels: 1 }
+        const p = placeItems(preferAbove, null, oneRow)
+        expect(p.slots.get('a')).toEqual({ side: 'above', level: 0 })
+        expect(p.slots.get('b')).toEqual({ side: 'above', level: 0 })
+        expect(p.slots.get('c')).toEqual({ side: 'below', level: 0 })
     })
 
     it('takes candidate order from the side strategy and keeps hysteresis ahead of it', () => {
@@ -590,6 +608,41 @@ describe('alternateSides', () => {
         expect(alternateSides(first)).toEqual(candidateSlots(2, 'above'))
         expect(alternateSides(afterAbove)).toEqual(candidateSlots(2, 'below'))
         expect(alternateSides(afterBelow)).toEqual(candidateSlots(2, 'above'))
+    })
+})
+
+describe('preferredSideFirst', () => {
+    it("offers the item's preferred side first, whatever the preceding side", () => {
+        const preferBelow: PlaceableItem = {
+            ...item('a', 0, 100),
+            preferredSide: 'below',
+        }
+        const afterAbove: SlotRequest = {
+            item: preferBelow,
+            precedingSide: 'above',
+            maxLevels: 2,
+        }
+        const afterBelow: SlotRequest = {
+            ...afterAbove,
+            precedingSide: 'below',
+        }
+        expect(preferredSideFirst(afterAbove)).toEqual(
+            candidateSlots(2, 'below')
+        )
+        expect(preferredSideFirst(afterBelow)).toEqual(
+            candidateSlots(2, 'below')
+        )
+    })
+
+    it('alternates for an item without a preferred side', () => {
+        const noPreference: SlotRequest = {
+            item: item('a', 0, 100),
+            precedingSide: 'above',
+            maxLevels: 2,
+        }
+        expect(preferredSideFirst(noPreference)).toEqual(
+            alternateSides(noPreference)
+        )
     })
 })
 
