@@ -6,9 +6,10 @@
     "scripts": {
         "dev": "next dev",
         "build": "next build",
-        "ci": "payload migrate && pnpm build",
+        "ci": "payload migrate && pnpm seed && pnpm build",
         "start": "next start",
         "payload": "payload",
+        "seed": "NODE_ENV=production payload run src/data/seed.ts",
         "lint": "eslint",
         "typecheck": "next typegen && tsc --noEmit",
         "test": "vitest run",
