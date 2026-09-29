@@ -133,6 +133,165 @@ describe('end room', () => {
     })
 })
 
+describe('start room', () => {
+    const ROOM = 0.2
+    const ROOMY_BOUNDS: Bounds = { ...SAMPLE, startRoom: ROOM }
+    const fortyYears = 40 * MS_PER_YEAR
+    const focusCenter = Date.UTC(1900, 0, 1)
+    const dragToStartPx = 1e9
+
+    it('initialViewport shows the whole range and its room when they fit', () => {
+        const range = (MAX_VISIBLE_MS / 2) * (1 - ROOM)
+        const fittingBounds: Bounds = {
+            min: SAMPLE.max - range,
+            max: SAMPLE.max,
+            startRoom: ROOM,
+        }
+        const vp = initialViewport(fittingBounds)
+        expect(vp.end).toBeCloseTo(fittingBounds.max, 0)
+        expect(visibleMs(vp)).toBeCloseTo(MAX_VISIBLE_MS / 2, 0)
+        expect(fittingBounds.min - vp.start).toBeCloseTo(
+            ROOM * visibleMs(vp),
+            0
+        )
+    })
+
+    it('panning to the start stops with the room before the first entry', () => {
+        const vp = zoomTo(focusCenter, fortyYears, ROOMY_BOUNDS)
+        const startStop = panBy(vp, WIDTH, dragToStartPx, ROOMY_BOUNDS)
+        expect(SAMPLE.min - startStop.start).toBeCloseTo(ROOM * fortyYears, 0)
+        expect(visibleMs(startStop)).toBeCloseTo(fortyYears, 0)
+    })
+
+    it('a focus zoom near the first entry keeps the room', () => {
+        const earlyFocus = zoomTo(SAMPLE.min, fortyYears, ROOMY_BOUNDS)
+        expect(SAMPLE.min - earlyFocus.start).toBeCloseTo(ROOM * fortyYears, 0)
+    })
+
+    it('zooming out stops once the range and its room fill the view', () => {
+        const narrowBounds: Bounds = {
+            min: SAMPLE.max - MAX_VISIBLE_MS / 4,
+            max: SAMPLE.max,
+            startRoom: ROOM,
+        }
+        let cur = zoomTo(
+            SAMPLE.max - MAX_VISIBLE_MS / 8,
+            MIN_VISIBLE_MS,
+            narrowBounds
+        )
+        for (let i = 0; i < 100 && canZoomOut(cur, narrowBounds); i++)
+            cur = zoomAround(
+                cur,
+                WIDTH,
+                500,
+                1 / ZOOM_STEP_FACTOR,
+                narrowBounds
+            )
+        expect(visibleMs(cur)).toBeCloseTo(MAX_VISIBLE_MS / 4 / (1 - ROOM), 0)
+        expect(cur.end).toBeCloseTo(narrowBounds.max, 0)
+        expect(canZoomOut(cur, narrowBounds)).toBe(false)
+    })
+
+    it.each([Number.NaN, -0.5, 1, 2])('treats a room of %s as none', (room) => {
+        const oddBounds: Bounds = { ...SAMPLE, startRoom: room }
+        expect(initialViewport(oddBounds)).toEqual(initialViewport(SAMPLE))
+    })
+})
+
+describe('rooms at roomyBounds ends', () => {
+    const ROOM = 0.2
+
+    it('initialViewport places min and max the same distance from their edges', () => {
+        const range = (MAX_VISIBLE_MS / 2) * (1 - 2 * ROOM)
+        const fittingBounds: Bounds = {
+            min: SAMPLE.max - range,
+            max: SAMPLE.max,
+            startRoom: ROOM,
+            endRoom: ROOM,
+        }
+        const vp = initialViewport(fittingBounds)
+        const minFromLeft = timeToX(vp, WIDTH, fittingBounds.min)
+        const maxFromRight = WIDTH - timeToX(vp, WIDTH, fittingBounds.max)
+        expect(minFromLeft).toBeCloseTo(ROOM * WIDTH, 6)
+        expect(maxFromRight).toBeCloseTo(minFromLeft, 6)
+    })
+
+    it('keeps today before its room when the range does not fit', () => {
+        const roomyBounds: Bounds = {
+            ...SAMPLE,
+            startRoom: ROOM,
+            endRoom: ROOM,
+        }
+        const vp = initialViewport(roomyBounds)
+        expect(visibleMs(vp)).toBeCloseTo(MAX_VISIBLE_MS, 0)
+        expect(vp.end - SAMPLE.max).toBeCloseTo(ROOM * visibleMs(vp), 0)
+    })
+
+    describe('when the rooms together fill the view', () => {
+        const WIDE_ROOM = 0.55
+        const crowdedBounds: Bounds = {
+            ...SAMPLE,
+            startRoom: WIDE_ROOM,
+            endRoom: WIDE_ROOM,
+        }
+        const fortyYears = 40 * MS_PER_YEAR
+        const focusCenter = Date.UTC(1900, 0, 1)
+        const dragToStartPx = 1e9
+        const dragToEndPx = -1e9
+        const absurdDragPx = 1e300
+        const vp = zoomTo(focusCenter, fortyYears, crowdedBounds)
+
+        it('initialViewport opens at the widest span, today before its room', () => {
+            const openingView = initialViewport(crowdedBounds)
+            expect(visibleMs(openingView)).toBeCloseTo(MAX_VISIBLE_MS, 0)
+            expect(openingView.end - SAMPLE.max).toBeCloseTo(
+                WIDE_ROOM * MAX_VISIBLE_MS,
+                0
+            )
+        })
+
+        it('panning stops with the room before the first entry and after today', () => {
+            const startStop = panBy(vp, WIDTH, dragToStartPx, crowdedBounds)
+            const endStop = panBy(vp, WIDTH, dragToEndPx, crowdedBounds)
+            expect(SAMPLE.min - startStop.start).toBeCloseTo(
+                WIDE_ROOM * fortyYears,
+                0
+            )
+            expect(endStop.end - SAMPLE.max).toBeCloseTo(
+                WIDE_ROOM * fortyYears,
+                0
+            )
+        })
+
+        it('keeps the span for an absurdlyDragged drag', () => {
+            const absurdlyDragged = panBy(
+                vp,
+                WIDTH,
+                absurdDragPx,
+                crowdedBounds
+            )
+            expect(visibleMs(absurdlyDragged)).toBeCloseTo(fortyYears, 0)
+            expect(SAMPLE.min - absurdlyDragged.start).toBeCloseTo(
+                WIDE_ROOM * fortyYears,
+                0
+            )
+        })
+
+        it('zooming out stops at MAX_VISIBLE_MS', () => {
+            let cur = vp
+            for (let i = 0; i < 100 && canZoomOut(cur, crowdedBounds); i++)
+                cur = zoomAround(
+                    cur,
+                    WIDTH,
+                    500,
+                    1 / ZOOM_STEP_FACTOR,
+                    crowdedBounds
+                )
+            expect(visibleMs(cur)).toBeCloseTo(MAX_VISIBLE_MS, 0)
+        })
+    })
+})
+
 describe('coordinate mapping', () => {
     const vp = initialViewport(SAMPLE)
 

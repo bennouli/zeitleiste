@@ -30,8 +30,8 @@ const { MAX_VISIBLE_MS } = VIEWPORT_UNDER_TESTS
 
 const WIDTH = 1000
 const HEIGHT = 800
-/** Room after today, as a fraction of the visible span. */
-const END_ROOM = (LABEL_MAX_WIDTH_PX + CARD_GAP_PX) / WIDTH
+/** Room before the earliest entry and after today, as a fraction of the visible span. */
+const ROOM = (LABEL_MAX_WIDTH_PX + CARD_GAP_PX) / WIDTH
 const NOW = Date.UTC(2026, 8, 27, 12)
 /** A point in time with a post that stands alone at the widest zoom. */
 const POST_POINT = sampleEntry('fall-der-berliner-mauer')
@@ -189,7 +189,7 @@ describe('Timeline', () => {
         expect(tickTimes.some((t) => t > today)).toBe(true)
     })
 
-    it('axis runs from the earliest entry to today plus room for a card; an earlier entry moves the start', () => {
+    it('axis runs from the earliest entry to today plus room for a card at each end; an earlier entry moves the start', () => {
         const { region, rerender } = renderTimeline()
         const earliest = Math.min(...entries.map((e) => startOf(e.start)))
         const today = Date.UTC(2026, 8, 27)
@@ -199,7 +199,7 @@ describe('Timeline', () => {
             6
         )
         expect(v.span).toBeCloseTo(
-            Math.min((today - earliest) / (1 - END_ROOM), MAX_VISIBLE_MS),
+            Math.min((today - earliest) / (1 - 2 * ROOM), MAX_VISIBLE_MS),
             -3
         )
         expect(
@@ -572,7 +572,7 @@ describe('Timeline', () => {
             />
         )
         const v = view(screen.getByRole('region'))
-        expect(v.span).toBeCloseTo((100 * MS_PER_YEAR) / (1 - END_ROOM), -3)
+        expect(v.span).toBeCloseTo((100 * MS_PER_YEAR) / (1 - 2 * ROOM), -3)
     })
 
     describe('keyboard access', () => {
@@ -734,23 +734,27 @@ describe('dataBounds', () => {
     const CENTURY_BACK = {
         min: TODAY - 100 * MS_PER_YEAR,
         max: TODAY,
-        endRoom: END_ROOM,
+        startRoom: ROOM,
+        endRoom: ROOM,
     }
 
-    it('reaches from the earliest entry start to today, with room for a card', () => {
+    it('reaches from the earliest entry start to today, with room for a card at each end', () => {
         const earliest = sampleEntry('grosser-nordischer-krieg')
         const mixed = [POST_POINT, earliest]
         const bounds = dataBounds(mixed, TODAY, WIDTH)
         expect(bounds).toEqual({
             min: startOf(earliest.start),
             max: TODAY,
-            endRoom: END_ROOM,
+            startRoom: ROOM,
+            endRoom: ROOM,
         })
     })
 
     it('keeps no room before the width is measured', () => {
         const unmeasured = 0
-        expect(dataBounds([POST_POINT], TODAY, unmeasured).endRoom).toBe(0)
+        const bounds = dataBounds([POST_POINT], TODAY, unmeasured)
+        expect(bounds.startRoom).toBe(0)
+        expect(bounds.endRoom).toBe(0)
     })
 
     it('reaches a century back without entries', () => {

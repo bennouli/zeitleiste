@@ -5,8 +5,27 @@ test.use({ viewport: { width: 1280, height: 800 }, reducedMotion: 'reduce' })
 
 const ZOOM_STEPS = 4
 
+const EARLIEST_SPAN = 'grosser-nordischer-krieg'
+const EDGE_ROOM_TOLERANCE_PX = 2
+
+const viewStart = async (region: Locator) =>
+    Number(await region.getAttribute('data-view-start'))
+
 const viewEnd = async (region: Locator) =>
     Number(await region.getAttribute('data-view-end'))
+
+const leftOf = (locator: Locator) =>
+    locator.evaluate((el) => el.getBoundingClientRect().x)
+
+async function panToStart(page: Page) {
+    const region = timelineRegion(page)
+    await region.focus()
+    await expect(async () => {
+        const startBeforePan = await viewStart(region)
+        await page.keyboard.press('ArrowLeft')
+        expect(await viewStart(region)).toBe(startBeforePan)
+    }).toPass({ intervals: [0] })
+}
 
 async function zoomInAndPanToEnd(page: Page) {
     const region = timelineRegion(page)
@@ -73,3 +92,30 @@ test('ticks after today look like ticks before it', async ({ page }) => {
     for (const tick of ticksAfter)
         expect(markClassesBefore).toContain(tick.markClass)
 })
+
+for (const [label, size] of [
+    ['desktop', { width: 1920, height: 1080 }],
+    ['phone', { width: 390, height: 844 }],
+] as const) {
+    test(`the first entry keeps the room from the left edge that today keeps from the right (${label})`, async ({
+        page,
+    }) => {
+        await page.setViewportSize(size)
+        await openTimeline(page)
+        const region = (await timelineRegion(page).boundingBox())!
+        const todayFromRight =
+            region.x +
+            region.width -
+            (await leftOf(page.locator('[data-today]')))
+
+        await panToStart(page)
+
+        const firstFromLeft =
+            (await leftOf(page.locator(`[data-span-id="${EARLIEST_SPAN}"]`))) -
+            region.x
+        expect(todayFromRight).toBeGreaterThan(EDGE_ROOM_TOLERANCE_PX)
+        expect(Math.abs(firstFromLeft - todayFromRight)).toBeLessThanOrEqual(
+            EDGE_ROOM_TOLERANCE_PX
+        )
+    })
+}
