@@ -29,6 +29,13 @@ const post = found([{ id: 7, body }])
 const nothing = found([])
 const unreachable = new Error('connection refused')
 const withoutSlug = found([{ ...entryDoc('krimkrieg', null), slug: null }])
+const withEnglishOnlyEntry = found([
+    entryDoc('krimkrieg', null),
+    { ...entryDoc('crimean-war', null), title: null, summary: null },
+])
+const englishOnlyWithPost = found([
+    { ...entryDoc('crimean-war', 7), title: null },
+])
 const mixed = found([
     entryDoc('krimkrieg', 7),
     entryDoc('wiener-kongress', null),
@@ -64,6 +71,12 @@ describe('loadEntries', () => {
             ['wiener-kongress', false],
         ])
         expect(find).toHaveBeenCalledTimes(1)
+    })
+
+    it('leaves out an entry without texts in the locale', async () => {
+        find.mockResolvedValueOnce(withEnglishOnlyEntry)
+        const entries = await Effect.runPromise(loadEntries('de'))
+        expect(entries.map((e) => e.id)).toEqual(['krimkrieg'])
     })
 
     it('fails with a LoadError when the content management fails', async () => {
@@ -108,6 +121,14 @@ describe('loadPost', () => {
         find.mockResolvedValueOnce(nothing)
         expect(
             await Effect.runPromise(loadPost('entwurf', 'de'))
+        ).toBeUndefined()
+        expect(find).toHaveBeenCalledTimes(1)
+    })
+
+    it('finds nothing for an entry without texts in the locale', async () => {
+        find.mockResolvedValueOnce(englishOnlyWithPost)
+        expect(
+            await Effect.runPromise(loadPost('crimean-war', 'de'))
         ).toBeUndefined()
         expect(find).toHaveBeenCalledTimes(1)
     })

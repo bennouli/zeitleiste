@@ -1,7 +1,7 @@
 import { defineConfig, devices } from '@playwright/test'
 
 const PORT = 3100
-const PUBLISHING = /publishing\.spec\.ts/
+const PUBLISHING = /(publishing|entry-languages)\.spec\.ts/
 
 export default defineConfig({
     testDir: './e2e',

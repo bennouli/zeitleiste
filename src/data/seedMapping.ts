@@ -19,7 +19,7 @@ type EntryFields = Pick<
 >
 
 export type SeedEntry = {
-    fields: EntryFields & { slug: string }
+    fields: EntryFields & { slug: string; title: string; summary: string }
     tagNames: readonly string[]
     subjectSlug?: string
     partOfSlug?: string

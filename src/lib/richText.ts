@@ -1,7 +1,7 @@
 import type { Post as PostDocument } from '@/payload-types'
 
 /** A post body as the admin's rich-text editor stores it. */
-export type PostBody = PostDocument['body']
+export type PostBody = NonNullable<PostDocument['body']>
 
 /** Plain text with blank lines between paragraphs, as rich text of those paragraphs. */
 export function paragraphsToLexical(text: string): PostBody {

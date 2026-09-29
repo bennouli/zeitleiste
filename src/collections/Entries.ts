@@ -8,7 +8,7 @@ import type {
     RelationshipFieldValidation,
     RowField,
 } from 'payload'
-import { checkbox, number, relationship } from 'payload/shared'
+import { checkbox, number, relationship, text, textarea } from 'payload/shared'
 import {
     datePartsOf,
     datePartsOnSave,
@@ -23,6 +23,7 @@ import {
     type EntryDateParts,
     type Side,
 } from './entryDates'
+import { requiredInGerman } from './requiredInGerman'
 import { revalidateEntryChange, revalidateEntryDelete } from './revalidate'
 import { germanSlugField } from './slugField'
 
@@ -123,16 +124,16 @@ export const Entries: CollectionConfig = {
             name: 'title',
             type: 'text',
             label: 'Titel',
-            required: true,
             localized: true,
+            validate: requiredInGerman(text),
         },
         germanSlugField('title'),
         {
             name: 'summary',
             type: 'textarea',
             label: 'Zusammenfassung',
-            required: true,
             localized: true,
+            validate: requiredInGerman(textarea),
             admin: {
                 description:
                     'Hinweis beim Überfahren und Vorspann des Beitrags.',

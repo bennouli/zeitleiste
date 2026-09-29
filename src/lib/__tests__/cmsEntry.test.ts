@@ -1,13 +1,25 @@
 import { entries } from '@/data/entries'
 import { Schema } from 'effect'
 import { describe, expect, it } from 'vitest'
-import { CmsEntry, CmsPost, entryOf, postIdOf } from '../cmsEntry'
+import {
+    CmsEntry,
+    CmsPost,
+    entryOf,
+    hasTexts,
+    postIdOf,
+    type TextedCmsEntry,
+} from '../cmsEntry'
 import type { Entry } from '../entry'
 import { paragraphsToLexical } from '../richText'
 
-const decodeEntry = Schema.decodeUnknownSync(CmsEntry)
+const decodeCmsEntry = Schema.decodeUnknownSync(CmsEntry)
 const decodePost = Schema.decodeUnknownSync(CmsPost)
 
+function decodeEntry(doc: unknown): TextedCmsEntry {
+    const decoded = decodeCmsEntry(doc)
+    if (!hasTexts(decoded)) throw new Error('entry without texts')
+    return decoded
+}
 /** The Local API's depth-1 document for a sample entry, with ids for everything a visitor may not read. */
 function cmsDocOf(entry: Entry, index: number) {
     const end = entry.end === 'ongoing' ? undefined : entry.end
@@ -89,6 +101,23 @@ describe('entryOf', () => {
     it('rejects an unknown entry type', () => {
         const doc = { ...cmsDocOf(entries[0]!, 0), type: 'battle' }
         expect(() => decodeEntry(doc)).toThrow()
+    })
+})
+
+describe('hasTexts', () => {
+    it('holds for an entry with its title and summary', () => {
+        const doc = decodeCmsEntry(cmsDocOf(entries[0]!, 0))
+        expect(hasTexts(doc)).toBe(true)
+    })
+
+    it('fails for an entry read in a locale it has no texts in', () => {
+        const doc = cmsDocOf(entries[0]!, 0)
+        const noTitle = decodeCmsEntry({ ...doc, title: null })
+        const noSummary = decodeCmsEntry({ ...doc, summary: undefined })
+        const emptyTitle = decodeCmsEntry({ ...doc, title: '' })
+        expect(hasTexts(noTitle)).toBe(false)
+        expect(hasTexts(noSummary)).toBe(false)
+        expect(hasTexts(emptyTitle)).toBe(false)
     })
 })
 

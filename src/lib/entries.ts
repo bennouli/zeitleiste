@@ -2,7 +2,7 @@ import { DEFAULT_LOCALE, type Locale } from '@/i18n/locales'
 import config from '@/payload.config'
 import { Data, Effect, Schema } from 'effect'
 import { getPayload, type Payload, type Where } from 'payload'
-import { CmsEntry, CmsPost, entryOf, postIdOf } from './cmsEntry'
+import { CmsEntry, CmsPost, entryOf, hasTexts, postIdOf } from './cmsEntry'
 import type { Post } from './entry'
 import { paragraphsToLexical } from './richText'
 
@@ -51,7 +51,10 @@ function findPublishedEntries(locale: Locale, where: Where) {
             sort: 'startAt',
             pagination: false,
         })
-    ).pipe(Effect.flatMap(({ docs }) => decode(Schema.Array(CmsEntry), docs)))
+    ).pipe(
+        Effect.flatMap(({ docs }) => decode(Schema.Array(CmsEntry), docs)),
+        Effect.map((docs) => docs.filter(hasTexts))
+    )
 }
 
 /**
