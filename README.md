@@ -88,6 +88,28 @@ branch back to push mode.
 
 Content typed into a local `/admin` lands on the `dev` branch and stays there. Real content is entered on the deployed admin.
 
+## Deployment
+
+The site runs on [Vercel](https://vercel.com) from the GitHub repository: a push to `main` deploys to production, every pull request gets a
+preview deployment. `staging` is the trunk (AGENTS.md § Branches); production only changes through a promotion PR from `staging` to `main`.
+
+Project settings: Framework Next.js, Build Command `pnpm run ci` (migrations, then the one-off seed, then `next build`), Install Command
+`pnpm install`, Node.js 24.
+
+| Variable                  | Production                 | Preview                | Where it is explained |
+| ------------------------- | -------------------------- | ---------------------- | --------------------- |
+| `DATABASE_URL`            | Neon `production`, direct  | Neon `preview`, direct | § Databases           |
+| `PAYLOAD_SECRET`          | its own value              | its own value          | `.env.example`        |
+| `SMTP_HOST` … `SMTP_PASS` | Scaleway                   | Scaleway               | § Email               |
+| `EMAIL_FROM`              | optional                   | optional               | § Email               |
+| `SERVER_URL`              | optional (own domain only) | unset                  | § Email               |
+
+Mark `DATABASE_URL`, `PAYLOAD_SECRET` and `SMTP_PASS` as sensitive. Nothing is set for the Development environment: local machines use
+`.env.local`.
+
+The first deploy after a schema change applies the migration to that environment's branch during the build. A failed build leaves the
+previous deployment serving; fix forward, never edit a migration that a branch has already applied.
+
 ## License
 
 The code is licensed under the [MIT License](LICENSE.md).
