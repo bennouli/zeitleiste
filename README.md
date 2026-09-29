@@ -63,9 +63,9 @@ Get a connection string in the [Neon Console](https://console.neon.tech) under *
 CLI: `neon connection-string <branch>`. The Vercel branches use the direct host, without `-pooler`, because they run migrations. Vercel's
 Build Command is `pnpm run ci`.
 
-`pnpm seed` imports the sample entries, their tags and posts, creating only what is missing, so a second run changes nothing and editors'
-changes survive; `pnpm run ci` runs it after the migrations, so every database receives the sample content. Documents are matched by entry
-slug and tag name, so a sample entry deleted or re-slugged in the admin, or a renamed sample tag, comes back on the next deploy.
+`pnpm seed` imports the sample entries, their tags and posts into a database without entries; if any entry exists, it seeds nothing.
+`pnpm run ci` runs it after the migrations, so a fresh database receives the sample content once, and an entry deleted or re-slugged in the
+admin never comes back.
 
 ### Changing the schema
 

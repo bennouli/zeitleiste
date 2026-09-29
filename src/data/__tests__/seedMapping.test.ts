@@ -2,6 +2,7 @@ import type { Entry, HDate } from '@/lib/entry'
 import { describe, expect, it } from 'vitest'
 import { entries } from '../entries'
 import {
+    acceptsSeed,
     missingKeys,
     seedEntryOf,
     tagKindOf,
@@ -187,5 +188,19 @@ describe('missingKeys', () => {
         ])
 
         expect(missingKeys(keys, storedIds)).toEqual([])
+    })
+})
+
+describe('acceptsSeed', () => {
+    it('seeds an empty entries collection', () => {
+        const storedEntryCount = 0
+
+        expect(acceptsSeed(storedEntryCount)).toBe(true)
+    })
+
+    it('leaves a collection with any entry alone', () => {
+        const storedEntryCount = 1
+
+        expect(acceptsSeed(storedEntryCount)).toBe(false)
     })
 })

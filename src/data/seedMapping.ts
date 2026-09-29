@@ -71,3 +71,7 @@ export function missingKeys(
 ): string[] {
     return keys.filter((key) => !storedIds.has(key))
 }
+
+export function acceptsSeed(storedEntryCount: number): boolean {
+    return storedEntryCount === 0
+}

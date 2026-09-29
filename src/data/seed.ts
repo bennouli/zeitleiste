@@ -3,6 +3,7 @@ import { Console, Data, Effect, Exit } from 'effect'
 import { getPayload, type Payload, type PayloadRequest } from 'payload'
 import { entries } from './entries'
 import {
+    acceptsSeed,
     missingKeys,
     seedEntryOf,
     tagKindOf,
@@ -29,6 +30,7 @@ type Transaction = Pick<PayloadRequest, 'transactionID'>
 type IdByKey = ReadonlyMap<string, number>
 
 const LOCALE = 'de'
+const NOTHING_SEEDED = 'entries present, nothing seeded'
 
 function payloadCall<A>(operation: string, run: () => Promise<A>) {
     return Effect.tryPromise({
@@ -41,6 +43,10 @@ const seedSampleContent = Effect.fn('seedSampleContent')(function* (
     payload: Payload,
     req: Transaction
 ) {
+    const storedEntries = yield* payloadCall('count entries', () =>
+        payload.count({ collection: 'entries', req })
+    )
+    if (!acceptsSeed(storedEntries.totalDocs)) return NOTHING_SEEDED
     const seedEntries = entries.map(seedEntryOf)
     const tagNames = tagNamesOf(seedEntries)
     const storedTagIds = yield* tagIdsByName(payload, req)
