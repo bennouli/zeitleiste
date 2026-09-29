@@ -31,7 +31,7 @@ export function ZoomControls({
     const { t } = useI18n()
     return (
         <div
-            className="absolute top-4 right-7 z-20 flex gap-3.5"
+            className="pointer-events-auto absolute top-4 right-7 flex gap-3.5"
             {...{ [NO_DRAG_ATTR]: '' }}
         >
             <button

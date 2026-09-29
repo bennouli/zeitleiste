@@ -4,6 +4,7 @@ import { useI18n } from '@/components/I18nContext'
 import type { Entry } from '@/lib/entry'
 import { formatGroupName, formatGroupZoomName } from '@/lib/format'
 import { compareIds } from '@/lib/order'
+import type { LevelsPerSide } from '@/lib/placement'
 import type { CSSProperties, ReactNode } from 'react'
 import { AXIS_LINE_Y_PX } from './Axis'
 import { Connector } from './Connector'
@@ -24,8 +25,8 @@ const Z_HIGHLIGHTED = 200
 export type CardLayerProps = {
     items: LayoutItem[]
     rowHeightPx: number
-    /** Cards visible at once in a group stack. */
-    visibleCount: number
+    /** Cards visible at once in a group stack, on each side. */
+    visibleCount: LevelsPerSide
     slotHeightPx: number
     focusEntryId: string | null
     /** The label ringed after a click on its span bar; its stack reveals it. */
@@ -186,7 +187,7 @@ function GroupItem({
             <Connector side={side} lengthPx={CARD_FIRST_ROW_OFFSET_PX} />
             <GroupStack
                 entries={item.entries}
-                visibleCount={visibleCount}
+                visibleCount={visibleCount[side]}
                 slotHeightPx={slotHeightPx}
                 // Without a highlighted member the window stays put (closing a post must not hide its card).
                 initialIndex={focusIndex >= 0 ? focusIndex : undefined}

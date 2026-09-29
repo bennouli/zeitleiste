@@ -2,6 +2,9 @@ import { compareIds } from '@/lib/order'
 
 export type Side = 'above' | 'below'
 
+/** A row count for each side of the axis. */
+export type LevelsPerSide = Record<Side, number>
+
 export type Slot = {
     side: Side
     /** 0 = nearest the axis */
@@ -22,8 +25,8 @@ export type PlaceableItem = {
 export type PlacementOptions = {
     /** Minimum horizontal gap between two cards in the same row, default 8. */
     gapPx?: number
-    /** Rows per side, default 2 (so 4 rows total). */
-    maxLevels?: number
+    /** Rows per side, default 2 (so 4 rows total); one count for both sides or one each. */
+    maxLevels?: number | LevelsPerSide
     /** Intervals already taken before any item is placed, e.g. the rows a group stack covers. */
     blocked?: readonly BlockedInterval[]
     /** Items an earlier call placed, e.g. group stacks; they count as preceding items. */
@@ -37,8 +40,8 @@ export type SlotRequest = {
     item: PlaceableItem
     /** Side of the chronologically preceding placed item; undefined for the first. */
     precedingSide: Side | undefined
-    /** Rows per side. */
-    maxLevels: number
+    /** Rows on each side. */
+    maxLevels: LevelsPerSide
 }
 
 /** Orders the slots an item tries, first choice first. Hysteresis is applied before it. */
@@ -123,9 +126,9 @@ function compareItems(a: PlaceableItem, b: PlaceableItem): number {
 }
 
 /** Every row on `side` (nearest the axis first), then every row on the other side. */
-function candidateSlots(maxLevels: number, side: Side): Slot[] {
+function candidateSlots(maxLevels: LevelsPerSide, side: Side): Slot[] {
     return [side, oppositeOf(side)].flatMap((s) =>
-        Array.from({ length: maxLevels }, (_, level): Slot => ({
+        Array.from({ length: maxLevels[s] }, (_, level): Slot => ({
             side: s,
             level,
         }))
@@ -152,13 +155,13 @@ function oppositeOf(side: Side): Side {
 }
 
 function buildRows(
-    maxLevels: number,
+    maxLevels: LevelsPerSide,
     gap: number,
     blocked: readonly BlockedInterval[]
 ): Record<Side, Row[]> {
     const rows: Record<Side, Row[]> = {
-        above: Array.from({ length: maxLevels }, () => new Row(gap)),
-        below: Array.from({ length: maxLevels }, () => new Row(gap)),
+        above: Array.from({ length: maxLevels.above }, () => new Row(gap)),
+        below: Array.from({ length: maxLevels.below }, () => new Row(gap)),
     }
     for (const b of blocked) {
         const x0 = Math.min(b.x0, b.x1)
@@ -185,10 +188,7 @@ export function placeItems(
     options: PlacementOptions = {}
 ): Placement {
     const gap = Math.max(0, options.gapPx ?? DEFAULT_GAP_PX)
-    const maxLevels = Math.min(
-        MAX_LEVELS_CAP,
-        Math.max(0, Math.floor(options.maxLevels ?? DEFAULT_MAX_LEVELS))
-    )
+    const maxLevels = levelsPerSide(options.maxLevels ?? DEFAULT_MAX_LEVELS)
     const rows = buildRows(maxLevels, gap, options.blocked ?? [])
     const sideStrategy = options.sideStrategy ?? preferredSideFirst
     const placedElsewhere = [...(options.placedElsewhere ?? [])].sort(
@@ -237,6 +237,21 @@ export function placeItems(
     }
 
     return { slots, overflow }
+}
+
+function levelsPerSide(maxLevels: number | LevelsPerSide): LevelsPerSide {
+    const counts =
+        typeof maxLevels === 'number'
+            ? { above: maxLevels, below: maxLevels }
+            : maxLevels
+    return {
+        above: clampLevels(counts.above),
+        below: clampLevels(counts.below),
+    }
+}
+
+function clampLevels(levels: number): number {
+    return Math.min(MAX_LEVELS_CAP, Math.max(0, Math.floor(levels)))
 }
 
 /** Side of the latest item before `order`, from this call or an earlier one. */

@@ -4,6 +4,7 @@ import {
     PRIVATE_UNDER_TESTS,
     placeItems,
     type BlockedInterval,
+    type LevelsPerSide,
     type PlaceableItem,
     type Placement,
     type PlacementOptions,
@@ -20,6 +21,11 @@ const {
     preferredSideFirst,
     buildRows,
 } = PRIVATE_UNDER_TESTS
+
+const NO_LEVELS: LevelsPerSide = { above: 0, below: 0 }
+const ONE_EACH: LevelsPerSide = { above: 1, below: 1 }
+const TWO_EACH: LevelsPerSide = { above: 2, below: 2 }
+const THREE_EACH: LevelsPerSide = { above: 3, below: 3 }
 
 function item(id: string, x0: number, x1: number, order = 0): PlaceableItem {
     return { id, x0, x1, order }
@@ -238,8 +244,8 @@ describe('placeItems', () => {
         expect(p.slots.get('b')).toEqual({ side: 'above', level: 0 })
         expect(p.slots.get('c')).toEqual({ side: 'below', level: 0 })
         expect(requests).toEqual([
-            { item: items[0], precedingSide: undefined, maxLevels: 2 },
-            { item: items[2], precedingSide: 'above', maxLevels: 2 },
+            { item: items[0], precedingSide: undefined, maxLevels: TWO_EACH },
+            { item: items[2], precedingSide: 'above', maxLevels: TWO_EACH },
         ])
     })
 
@@ -334,6 +340,21 @@ describe('placeItems', () => {
             'b',
             'c',
         ])
+    })
+
+    it('gives each side its own row count', () => {
+        const overlapping = ['a', 'b', 'c', 'd', 'e'].map((id, order) =>
+            item(id, 0, 100, order)
+        )
+        const oneAboveThreeBelow: PlacementOptions = {
+            maxLevels: { above: 1, below: 3 },
+        }
+        const p = placeItems(overlapping, null, oneAboveThreeBelow)
+        expect(p.slots.get('a')).toEqual({ side: 'above', level: 0 })
+        expect(p.slots.get('b')).toEqual({ side: 'below', level: 0 })
+        expect(p.slots.get('c')).toEqual({ side: 'below', level: 1 })
+        expect(p.slots.get('d')).toEqual({ side: 'below', level: 2 })
+        expect(p.overflow).toEqual(['e'])
     })
 
     it('respects the gap; touching cards (x1 + gap == x0) fit in one row', () => {
@@ -582,7 +603,7 @@ describe('usedLevels', () => {
 
 describe('candidateSlots', () => {
     it('lists every row on the given side, nearest first, before the other side', () => {
-        expect(candidateSlots(2, 'below')).toEqual([
+        expect(candidateSlots(TWO_EACH, 'below')).toEqual([
             { side: 'below', level: 0 },
             { side: 'below', level: 1 },
             { side: 'above', level: 0 },
@@ -590,8 +611,17 @@ describe('candidateSlots', () => {
         ])
     })
 
+    it("lists each side's own rows", () => {
+        const oneAboveTwoBelow: LevelsPerSide = { above: 1, below: 2 }
+        expect(candidateSlots(oneAboveTwoBelow, 'above')).toEqual([
+            { side: 'above', level: 0 },
+            { side: 'below', level: 0 },
+            { side: 'below', level: 1 },
+        ])
+    })
+
     it('is empty for zero levels', () => {
-        expect(candidateSlots(0, 'above')).toEqual([])
+        expect(candidateSlots(NO_LEVELS, 'above')).toEqual([])
     })
 })
 
@@ -601,13 +631,17 @@ describe('alternateSides', () => {
         const first: SlotRequest = {
             item: lone,
             precedingSide: undefined,
-            maxLevels: 2,
+            maxLevels: TWO_EACH,
         }
         const afterAbove: SlotRequest = { ...first, precedingSide: 'above' }
         const afterBelow: SlotRequest = { ...first, precedingSide: 'below' }
-        expect(alternateSides(first)).toEqual(candidateSlots(2, 'above'))
-        expect(alternateSides(afterAbove)).toEqual(candidateSlots(2, 'below'))
-        expect(alternateSides(afterBelow)).toEqual(candidateSlots(2, 'above'))
+        expect(alternateSides(first)).toEqual(candidateSlots(TWO_EACH, 'above'))
+        expect(alternateSides(afterAbove)).toEqual(
+            candidateSlots(TWO_EACH, 'below')
+        )
+        expect(alternateSides(afterBelow)).toEqual(
+            candidateSlots(TWO_EACH, 'above')
+        )
     })
 })
 
@@ -620,17 +654,17 @@ describe('preferredSideFirst', () => {
         const afterAbove: SlotRequest = {
             item: preferBelow,
             precedingSide: 'above',
-            maxLevels: 2,
+            maxLevels: TWO_EACH,
         }
         const afterBelow: SlotRequest = {
             ...afterAbove,
             precedingSide: 'below',
         }
         expect(preferredSideFirst(afterAbove)).toEqual(
-            candidateSlots(2, 'below')
+            candidateSlots(TWO_EACH, 'below')
         )
         expect(preferredSideFirst(afterBelow)).toEqual(
-            candidateSlots(2, 'below')
+            candidateSlots(TWO_EACH, 'below')
         )
     })
 
@@ -638,7 +672,7 @@ describe('preferredSideFirst', () => {
         const noPreference: SlotRequest = {
             item: item('a', 0, 100),
             precedingSide: 'above',
-            maxLevels: 2,
+            maxLevels: TWO_EACH,
         }
         expect(preferredSideFirst(noPreference)).toEqual(
             alternateSides(noPreference)
@@ -649,7 +683,7 @@ describe('preferredSideFirst', () => {
 describe('buildRows', () => {
     it('builds maxLevels empty rows per side', () => {
         const noBlocked: BlockedInterval[] = []
-        const rows = buildRows(3, 8, noBlocked)
+        const rows = buildRows(THREE_EACH, 8, noBlocked)
         expect(rows.above).toHaveLength(3)
         expect(rows.below).toHaveLength(3)
         expect(rows.above[0]!.isFree(0, 100)).toBe(true)
@@ -659,7 +693,7 @@ describe('buildRows', () => {
         const blocked: BlockedInterval[] = [
             { side: 'below', level: 1, x0: 200, x1: 100 },
         ]
-        const rows = buildRows(2, 8, blocked)
+        const rows = buildRows(TWO_EACH, 8, blocked)
         expect(rows.below[1]!.isFree(150, 160)).toBe(false)
         expect(rows.below[1]!.isFree(208, 300)).toBe(true)
         expect(rows.below[1]!.isFree(201, 300)).toBe(false)
@@ -673,7 +707,7 @@ describe('buildRows', () => {
             { side: 'above', level: 0, x0: NaN, x1: 10 },
             { side: 'above', level: 5, x0: 0, x1: 10 },
         ]
-        const rows = buildRows(1, 8, blocked)
+        const rows = buildRows(ONE_EACH, 8, blocked)
         expect(rows.above[0]!.isFree(0, 10)).toBe(true)
     })
 })

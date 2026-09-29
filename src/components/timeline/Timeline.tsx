@@ -15,7 +15,7 @@ import {
     type ReactNode,
 } from 'react'
 import { Axis } from './Axis'
-import { bandGeometry, SLOT_HEIGHT_PX } from './bandGeometry'
+import { bandGeometry, SLOT_HEIGHT_PX, type BandGeometry } from './bandGeometry'
 import { CardLayer } from './CardLayer'
 import {
     AXIS_HEIGHT_PX,
@@ -24,6 +24,7 @@ import {
     COLLAPSE_ANIMATION_MS,
     COLLAPSED_HEIGHT,
     FOCUS_VISIBLE_MS,
+    TOP_BAR_HEIGHT_PX,
 } from './constants'
 import { useEntryFocus } from './entryFocus'
 import { groupZoomTarget } from './groupZoom'
@@ -120,7 +121,7 @@ export function Timeline({
         return new Map([...bars].map(([id, bar]) => [id, bar.lane]))
     }, [spans, layoutToX, today])
     const bands = useMemo(
-        () => bandGeometry(height, width, collapsed),
+        () => bandGeometry(height, width, collapsed, TOP_BAR_HEIGHT_PX),
         [height, width, collapsed]
     )
 
@@ -135,7 +136,7 @@ export function Timeline({
             gapPx: CARD_GAP_PX,
             locale,
         },
-        `${layoutKey}|${bands.maxLevels}|${bands.groupLevels}|${locale}`
+        `${layoutKey}|${bandsKey(bands)}|${locale}`
     )
 
     const open = (id: string) => {
@@ -206,24 +207,37 @@ export function Timeline({
                         <div data-layer="below" className="min-h-0 flex-1" />
                     </>
                 )}
-                <div className="pointer-events-none absolute top-5.5 left-8 z-20 flex items-baseline gap-4">
-                    <p
-                        aria-hidden="true"
-                        className="small-caps text-label-lg font-medium tracking-wordmark text-fg"
-                    >
-                        {t.site.name}
-                    </p>
-                    {besideWordmark}
+                <div
+                    data-top-bar
+                    className="pointer-events-none absolute inset-x-0 top-0 z-20"
+                    style={{ height: TOP_BAR_HEIGHT_PX }}
+                >
+                    <div className="absolute top-5.5 left-8 flex items-baseline gap-4">
+                        <p
+                            aria-hidden="true"
+                            className="small-caps text-label-lg font-medium tracking-wordmark text-fg"
+                        >
+                            {t.site.name}
+                        </p>
+                        {besideWordmark}
+                    </div>
+                    <ZoomControls
+                        canZoomIn={controls.canZoomIn}
+                        canZoomOut={controls.canZoomOut}
+                        onZoomIn={actions.zoomIn}
+                        onZoomOut={actions.zoomOut}
+                    />
                 </div>
-                <ZoomControls
-                    canZoomIn={controls.canZoomIn}
-                    canZoomOut={controls.canZoomOut}
-                    onZoomIn={actions.zoomIn}
-                    onZoomOut={actions.zoomOut}
-                />
             </section>
         </TimelineContext>
     )
+}
+
+/** Changes whenever a row count or a stack's extent on either side changes. */
+function bandsKey({ maxLevels, groupLevels }: BandGeometry): string {
+    return [maxLevels, groupLevels]
+        .map((levels) => `${levels.above}/${levels.below}`)
+        .join('|')
 }
 
 /**

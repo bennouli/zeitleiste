@@ -6,12 +6,13 @@ import {
     type ClusterNode,
 } from '@/lib/cluster'
 import { isSpan, type Entry } from '@/lib/entry'
-import type { Side, Slot } from '@/lib/placement'
+import type { LevelsPerSide, Side, Slot } from '@/lib/placement'
 import { entryAnchor, MS_PER_DAY, MS_PER_YEAR } from '@/lib/time'
 import { sampleEntry } from '@/test/entries'
 import { renderHook } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 import { bandGeometry } from '../bandGeometry'
+import { TOP_BAR_HEIGHT_PX } from '../constants'
 import { estimateLabelWidthPx, LABEL_MAX_WIDTH_PX } from '../labelMetrics'
 import {
     PRIVATE_UNDER_TESTS,
@@ -42,8 +43,8 @@ type LayoutScenario = {
     visibleYears: number
     centerT?: number
     previous?: Map<string, Slot> | null
-    maxLevels?: number
-    groupLevels?: number
+    maxLevels?: LevelsPerSide
+    groupLevels?: LevelsPerSide
 }
 
 const WIDE_DESKTOP: LayoutScenario = {
@@ -66,6 +67,11 @@ const ZERO_WIDTH: LayoutScenario = { pts: entries, width: 0, visibleYears: 300 }
 const NO_ENTRIES: LayoutScenario = { pts: [], width: 1000, visibleYears: 300 }
 const GAP_PX = 8
 const DEFAULT_LEVELS = 3
+const eachSide = (levels: number): LevelsPerSide => ({
+    above: levels,
+    below: levels,
+})
+const DEFAULT_LEVELS_EACH = eachSide(DEFAULT_LEVELS)
 
 /** Layout of `pts` with `visibleYears` across `width` px, centered on `centerT`. */
 function layout({
@@ -74,8 +80,8 @@ function layout({
     visibleYears,
     centerT = (T0 + T1) / 2,
     previous = null,
-    maxLevels = DEFAULT_LEVELS,
-    groupLevels = DEFAULT_LEVELS,
+    maxLevels = DEFAULT_LEVELS_EACH,
+    groupLevels = DEFAULT_LEVELS_EACH,
 }: LayoutScenario): EntryLayout {
     const span = visibleYears * MS_PER_YEAR
     const geometry: LayoutGeometry = {
@@ -222,11 +228,12 @@ describe('layoutEntries', () => {
             const entryLayout = layout(scenario)
             const preferredSides = alternatingSides(scenario.pts)
             const timeToX = timeToXOf(scenario)
-            const maxLevels = scenario.maxLevels ?? DEFAULT_LEVELS
+            const maxLevels = scenario.maxLevels ?? DEFAULT_LEVELS_EACH
+            const groupLevels = scenario.groupLevels ?? DEFAULT_LEVELS_EACH
             const cards = entryLayout.items.filter((i) => i.kind === 'card')
             expect(cards.length).toBeGreaterThan(1)
             for (const card of cards) {
-                const preferredSide = preferredSides.get(card.id)
+                const preferredSide = preferredSides.get(card.id)!
                 if (card.slot.side === preferredSide) continue
                 const cardExtent = extent(card, timeToX)
                 const isRowTaken = (level: number) =>
@@ -234,10 +241,15 @@ describe('layoutEntries', () => {
                         (i) =>
                             i.kind !== 'marker' &&
                             i.slot.side === preferredSide &&
-                            rowsOf(i, scenario.groupLevels).includes(level) &&
+                            rowsOf(i, groupLevels[preferredSide]).includes(
+                                level
+                            ) &&
                             isNear(extent(i, timeToX), cardExtent)
                     )
-                const levels = Array.from({ length: maxLevels }, (_, l) => l)
+                const levels = Array.from(
+                    { length: maxLevels[preferredSide] },
+                    (_, l) => l
+                )
                 expect(
                     levels.every(isRowTaken),
                     `${card.id} left ${preferredSide} with room there`
@@ -311,8 +323,8 @@ describe('layoutEntries', () => {
             width: 375,
             visibleYears: 40,
             centerT: Y1900,
-            maxLevels: 1,
-            groupLevels: 2,
+            maxLevels: eachSide(1),
+            groupLevels: eachSide(2),
         }
         const entryLayout = layout(narrowPhone1900)
         checkInvariants(many, entryLayout, 375, 40, Y1900)
@@ -370,8 +382,8 @@ describe('layoutEntries', () => {
             timeToX: (t) => (t - Date.UTC(1900, 0, 1)) / MS_PER_DAY,
             msPerPx: MS_PER_DAY,
             width: 1000,
-            maxLevels: 1,
-            groupLevels: 1,
+            maxLevels: eachSide(1),
+            groupLevels: eachSide(1),
             gapPx: GAP_PX,
             locale: 'de',
         }
@@ -410,8 +422,8 @@ describe('useEntryLayout', () => {
             msPerPx:
                 (WIDE_DESKTOP.visibleYears * MS_PER_YEAR) / WIDE_DESKTOP.width,
             width: WIDE_DESKTOP.width,
-            maxLevels: DEFAULT_LEVELS,
-            groupLevels: DEFAULT_LEVELS,
+            maxLevels: DEFAULT_LEVELS_EACH,
+            groupLevels: DEFAULT_LEVELS_EACH,
             gapPx: GAP_PX,
             locale: 'de',
         }
@@ -580,7 +592,12 @@ function findNode(cluster: Cluster, members: string[]): ClusterNode {
 
 /** A 1920 × 1080 window's bands, `visibleYears` wide around 1918. */
 function desktopNear1918(visibleYears: number): LayoutScenario {
-    const { maxLevels, groupLevels } = bandGeometry(1080, 1920, false)
+    const { maxLevels, groupLevels } = bandGeometry(
+        1080,
+        1920,
+        false,
+        TOP_BAR_HEIGHT_PX
+    )
     return {
         ...WIDE_DESKTOP,
         visibleYears,
