@@ -12,6 +12,8 @@ import {
     UnorderedListFeature,
 } from '@payloadcms/richtext-lexical'
 import type { CollectionConfig } from 'payload'
+import { richText } from 'payload/shared'
+import { requiredInGerman } from './requiredInGerman'
 import { revalidatePostChange, revalidatePostDelete } from './revalidate'
 
 const postEditor = lexicalEditor({
@@ -47,8 +49,8 @@ export const Posts: CollectionConfig = {
             name: 'body',
             type: 'richText',
             label: 'Text',
-            required: true,
             localized: true,
+            validate: requiredInGerman(richText),
             editor: postEditor,
         },
         {

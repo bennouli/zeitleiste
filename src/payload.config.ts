@@ -11,6 +11,7 @@ import { Tags } from './collections/Tags'
 import { Users } from './collections/Users'
 import { deploymentOrigins } from './deployment'
 import { emailAdapter } from './email'
+import { DEFAULT_LOCALE } from './i18n/locales'
 
 const PayloadEnv = Schema.Struct({
     DATABASE_URL: Schema.NonEmptyString,
@@ -32,8 +33,12 @@ export default buildConfig({
     },
     collections: [Users, Entries, Posts, Subjects, Tags],
     localization: {
-        locales: ['de', 'en'],
-        defaultLocale: 'de',
+        locales: [
+            { code: 'de', label: 'Deutsch' },
+            { code: 'en', label: 'English' },
+        ],
+        defaultLocale: DEFAULT_LOCALE,
+        fallback: true,
     },
     editor: lexicalEditor(),
     email: emailAdapter(process.env),

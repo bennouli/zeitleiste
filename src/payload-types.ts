@@ -165,7 +165,7 @@ export interface User {
  */
 export interface Entry {
   id: number;
-  title: string;
+  title?: string | null;
   /**
    * When enabled, the slug will auto-generate from the title field on save and autosave.
    */
@@ -174,7 +174,7 @@ export interface Entry {
   /**
    * Hinweis beim Überfahren und Vorspann des Beitrags.
    */
-  summary: string;
+  summary?: string | null;
   startYear: number;
   startMonth?: number | null;
   startDay?: number | null;
@@ -234,7 +234,7 @@ export interface Tag {
  */
 export interface Post {
   id: number;
-  body: {
+  body?: {
     root: {
       type: string;
       children: {
@@ -248,7 +248,7 @@ export interface Post {
       version: number;
     };
     [k: string]: unknown;
-  };
+  } | null;
   entry?: {
     docs?: (number | Entry)[];
     hasNextPage?: boolean;
