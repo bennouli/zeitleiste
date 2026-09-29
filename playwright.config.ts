@@ -1,6 +1,7 @@
 import { defineConfig, devices } from '@playwright/test'
 
 const PORT = 3100
+const PUBLISHING = /publishing\.spec\.ts/
 
 export default defineConfig({
     testDir: './e2e',
@@ -12,7 +13,20 @@ export default defineConfig({
         baseURL: `http://localhost:${PORT}`,
         trace: 'retain-on-failure',
     },
-    projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
+    projects: [
+        {
+            name: 'chromium',
+            use: { ...devices['Desktop Chrome'] },
+            testIgnore: PUBLISHING,
+        },
+        // Adds and removes entries, which would shift what the other specs count and order.
+        {
+            name: 'publishing',
+            use: { ...devices['Desktop Chrome'] },
+            testMatch: PUBLISHING,
+            dependencies: ['chromium'],
+        },
+    ],
     webServer: {
         // A second `next dev` in this directory is refused while one runs, so e2e uses a production build.
         command: `pnpm build && pnpm exec next start -p ${PORT}`,
