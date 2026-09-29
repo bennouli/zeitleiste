@@ -17,6 +17,7 @@ export default defineConfig({
         // A second `next dev` in this directory is refused while one runs, so e2e uses a production build.
         command: `pnpm build && pnpm exec next start -p ${PORT}`,
         url: `http://localhost:${PORT}`,
+        env: { SERVER_URL: `http://localhost:${PORT}` },
         // Locally an already running server on the port is reused; make sure it serves the current build.
         reuseExistingServer: !process.env.CI,
         timeout: 300_000,
