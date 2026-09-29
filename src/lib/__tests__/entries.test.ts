@@ -23,6 +23,16 @@ const entryDoc = (slug: string, post: number | null) => ({
 })
 const body = paragraphsToLexical('Der Text.')
 const found = (docs: object[]) => ({ docs })
+const withoutPost = found([entryDoc('krimkrieg', null)])
+const withPost = found([entryDoc('krimkrieg', 7)])
+const post = found([{ id: 7, body }])
+const nothing = found([])
+const unreachable = new Error('connection refused')
+const withoutSlug = found([{ ...entryDoc('krimkrieg', null), slug: null }])
+const mixed = found([
+    entryDoc('krimkrieg', 7),
+    entryDoc('wiener-kongress', null),
+])
 
 beforeEach(() => {
     find.mockReset()
@@ -31,7 +41,7 @@ beforeEach(() => {
 
 describe('loadEntries', () => {
     it('asks for published entries only, as a visitor, in start order', async () => {
-        find.mockResolvedValueOnce(found([entryDoc('krimkrieg', null)]))
+        find.mockResolvedValueOnce(withoutPost)
         await Effect.runPromise(loadEntries('en'))
         expect(find).toHaveBeenCalledWith(
             expect.objectContaining({
@@ -47,11 +57,7 @@ describe('loadEntries', () => {
     })
 
     it('marks entries with a post without loading its body', async () => {
-        const docs = [
-            entryDoc('krimkrieg', 7),
-            entryDoc('wiener-kongress', null),
-        ]
-        find.mockResolvedValueOnce(found(docs))
+        find.mockResolvedValueOnce(mixed)
         const entries = await Effect.runPromise(loadEntries('de'))
         expect(entries.map((e) => [e.id, e.post !== undefined])).toEqual([
             ['krimkrieg', true],
@@ -61,14 +67,13 @@ describe('loadEntries', () => {
     })
 
     it('fails with a LoadError when the content management fails', async () => {
-        find.mockRejectedValueOnce(new Error('connection refused'))
+        find.mockRejectedValueOnce(unreachable)
         const error = await Effect.runPromise(Effect.flip(loadEntries('de')))
         expect(error._tag).toBe('LoadError')
     })
 
     it('fails with a LoadError on a document it cannot read', async () => {
-        const broken = { ...entryDoc('krimkrieg', null), slug: null }
-        find.mockResolvedValueOnce(found([broken]))
+        find.mockResolvedValueOnce(withoutSlug)
         const error = await Effect.runPromise(Effect.flip(loadEntries('de')))
         expect(error._tag).toBe('LoadError')
     })
@@ -76,8 +81,8 @@ describe('loadEntries', () => {
 
 describe('loadPost', () => {
     it('loads the post of the published entry at the slug', async () => {
-        find.mockResolvedValueOnce(found([entryDoc('krimkrieg', 7)]))
-        find.mockResolvedValueOnce(found([{ id: 7, body }]))
+        find.mockResolvedValueOnce(withPost)
+        find.mockResolvedValueOnce(post)
         const entry = await Effect.runPromise(loadPost('krimkrieg', 'de'))
         expect(entry?.post?.body).toEqual(body)
         expect(find).toHaveBeenNthCalledWith(
@@ -100,7 +105,7 @@ describe('loadPost', () => {
     })
 
     it('finds nothing for an unpublished or unknown slug', async () => {
-        find.mockResolvedValueOnce(found([]))
+        find.mockResolvedValueOnce(nothing)
         expect(
             await Effect.runPromise(loadPost('entwurf', 'de'))
         ).toBeUndefined()
@@ -108,7 +113,7 @@ describe('loadPost', () => {
     })
 
     it('finds nothing for an entry without a post', async () => {
-        find.mockResolvedValueOnce(found([entryDoc('krimkrieg', null)]))
+        find.mockResolvedValueOnce(withoutPost)
         expect(
             await Effect.runPromise(loadPost('krimkrieg', 'de'))
         ).toBeUndefined()

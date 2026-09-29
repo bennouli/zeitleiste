@@ -5,13 +5,17 @@ import { postSlugs } from '@/lib/posts'
 import { Effect } from 'effect'
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
+import { cache } from 'react'
 
 type Props = {
     params: Promise<{ slug: string }>
 }
 
-// A post published after the build renders on its first request.
 export const dynamicParams = true
+
+const publishedPost = cache((slug: string) =>
+    Effect.runPromise(loadPost(slug, DEFAULT_LOCALE))
+)
 
 export async function generateStaticParams() {
     const entries = await Effect.runPromise(loadEntries(DEFAULT_LOCALE))
@@ -19,15 +23,13 @@ export async function generateStaticParams() {
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-    const { slug } = await params
-    const entry = await Effect.runPromise(loadPost(slug, DEFAULT_LOCALE))
+    const entry = await publishedPost((await params).slug)
     if (!entry) return {}
     return { title: `${entry.title} – Zeitleiste`, description: entry.summary }
 }
 
 export default async function PostPage({ params }: Props) {
-    const { slug } = await params
-    const entry = await Effect.runPromise(loadPost(slug, DEFAULT_LOCALE))
+    const entry = await publishedPost((await params).slug)
     if (!entry) notFound()
     return <Post entry={entry} />
 }

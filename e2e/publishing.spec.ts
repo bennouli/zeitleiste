@@ -48,8 +48,10 @@ test.afterAll(async ({ playwright }, { project }) => {
         baseURL: project.use.baseURL,
         extraHTTPHeaders: { Authorization: authorization },
     })
-    for (const { collection, id } of created.reverse())
-        await api.delete(`/api/${collection}/${id}`)
+    for (const { collection, id } of created.reverse()) {
+        const res = await api.delete(`/api/${collection}/${id}`)
+        expect(res.status()).toBe(200)
+    }
     await api.dispose()
     await payload.delete({
         collection: 'users',

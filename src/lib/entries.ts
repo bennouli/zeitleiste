@@ -11,7 +11,6 @@ class LoadError extends Data.TaggedError('LoadError')<{
     readonly cause: unknown
 }> {}
 
-/** Stands in for a post body the timeline does not render. */
 const POST_NOT_LOADED: Post = { body: paragraphsToLexical('') }
 
 /**

@@ -7,16 +7,11 @@ import type {
 
 type Versioned = { _status?: 'draft' | 'published' | null }
 
-/**
- * Every page renders the whole timeline in the shared layout, so any change
- * visitors can see refreshes every page.
- */
 function revalidateSite({ context }: PayloadRequest): void {
     if (context.disableRevalidate) return
     revalidatePath('/', 'layout')
 }
 
-/** True if visitors saw the entry before the change or see it after. */
 function isVisibleChange(
     doc: Versioned | null | undefined,
     previousDoc: Versioned | null | undefined

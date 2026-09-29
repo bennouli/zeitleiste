@@ -19,7 +19,6 @@ export default defineConfig({
             use: { ...devices['Desktop Chrome'] },
             testIgnore: PUBLISHING,
         },
-        // Adds and removes entries, which would shift what the other specs count and order.
         {
             name: 'publishing',
             use: { ...devices['Desktop Chrome'] },

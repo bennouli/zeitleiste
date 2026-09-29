@@ -62,7 +62,8 @@ describe('entryOf', () => {
             subject: 3,
             partOf: 4,
         }
-        const entry = entryOf(decodeEntry(doc))
+        const decoded = decodeEntry(doc)
+        const entry = entryOf(decoded)
         expect(entry.tags).toEqual(['Russland'])
         expect(entry).not.toHaveProperty('subject')
         expect(entry).not.toHaveProperty('partOf')
@@ -74,7 +75,8 @@ describe('entryOf', () => {
             ongoing: true,
             endYear: 1720,
         }
-        expect(entryOf(decodeEntry(doc)).end).toBe('ongoing')
+        const decoded = decodeEntry(doc)
+        expect(entryOf(decoded).end).toBe('ongoing')
     })
 
     it('rejects an entry without a slug', () => {
@@ -93,9 +95,12 @@ describe('entryOf', () => {
 describe('postIdOf', () => {
     it('reads the id of a bare or populated post', () => {
         const doc = cmsDocOf(entries[0]!, 0)
-        expect(postIdOf(decodeEntry({ ...doc, post: 12 }))).toBe(12)
-        expect(postIdOf(decodeEntry({ ...doc, post: { id: 13 } }))).toBe(13)
-        expect(postIdOf(decodeEntry({ ...doc, post: null }))).toBeUndefined()
+        const barePost = decodeEntry({ ...doc, post: 12 })
+        const populatedPost = decodeEntry({ ...doc, post: { id: 13 } })
+        const noPost = decodeEntry({ ...doc, post: null })
+        expect(postIdOf(barePost)).toBe(12)
+        expect(postIdOf(populatedPost)).toBe(13)
+        expect(postIdOf(noPost)).toBeUndefined()
     })
 })
 
