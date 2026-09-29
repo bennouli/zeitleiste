@@ -11,13 +11,13 @@ import nodemailer, { type SentMessageInfo, type Transport } from 'nodemailer'
 
 export const emailAdapter = (env: unknown) => {
     const { sender, smtp } = decodeEmailEnv(env)
-    const defaults = {
+    const senderDefaults = {
         defaultFromName: sender.name,
         defaultFromAddress: sender.address,
     }
     if (smtp !== undefined) {
         return nodemailerAdapter({
-            ...defaults,
+            ...senderDefaults,
             transportOptions: {
                 host: smtp.host,
                 port: smtp.port,
@@ -29,7 +29,7 @@ export const emailAdapter = (env: unknown) => {
     }
     console.warn('SMTP not configured, emails are printed to the terminal')
     return nodemailerAdapter({
-        ...defaults,
+        ...senderDefaults,
         transport: nodemailer.createTransport(consoleTransport),
     })
 }
@@ -119,33 +119,37 @@ type EmailSettings = typeof EmailSettings.Type
 
 const SMTP_KEYS = ['SMTP_HOST', 'SMTP_PORT', 'SMTP_USER', 'SMTP_PASS'] as const
 
+type EmailEnvFields = typeof EmailEnvFields.Type
+type CompleteSmtpFields = EmailEnvFields &
+    Required<Pick<EmailEnvFields, (typeof SMTP_KEYS)[number]>>
+
+const hasCompleteSmtp = (
+    fields: EmailEnvFields
+): fields is CompleteSmtpFields =>
+    SMTP_KEYS.every((key) => fields[key] !== undefined)
+
 const EmailEnv = EmailEnvFields.pipe(
     Schema.decodeTo(
         EmailSettings,
         SchemaTransformation.transformEffect({
             decode: (fields) => {
-                const {
-                    EMAIL_FROM: sender,
-                    SMTP_HOST: host,
-                    SMTP_PORT: port,
-                    SMTP_USER: user,
-                    SMTP_PASS: pass,
-                } = fields
-                if (
-                    host !== undefined &&
-                    port !== undefined &&
-                    user !== undefined &&
-                    pass !== undefined
-                )
+                if (hasCompleteSmtp(fields))
                     return Effect.succeed<EmailSettings>({
-                        sender,
-                        smtp: { host, port, user, pass },
+                        sender: fields.EMAIL_FROM,
+                        smtp: {
+                            host: fields.SMTP_HOST,
+                            port: fields.SMTP_PORT,
+                            user: fields.SMTP_USER,
+                            pass: fields.SMTP_PASS,
+                        },
                     })
                 const missingKeys = SMTP_KEYS.filter(
                     (key) => fields[key] === undefined
                 )
                 return missingKeys.length === SMTP_KEYS.length
-                    ? Effect.succeed<EmailSettings>({ sender })
+                    ? Effect.succeed<EmailSettings>({
+                          sender: fields.EMAIL_FROM,
+                      })
                     : Effect.fail(
                           new SchemaIssue.InvalidValue({
                               message: `SMTP_HOST, SMTP_PORT, SMTP_USER and SMTP_PASS are set together or not at all; missing ${missingKeys.join(', ')}`,

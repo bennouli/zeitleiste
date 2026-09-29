@@ -153,12 +153,12 @@ describe('terminal transport', () => {
             text: 'Hier ist dein Link',
             html: '<p>ignored</p>',
         }
-        const sent = await sendThroughTerminal(message)
+        const sentInfo = await sendThroughTerminal(message)
         expect(info).toHaveBeenCalledExactlyOnceWith(
             'Email to editor@example.com\nSubject: Einladung\n\nHier ist dein Link'
         )
-        expect(sent.envelope.to).toEqual(['editor@example.com'])
-        expect(sent.messageId).toMatch(/^<.+>$/)
+        expect(sentInfo.envelope.to).toEqual(['editor@example.com'])
+        expect(sentInfo.messageId).toMatch(/^<.+>$/)
     })
 
     it('prints the html body when there is no text', async () => {
