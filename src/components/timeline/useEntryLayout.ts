@@ -53,7 +53,6 @@ export type LayoutGeometry = {
     /** Rows a group stack covers. */
     groupLevels: number
     gapPx: number
-    /** Language of the labels, whose widths the placement depends on. */
     locale: Locale
 }
 

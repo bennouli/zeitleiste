@@ -141,12 +141,14 @@ describe('GroupStack', () => {
     it('names the step buttons and the position in English', async () => {
         const user = userEvent.setup()
         const english = inLocale('en')
+        const sevenEntries = makeEntries(7)
+        const renderTitle = (entry: Entry) => entry.title
         render(
             <GroupStack
-                entries={makeEntries(7)}
+                entries={sevenEntries}
                 visibleCount={3}
                 slotHeightPx={SLOT}
-                renderCard={(entry) => entry.title}
+                renderCard={renderTitle}
                 label="Group"
             />,
             { wrapper: english }

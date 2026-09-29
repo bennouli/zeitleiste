@@ -52,12 +52,14 @@ describe('ZoomControls', () => {
 
     it('names the buttons in the language of the page', () => {
         const english = inLocale('en')
+        const onZoomIn = vi.fn()
+        const onZoomOut = vi.fn()
         render(
             <ZoomControls
                 canZoomIn
                 canZoomOut
-                onZoomIn={vi.fn()}
-                onZoomOut={vi.fn()}
+                onZoomIn={onZoomIn}
+                onZoomOut={onZoomOut}
             />,
             { wrapper: english }
         )

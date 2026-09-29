@@ -22,13 +22,14 @@ const PRIVATE_UNDER_TESTS_SELECTORS = [
 ]
 
 const TEXT_ATTRIBUTE =
-    'JSXAttribute[name.name=/^(aria-label|title|alt|placeholder)$/]'
+    'JSXAttribute[name.name=/^(aria-label|title|alt|placeholder|label)$/]'
 const INTERFACE_TEXT_MESSAGE =
     'Interface text lives in src/i18n (de.ts, en.ts); read it with useI18n() or messages[locale].'
 
 const INTERFACE_TEXT_SELECTORS = [
     'JSXText[value=/\\p{L}/u]',
     `${TEXT_ATTRIBUTE} > Literal[value=/\\p{L}/u]`,
+    `${TEXT_ATTRIBUTE} > JSXExpressionContainer > Literal[value=/\\p{L}/u]`,
     `${TEXT_ATTRIBUTE} > JSXExpressionContainer > TemplateLiteral`,
     `${TEXT_ATTRIBUTE} > JSXExpressionContainer > ConditionalExpression > Literal[value=/\\p{L}/u]`,
 ].map((selector) => ({ selector, message: INTERFACE_TEXT_MESSAGE }))

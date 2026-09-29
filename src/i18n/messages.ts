@@ -3,7 +3,6 @@ import { de } from './de'
 import { en } from './en'
 import type { Locale } from './locales'
 
-/** Every interface text of the site in one language; grammar that depends on a number is a function. */
 export type Messages = {
     site: {
         /** Wordmark, page title and the timeline's accessible name. */
@@ -58,5 +57,4 @@ export type Messages = {
 
 export const messages: Record<Locale, Messages> = { de, en }
 
-/** The Intl locale each site locale formats dates with; British English writes "7 November 1917". */
 export const INTL_LOCALE: Record<Locale, string> = { de: 'de', en: 'en-GB' }
