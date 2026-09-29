@@ -117,3 +117,17 @@ schema; the sample entries, a CMS response and a route param do. The idioms are 
 
 Derive the type from the schema; `typeof S.Encoded` is what a caller supplies, `typeof S.Type` is what the code holds after decoding — the
 decoded side has already applied every default and transformation.
+
+**Hooks prepare, screens consume.** A component consumes state that is already prepared for it; it does not prepare it. Composing several
+hooks, business logic, control flow, and converging several states into one semantic state (a combined `pending`, "which entry is centred",
+"may this be submitted") belongs in a hook named for the component's intent, and the component renders what that hook returns.
+`useEntryLayout` is the shape: clustering, placement and label metrics converge into one layout, and the card layer draws it. `Timeline.tsx`
+composing element size, settled height, viewport, gestures, centring and focus itself is the debt this rule names; new code puts that
+composition in a `useTimeline()` and the component becomes "pending → nothing, else draw".
+
+- **The hook is the unit, its parts stay private.** A helper the hook composes exactly once (a derivation, a step resolver) is part of the
+  hook, not an export — test the hook (`renderHook` from Testing Library; Vitest runs in jsdom). If a part earns its own test, it goes in
+  `PRIVATE_UNDER_TESTS`, never a bare export made only so a test can reach it.
+- **Decide the owner before the shape.** Before extracting code — for a test, for reuse, for size — name the layer that owns the behaviour.
+  Diff size and "cheapest to test" break ties between shapes that are equally right; they never choose the layer. If the owner cannot be
+  tested with the current tooling, raise that as a question; do not move the logic somewhere easier to test instead.

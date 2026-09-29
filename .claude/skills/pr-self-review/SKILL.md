@@ -117,6 +117,18 @@ git diff $R --name-only --diff-filter=A -- 'src/lib' | grep -vE '\.test\.ts$'
 Every added module in the second list needs its test in the same diff. For the first list, read the file: a `useMemo` with more than three
 computations, or a callback that computes before it renders, is the candidate.
 
+**Hooks prepare, screens consume** (AGENTS.md § Heuristics). A component that composes several hooks and converges their results into a
+semantic state (a combined `pending`, "which entry is centred") is preparing, not consuming: that composition belongs in a hook named for
+the component's intent, and the component renders what it returns. The hook is the unit; a helper it composes once is not an export, and a
+part with its own test goes in `PRIVATE_UNDER_TESTS`. Logic moved to a layer because it was easier to test there, rather than because that
+layer owns it, is a finding even when the tests are good; a layer that cannot be tested with the current tooling is a ❓, not a licence.
+
+```bash
+# components adding hook calls: three or more in one file is the candidate
+git diff $R -- 'src/components' 'src/app' ':!*.test.*' ':!**/use*.ts' ':!**/use*.tsx' \
+  | awk '/^\+\+\+ /{f=$2} /^\+.*\<use[A-Z][A-Za-z]*\(/{c[f]++} END{for (f in c) if (c[f]>=3) print c[f], f}'
+```
+
 ## Dimension 4 — Interaction rules (CRITICAL)
 
 Product decisions from the timeline issues, each broken silently by one line:
