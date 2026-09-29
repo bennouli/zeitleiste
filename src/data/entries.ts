@@ -1,5 +1,6 @@
 // All dates are Gregorian, including Russian dates before 1918 (Julian dates converted).
 import type { Entry } from '@/lib/entry'
+import { paragraphsToLexical } from '@/lib/richText'
 
 export const entries: Entry[] = [
     {
@@ -127,13 +128,13 @@ export const entries: Entry[] = [
         type: 'revolution',
         tags: ['Russland'],
         post: {
-            body: `Im Herbst 1917 war die Provisorische Regierung unter Alexander Kerenski geschwächt. Russland führte den verlustreichen Krieg gegen die Mittelmächte weiter, die Versorgung der Städte brach zusammen, und auf dem Land eigneten sich Bauern eigenmächtig Gutsland an. Die Bolschewiki gewannen mit ihren Forderungen nach Frieden, Land und Brot in den Arbeiter- und Soldatenräten, den Sowjets, zunehmend die Mehrheit.
+            body: paragraphsToLexical(`Im Herbst 1917 war die Provisorische Regierung unter Alexander Kerenski geschwächt. Russland führte den verlustreichen Krieg gegen die Mittelmächte weiter, die Versorgung der Städte brach zusammen, und auf dem Land eigneten sich Bauern eigenmächtig Gutsland an. Die Bolschewiki gewannen mit ihren Forderungen nach Frieden, Land und Brot in den Arbeiter- und Soldatenräten, den Sowjets, zunehmend die Mehrheit.
 
 In der Nacht auf den 7. November 1917 besetzten Rotgardisten und Soldaten unter Führung des Militärrevolutionären Komitees des Petrograder Sowjets Brücken, Bahnhöfe und Telegrafenämter. Am folgenden Abend wurde das Winterpalais eingenommen, der Sitz der Regierung; ihre Minister wurden verhaftet. Nach dem damals in Russland gültigen julianischen Kalender war dies der 25. Oktober, daher der Name der Revolution.
 
 Der gleichzeitig tagende Zweite Allrussische Sowjetkongress bestätigte die Machtübernahme und verabschiedete Dekrete über den Frieden und über das Land. Eine neue Regierung, der Rat der Volkskommissare unter Lenin, trat an die Stelle der Provisorischen Regierung. Die im November gewählte Verfassunggebende Versammlung, in der die Bolschewiki keine Mehrheit hatten, wurde im Januar 1918 aufgelöst.
 
-Die Oktoberrevolution mündete in einen mehrjährigen Bürgerkrieg und schließlich in die Gründung der Sowjetunion. Sie gilt als eines der folgenreichsten Ereignisse des 20. Jahrhunderts, weil sie den ersten kommunistisch regierten Staat hervorbrachte und die Weltpolitik bis zum Ende des Kalten Krieges prägte.`,
+Die Oktoberrevolution mündete in einen mehrjährigen Bürgerkrieg und schließlich in die Gründung der Sowjetunion. Sie gilt als eines der folgenreichsten Ereignisse des 20. Jahrhunderts, weil sie den ersten kommunistisch regierten Staat hervorbrachte und die Weltpolitik bis zum Ende des Kalten Krieges prägte.`),
         },
     },
     {
@@ -232,13 +233,13 @@ Die Oktoberrevolution mündete in einen mehrjährigen Bürgerkrieg und schließl
         type: 'war',
         tags: ['USA', 'Sowjetunion', 'Kuba'],
         post: {
-            body: `Nach der gescheiterten, von den USA unterstützten Invasion in der Schweinebucht 1961 suchte Kubas Regierung unter Fidel Castro engeren Schutz durch die Sowjetunion. Parteichef Nikita Chruschtschow ließ daraufhin 1962 heimlich Mittelstreckenraketen mit Atomsprengköpfen auf die Insel bringen. Er wollte Kuba absichern und zugleich einen Ausgleich für die amerikanischen Raketen in der Türkei und in Italien schaffen.
+            body: paragraphsToLexical(`Nach der gescheiterten, von den USA unterstützten Invasion in der Schweinebucht 1961 suchte Kubas Regierung unter Fidel Castro engeren Schutz durch die Sowjetunion. Parteichef Nikita Chruschtschow ließ daraufhin 1962 heimlich Mittelstreckenraketen mit Atomsprengköpfen auf die Insel bringen. Er wollte Kuba absichern und zugleich einen Ausgleich für die amerikanischen Raketen in der Türkei und in Italien schaffen.
 
 Am 16. Oktober 1962 legten Berater dem Präsidenten John F. Kennedy Luftaufnahmen eines Aufklärungsflugzeugs vor, die Abschussrampen auf Kuba zeigten. Kennedy beriet sich tagelang im kleinen Kreis und entschied sich gegen einen sofortigen Luftangriff. Am 22. Oktober machte er die Raketen in einer Fernsehansprache öffentlich und verkündete eine Seeblockade, die er als „Quarantäne“ bezeichnete.
 
 In den folgenden Tagen steuerten sowjetische Frachter auf die Sperrlinie zu, und die Streitkräfte beider Seiten wurden in höchste Alarmbereitschaft versetzt. Am 27. Oktober wurde über Kuba ein amerikanisches Aufklärungsflugzeug abgeschossen. Hinter den Kulissen verhandelten beide Seiten über Briefe und vertrauliche Kanäle weiter.
 
-Am 28. Oktober kündigte Chruschtschow den Abbau der Raketen an. Im Gegenzug sicherten die USA zu, Kuba nicht anzugreifen, und sagten vertraulich den späteren Abzug ihrer Raketen aus der Türkei zu. Die Krise führte 1963 zur Einrichtung einer direkten Fernschreibverbindung zwischen Washington und Moskau, dem sogenannten heißen Draht, und zu ersten Abkommen über Rüstungskontrolle.`,
+Am 28. Oktober kündigte Chruschtschow den Abbau der Raketen an. Im Gegenzug sicherten die USA zu, Kuba nicht anzugreifen, und sagten vertraulich den späteren Abzug ihrer Raketen aus der Türkei zu. Die Krise führte 1963 zur Einrichtung einer direkten Fernschreibverbindung zwischen Washington und Moskau, dem sogenannten heißen Draht, und zu ersten Abkommen über Rüstungskontrolle.`),
         },
     },
     {
@@ -250,13 +251,13 @@ Am 28. Oktober kündigte Chruschtschow den Abbau der Raketen an. Im Gegenzug sic
         type: 'event',
         tags: ['DDR', 'Berlin'],
         post: {
-            body: `Im Sommer und Herbst 1989 geriet die DDR-Führung unter wachsenden Druck. Zehntausende Bürgerinnen und Bürger flohen über Ungarn, das seine Grenze zu Österreich geöffnet hatte, oder über die Botschaften in Prag und Warschau in den Westen. Gleichzeitig forderten bei den Montagsdemonstrationen in Leipzig und anderen Städten immer mehr Menschen Reisefreiheit und demokratische Reformen. Die Sowjetunion unter Michail Gorbatschow machte deutlich, dass sie nicht militärisch eingreifen würde.
+            body: paragraphsToLexical(`Im Sommer und Herbst 1989 geriet die DDR-Führung unter wachsenden Druck. Zehntausende Bürgerinnen und Bürger flohen über Ungarn, das seine Grenze zu Österreich geöffnet hatte, oder über die Botschaften in Prag und Warschau in den Westen. Gleichzeitig forderten bei den Montagsdemonstrationen in Leipzig und anderen Städten immer mehr Menschen Reisefreiheit und demokratische Reformen. Die Sowjetunion unter Michail Gorbatschow machte deutlich, dass sie nicht militärisch eingreifen würde.
 
 Am Abend des 9. November 1989 stellte SED-Politbüromitglied Günter Schabowski auf einer im Fernsehen übertragenen Pressekonferenz eine neue Reiseregelung vor. Auf die Frage, ab wann sie gelte, antwortete er, nach seiner Kenntnis sofort und unverzüglich. Die Nachricht verbreitete sich rasch über westliche Rundfunk- und Fernsehsender, die auch in der DDR empfangen wurden.
 
 Noch in derselben Nacht versammelten sich Tausende Ost-Berliner an den Grenzübergängen. Die Grenzsoldaten hatten keine klaren Befehle. Gegen 23:30 Uhr öffnete der diensthabende Offizier am Übergang Bornholmer Straße den Schlagbaum, bald darauf folgten weitere Übergänge. Menschen aus Ost und West feierten gemeinsam auf der Mauer am Brandenburger Tor.
 
-Der Mauerfall beschleunigte den Zusammenbruch der SED-Herrschaft und machte den Weg zur deutschen Einheit frei, die am 3. Oktober 1990 vollzogen wurde. Er gilt als Wendepunkt am Ende des Kalten Krieges und steht bis heute für die friedlichen Revolutionen in Mittel- und Osteuropa.`,
+Der Mauerfall beschleunigte den Zusammenbruch der SED-Herrschaft und machte den Weg zur deutschen Einheit frei, die am 3. Oktober 1990 vollzogen wurde. Er gilt als Wendepunkt am Ende des Kalten Krieges und steht bis heute für die friedlichen Revolutionen in Mittel- und Osteuropa.`),
         },
     },
     {

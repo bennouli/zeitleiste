@@ -2,6 +2,7 @@ import { entries } from '@/data/entries'
 import { describe, expect, it } from 'vitest'
 import type { Entry } from '../entry'
 import { findEntry, postHref, postSlugs, slugFromPathname } from '../posts'
+import { paragraphsToLexical } from '../richText'
 
 const base = {
     summary: 's',
@@ -10,9 +11,9 @@ const base = {
     tags: [],
 } as const
 const sample: Entry[] = [
-    { ...base, id: 'a', title: 'A', post: { body: 'x' } },
+    { ...base, id: 'a', title: 'A', post: { body: paragraphsToLexical('x') } },
     { ...base, id: 'b', title: 'B' },
-    { ...base, id: 'c', title: 'C', post: { body: 'y' } },
+    { ...base, id: 'c', title: 'C', post: { body: paragraphsToLexical('y') } },
 ]
 
 describe('postSlugs', () => {

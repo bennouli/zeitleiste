@@ -1,5 +1,6 @@
 import { TimelineShell } from '@/components/TimelineShell'
 import { entries } from '@/data/entries'
+import { paragraphsToLexical } from '@/lib/richText'
 import type { Metadata } from 'next'
 import localFont from 'next/font/local'
 import type { ReactNode } from 'react'
@@ -7,7 +8,7 @@ import './globals.css'
 
 // The timeline only needs to know that a post exists; post bodies are loaded by the post pages.
 const timelineEntries = entries.map((e) =>
-    e.post ? { ...e, post: { body: '' } } : e
+    e.post ? { ...e, post: { body: paragraphsToLexical('') } } : e
 )
 
 // Footgun: the order of `src` decides which file the fallback metrics are measured on (DESIGN.md § Fonts).

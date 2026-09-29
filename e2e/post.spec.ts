@@ -7,6 +7,7 @@ const POST_ENTRY = sampleEntry('oktoberrevolution')
 const SPAN_WITH_POST = sampleEntry('kubakrise')
 const POST_PATH = `/post/${POST_ENTRY.id}`
 const FIRST_BODY_PARAGRAPH_START = /^Im Herbst 1917/
+const BODY_PARAGRAPHS = 4
 const DESKTOP = { width: 1920, height: 1080 }
 const MAX_COLUMN_PX = 660
 
@@ -26,7 +27,7 @@ async function typeface(el: Locator): Promise<Typeface> {
 
 test.use({ viewport: DESKTOP })
 
-test('title, lead and body are set in the serif at their sizes; the column stays within 660 px', async ({
+test("title, lead and the body's four paragraphs are set in the serif at their sizes; the column stays within 660 px", async ({
     page,
 }) => {
     await openTimeline(page, POST_PATH)
@@ -52,6 +53,7 @@ test('title, lead and body are set in the serif at their sizes; the column stays
         size: '18px',
         style: 'normal',
     })
+    await expect(article.locator('p.text-body')).toHaveCount(BODY_PARAGRAPHS)
     const bodyWidth = await body.evaluate(
         (el) => el.getBoundingClientRect().width
     )

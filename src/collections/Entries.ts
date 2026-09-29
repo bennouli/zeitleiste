@@ -179,5 +179,11 @@ export const Entries: CollectionConfig = {
                 id === undefined ? true : { id: { not_equals: id } },
             validate: notPartOfItself,
         },
+        {
+            name: 'post',
+            type: 'relationship',
+            label: 'Beitrag',
+            relationTo: 'posts',
+        },
     ],
 }

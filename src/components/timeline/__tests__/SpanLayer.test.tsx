@@ -1,5 +1,6 @@
 import { entries } from '@/data/entries'
 import { isSpan, type Entry } from '@/lib/entry'
+import { paragraphsToLexical } from '@/lib/richText'
 import { startOf } from '@/lib/time'
 import { expectNoAxeViolations } from '@/test/axe'
 import { act, fireEvent, render, screen } from '@testing-library/react'
@@ -68,7 +69,7 @@ const withPost: Entry = {
     end: { year: 1950 },
     type: 'war',
     tags: [],
-    post: { body: 'Text' },
+    post: { body: paragraphsToLexical('Text') },
 }
 const withoutPost: Entry = {
     ...withPost,

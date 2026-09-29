@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
+import { paragraphsToLexical } from '../../lib/richText'
 import { PRIVATE_UNDER_TESTS } from '../../lib/time'
 import { validateEntry } from '../../test/validate-entry'
 import { entries } from '../entries'
@@ -66,9 +67,9 @@ describe('sample entries', () => {
         const withPost = entries.filter((e) => e.post !== undefined)
         expect(withPost).toHaveLength(3)
         for (const e of withPost) {
-            const paragraphs = e
-                .post!.body.split(/\n\s*\n/)
-                .filter((p) => p.trim().length > 0)
+            const paragraphs = e.post!.body.root.children.filter(
+                (node) => node.type === 'paragraph'
+            )
             expect(paragraphs.length, e.id).toBeGreaterThanOrEqual(3)
             expect(paragraphs.length, e.id).toBeLessThanOrEqual(5)
         }
@@ -97,6 +98,9 @@ describe('validateEntry', () => {
         type: 'event',
         tags: [],
     }
+    const postWithText = { body: paragraphsToLexical('Text') }
+    const postWithoutText = { body: paragraphsToLexical('') }
+    const postWithPlainString = { body: 'Klartext' }
 
     it('accepts a valid entry', () => {
         expect(validateEntry(valid)).toEqual([])
@@ -112,6 +116,12 @@ describe('validateEntry', () => {
             validateEntry({
                 ...valid,
                 start: { year: 2000, month: 2, day: 29 },
+            })
+        ).toEqual([])
+        expect(
+            validateEntry({
+                ...valid,
+                post: postWithText,
             })
         ).toEqual([])
     })
@@ -148,6 +158,12 @@ describe('validateEntry', () => {
         ).not.toEqual([])
         expect(validateEntry({ ...valid, type: 'culture' })).not.toEqual([])
         expect(validateEntry({ ...valid, tags: undefined })).not.toEqual([])
+        expect(
+            validateEntry({ ...valid, post: postWithPlainString })
+        ).not.toEqual([])
+        expect(validateEntry({ ...valid, post: postWithoutText })).not.toEqual(
+            []
+        )
         expect(validateEntry({ ...valid, tags: [' '] })).not.toEqual([])
         expect(validateEntry({ ...valid, post: { body: '' } })).not.toEqual([])
     })
@@ -171,7 +187,7 @@ describe('validateEntry', () => {
             'end: 1900-2-30 does not exist',
             'type: must be one of war, revolution, power, event',
             'tags: must be a list of non-empty strings',
-            'post.body: must be a non-empty string',
+            'post.body: must be rich text with at least one node',
         ])
     })
 
