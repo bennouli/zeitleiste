@@ -1,7 +1,8 @@
 import { entries } from '@/data/entries'
-import { postSlugs } from '@/lib/posts'
+import { findEntry, postSlugs } from '@/lib/posts'
 import { sampleEntry } from '@/test/entries'
 import { render, screen } from '@testing-library/react'
+import { Effect } from 'effect'
 import { describe, expect, it, vi } from 'vitest'
 import PostPage, {
     dynamicParams,
@@ -15,15 +16,20 @@ vi.mock('next/navigation', () => ({
     },
 }))
 
+vi.mock('@/lib/entries', () => ({
+    loadEntries: () => Effect.succeed(entries),
+    loadPost: (slug: string) => Effect.succeed(findEntry(entries, slug)),
+}))
+
 const params = (slug: string) => ({ params: Promise.resolve({ slug }) })
 const noPost = entries.find((e) => !e.post)!
 
 describe('post page', () => {
-    it('prebuilds exactly the posts', () => {
-        expect(generateStaticParams()).toEqual(
+    it('prebuilds the published posts and renders later ones on request', async () => {
+        expect(await generateStaticParams()).toEqual(
             postSlugs(entries).map((slug) => ({ slug }))
         )
-        expect(dynamicParams).toBe(false)
+        expect(dynamicParams).toBe(true)
     })
 
     it('renders the post', async () => {
