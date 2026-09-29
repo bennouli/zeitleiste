@@ -1,0 +1,20 @@
+const GERMAN_LETTERS: Record<string, string> = {
+    ä: 'ae',
+    ö: 'oe',
+    ü: 'ue',
+    ß: 'ss',
+}
+
+/** URL slug of a German title: 'Großer Nordischer Krieg' → 'grosser-nordischer-krieg'. */
+export function slugify(text: string): string {
+    return text
+        .toLowerCase()
+        .replace(/[äöüß]/g, (letter) => GERMAN_LETTERS[letter] ?? letter)
+        .normalize('NFKD')
+        .replace(/[̀-ͯ]/g, '')
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, '')
+}
+
+/** Lowercase a–z and digits in groups separated by single hyphens. */
+export const SLUG_PATTERN = /^[a-z0-9]+(-[a-z0-9]+)*$/

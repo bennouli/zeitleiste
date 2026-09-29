@@ -267,7 +267,6 @@ describe('layoutEntries', () => {
                 month: 1 + (k % 12),
             },
             end: undefined,
-            importance: ((k % 3) + 1) as 1 | 2 | 3,
         }))
         const narrowPhone1900: LayoutScenario = {
             pts: many,

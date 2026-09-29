@@ -31,7 +31,7 @@ export function spanLayout(
         const x0 = timeToX(start)
         const x1 = timeToX(end)
         if (!Number.isFinite(x0) || !Number.isFinite(x1)) return []
-        return [{ id: e.id, x0, x1, importance: e.importance }]
+        return [{ id: e.id, x0, x1 }]
     }
     const inputs = spans.filter(isSpan).flatMap(toSpanInput)
     const layout = layoutSpans(inputs, {

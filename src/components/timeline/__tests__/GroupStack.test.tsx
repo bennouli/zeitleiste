@@ -23,9 +23,8 @@ function makeEntries(n: number): Entry[] {
         title: `Eintrag ${i + 1}`,
         summary: `Zusammenfassung ${i + 1}`,
         start: { year: 1914 + i },
-        region: 'russia',
-        category: 'event',
-        importance: 2,
+        type: 'event',
+        tags: [],
     }))
 }
 

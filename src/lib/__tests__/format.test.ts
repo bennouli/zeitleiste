@@ -27,9 +27,8 @@ function span(start: HDate, end?: HDate | 'ongoing'): Entry {
         summary: 'T',
         start,
         end,
-        region: 'both',
-        category: 'event',
-        importance: 2,
+        type: 'event',
+        tags: [],
     }
 }
 
@@ -244,18 +243,26 @@ describe('entryLabel', () => {
 })
 
 describe('formatEntryMeta', () => {
-    it('joins long date, category and region', () => {
+    it('joins long date, type and the one tag', () => {
         const point = sampleEntry('oktoberrevolution')
         expect(formatEntryMeta(point)).toBe(
-            '7. November 1917 · Revolution · Russland/Sowjetunion'
+            '7. November 1917 · Revolution · Russland'
         )
     })
 
-    it('gives a span its date range', () => {
+    it('gives a span its date range and every tag in order', () => {
         const range = sampleEntry('grosser-nordischer-krieg')
         expect(formatEntryMeta(range)).toBe(
-            '1700 – 10. September 1721 · Krieg · Russland/Sowjetunion'
+            '1700 – 10. September 1721 · Krieg · Russland · Schweden'
         )
+    })
+
+    it('ends with the type when the entry has no tags', () => {
+        const untagged: Entry = {
+            ...sampleEntry('oktoberrevolution'),
+            tags: [],
+        }
+        expect(formatEntryMeta(untagged)).toBe('7. November 1917 · Revolution')
     })
 })
 

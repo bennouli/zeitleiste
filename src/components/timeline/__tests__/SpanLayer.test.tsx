@@ -66,9 +66,8 @@ const withPost: Entry = {
     summary: '',
     start: { year: 1900 },
     end: { year: 1950 },
-    region: 'russia',
-    category: 'war',
-    importance: 2,
+    type: 'war',
+    tags: [],
     post: { body: 'Text' },
 }
 const withoutPost: Entry = {
@@ -77,7 +76,6 @@ const withoutPost: Entry = {
     title: 'Ohne Beitrag',
     summary: 'Eine kurze Zusammenfassung.',
     post: undefined,
-    region: 'west',
 }
 
 describe('SpanLayer', () => {
@@ -97,11 +95,10 @@ describe('SpanLayer', () => {
     it('draws each bar in its lane box: lane 0 on the axis line, further lanes thinner below it', () => {
         const stacked: Entry[] = [
             withPost,
-            { ...withoutPost, id: 'zweite', importance: 1 },
+            { ...withoutPost, id: 'zweite' },
             {
                 ...withoutPost,
                 id: 'dritte',
-                importance: 1,
                 start: { year: 1910 },
             },
         ]

@@ -10,8 +10,8 @@ import {
 
 const { drawnExtent, firstFreeLane } = PRIVATE_UNDER_TESTS
 
-function span(id: string, x0: number, x1: number, importance = 1): SpanInput {
-    return { id, x0, x1, importance }
+function span(id: string, x0: number, x1: number): SpanInput {
+    return { id, x0, x1 }
 }
 
 function byId(bars: SpanBar[], id: string): SpanBar {
@@ -203,7 +203,7 @@ describe('layoutSpans: maxX', () => {
             span('a', 900, 940),
             span('b', 990, 1000),
             span('c', 950, 960),
-            span('d', 0, 1000, 2),
+            span('d', 0, 1000),
         ]
         expect(layoutSpans([...input].reverse(), { maxX: 1000 })).toEqual(
             layoutSpans(input, { maxX: 1000 })
@@ -248,27 +248,7 @@ describe('layoutSpans: lanes', () => {
         ).toBe(1)
     })
 
-    it('respects the gap to the left of an already placed bar', () => {
-        expect(
-            layoutSpans([span('major', 104, 200, 2), span('minor', 0, 100, 1)])
-                .laneCount
-        ).toBe(1)
-        expect(
-            layoutSpans([span('major', 103, 200, 2), span('minor', 0, 100, 1)])
-                .laneCount
-        ).toBe(2)
-    })
-
-    it('uses the extended extent of a bar placed to the left', () => {
-        const { bars } = layoutSpans([
-            span('major', 40, 200, 2),
-            span('minor', 0, 10, 1),
-        ])
-        expect(byId(bars, 'major').lane).toBe(0)
-        expect(byId(bars, 'minor').lane).toBe(1)
-    })
-
-    it('processes equally important spans by x0 before id', () => {
+    it('processes spans by x0 before id', () => {
         const { bars } = layoutSpans([
             span('a', 50, 150),
             span('b', 120, 200),
@@ -286,20 +266,20 @@ describe('layoutSpans: lanes', () => {
         assertNoOverlapInLanes(bars, 4)
     })
 
-    it('gives the more important of two overlapping spans lane 0', () => {
+    it('gives the earlier of two overlapping spans lane 0', () => {
         const { bars } = layoutSpans([
-            span('minor', 0, 300, 1),
-            span('major', 100, 200, 3),
+            span('later', 100, 200),
+            span('earlier', 0, 300),
         ])
-        expect(byId(bars, 'major').lane).toBe(0)
-        expect(byId(bars, 'minor').lane).toBe(1)
+        expect(byId(bars, 'earlier').lane).toBe(0)
+        expect(byId(bars, 'later').lane).toBe(1)
     })
 
     it('reuses a lower lane when a later span fits there', () => {
         const { bars, laneCount } = layoutSpans([
-            span('a', 0, 100, 3),
-            span('b', 50, 150, 2),
-            span('c', 200, 300, 1),
+            span('a', 0, 100),
+            span('b', 50, 150),
+            span('c', 200, 300),
         ])
         expect(byId(bars, 'c').lane).toBe(0)
         expect(laneCount).toBe(2)
@@ -339,12 +319,12 @@ describe('layoutSpans: determinism', () => {
         SpanInput,
         SpanInput,
     ] = [
-        span('a', 0, 100, 2),
-        span('b', 50, 150, 2),
-        span('c', 50, 150, 2),
-        span('d', 120, 125, 3),
-        span('e', 300, 310, 1),
-        span('f', 0, 400, 1),
+        span('a', 0, 100),
+        span('b', 50, 150),
+        span('c', 50, 150),
+        span('d', 120, 125),
+        span('e', 300, 310),
+        span('f', 0, 400),
     ]
 
     it('does not depend on the input order', () => {
@@ -387,7 +367,6 @@ describe('layoutSpans: sample data', () => {
         id: e.id,
         x0: toPx(e.start),
         x1: e.end === 'ongoing' ? (2027 - startYear) * pxPerYear : toPx(e.end!),
-        importance: e.importance,
     }))
     const maxX = (2027 - startYear) * pxPerYear
     const { bars, laneCount } = layoutSpans(input, { maxX })

@@ -6,9 +6,8 @@ const base: Entry = {
     title: 'Test',
     summary: 'Test',
     start: { year: 1917 },
-    region: 'russia',
-    category: 'revolution',
-    importance: 1,
+    type: 'revolution',
+    tags: [],
 }
 
 describe('precisionOf', () => {

@@ -82,7 +82,7 @@ describe('EntryCard', () => {
         const tip = screen.getByRole('tooltip')
         const lines = [...tip.children].map((line) => line.textContent)
         expect(lines).toEqual([
-            '1700 – 10. September 1721 · Krieg · Russland/Sowjetunion',
+            '1700 – 10. September 1721 · Krieg · Russland · Schweden',
             span.title,
             span.summary,
         ])
