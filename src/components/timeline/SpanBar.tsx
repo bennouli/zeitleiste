@@ -17,17 +17,20 @@ export type SpanBarProps = {
     bar: SpanBar
     /** Runs until today or later: the bar fades out over its last 40 %. */
     ongoing: boolean
+    /** Click, Enter or Space on the bar. */
+    onActivate?: (id: string) => void
 }
 
 /**
  * One time span drawn as a thin bar at [bar.x0, bar.x1]: lane 0 straddles the
  * axis line, further lanes hang below it. Hover or keyboard focus shows the
- * entry's hover note.
+ * entry's hover note; a click, Enter or Space is handed to `onActivate`.
  */
 export function SpanBarView({
     entry,
     bar,
     ongoing,
+    onActivate,
 }: SpanBarProps): JSX.Element {
     const tooltipId = useId()
     const anchorRef = useRef<HTMLDivElement>(null)
@@ -60,6 +63,12 @@ export function SpanBarView({
                 }}
                 {...triggerProps}
                 {...hoverProps}
+                onClick={() => onActivate?.(entry.id)}
+                onKeyDown={(e) => {
+                    if (e.key !== 'Enter' && e.key !== ' ') return
+                    e.preventDefault()
+                    onActivate?.(entry.id)
+                }}
             />
             <Tooltip
                 id={tooltipId}

@@ -15,6 +15,12 @@ import type {
 } from 'react'
 import { useEffect, useRef, useState } from 'react'
 
+/**
+ * A member to bring into view: the window moves the least that shows `index`, and not at all
+ * when it already does. A new `key` reveals again, even for the same index.
+ */
+export type StackReveal = { index: number; key: number }
+
 export type GroupStackProps = {
     /** Chronological (the caller sorts; not checked here). */
     entries: Entry[]
@@ -29,6 +35,8 @@ export type GroupStackProps = {
      * change scrolls to the new index; a change to `undefined` keeps the window.
      */
     initialIndex?: number
+    /** Member to reveal, e.g. the entry whose span bar was clicked. */
+    reveal?: StackReveal
     /** Accessible name of the group, e.g. "Gruppe: 1914–1922". */
     label: string
     /** Called when the visible window changes (top index). */
@@ -97,6 +105,19 @@ function clamp(i: number, max: number): number {
     return Math.min(Math.max(0, Math.round(i)), max)
 }
 
+/** The top index nearest `topIndex` whose window shows `index`. */
+function topIndexShowing(
+    index: number,
+    topIndex: number,
+    slotCount: number,
+    maxIndex: number
+): number {
+    if (index < topIndex) return clamp(index, maxIndex)
+    if (index >= topIndex + slotCount)
+        return clamp(index - slotCount + 1, maxIndex)
+    return topIndex
+}
+
 function isInWindow(i: number, topIndex: number, slotCount: number): boolean {
     return i >= topIndex && i < topIndex + slotCount
 }
@@ -125,6 +146,7 @@ export function GroupStack({
     slotHeightPx,
     renderCard,
     initialIndex,
+    reveal,
     label,
     onIndexChange,
     anchoredAt = 'start',
@@ -142,6 +164,18 @@ export function GroupStack({
         setFollowedInitialIndex(initialIndex)
         if (initialIndex !== undefined)
             setRawIndex(clamp(initialIndex, maxIndex))
+    }
+    const [followedRevealKey, setFollowedRevealKey] = useState<number>()
+    if (reveal && reveal.key !== followedRevealKey) {
+        setFollowedRevealKey(reveal.key)
+        setRawIndex(
+            topIndexShowing(
+                reveal.index,
+                clamp(rawIndex, maxIndex),
+                slotCount,
+                maxIndex
+            )
+        )
     }
     const topIndex = clamp(rawIndex, maxIndex)
     const groupRef = useRef<HTMLDivElement>(null)
@@ -489,6 +523,7 @@ function StepButton({ direction, canStep, onStep }: StepButtonProps) {
 
 export const PRIVATE_UNDER_TESTS = {
     stepForKey,
+    topIndexShowing,
     STRIP_BUTTON_PX,
     STRIP_DOT_PX,
     STRIP_GAP_PX,

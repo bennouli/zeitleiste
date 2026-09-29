@@ -22,3 +22,7 @@ export const CLUSTER_MIN_GAP_PX = 8
 export const MAX_GROUP_SPAN_PX = 352
 /** Keyboard pan step as a fraction of the width. */
 export const KEY_PAN_FRACTION = 0.1
+/** How long a label stays ringed after its span bar is clicked. */
+export const BAR_HIGHLIGHT_MS = 1000
+/** Fade-out of that ring; matches `duration-300` on the label. */
+export const BAR_HIGHLIGHT_FADE_MS = 300

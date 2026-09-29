@@ -529,6 +529,39 @@ describe('EntryCard', () => {
         expect(card(withPost).className).not.toMatch(/transition|duration/)
     })
 
+    it.each([
+        ['on', 'outline-focus', null],
+        ['fading', 'outline-focus/0', /transition-\[outline-color\]/],
+    ] as const)(
+        'rings the card while its bar highlight is %s',
+        (phase, colourClass, transition) => {
+            const ringedSpan = { entry: span, barHighlight: phase }
+            renderCard(ringedSpan)
+            const cardWrapper = document.querySelector<HTMLElement>(
+                `[data-entry-id="${span.id}"]`
+            )!
+            expect(cardWrapper.dataset.barHighlight).toBe(phase)
+            expect(card(span)).toHaveClass('outline-2', colourClass)
+            if (transition) expect(card(span).className).toMatch(transition)
+        }
+    )
+
+    it('draws no ring without a bar highlight', () => {
+        const plainSpan = { entry: span }
+        renderCard(plainSpan)
+        expect(card(span)).not.toHaveClass('outline-2')
+    })
+
+    it('insets the ring inside a stack, whose window would clip it', () => {
+        const stackedRingedSpan = {
+            entry: span,
+            barHighlight: 'on',
+            inline: true,
+        } as const
+        renderCard(stackedRingedSpan)
+        expect(card(span)).toHaveClass('-outline-offset-2')
+    })
+
     it('raises an open card above highlighted ones', async () => {
         const user = userEvent.setup()
         renderCard({ entry: span, highlighted: true })

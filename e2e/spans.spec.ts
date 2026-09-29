@@ -155,3 +155,177 @@ test('bars paint behind the dots and connectors that cross them', async ({
     expect(paintOrder.length).toBeGreaterThan(0)
     expect(paintOrder.every(Boolean)).toBe(true)
 })
+
+const label = (page: Page, id: string) =>
+    page.locator(`[data-layer="cards"] [data-entry-id="${id}"]`)
+
+const viewRange = (page: Page) =>
+    timelineRegion(page).evaluate((el) => [
+        el.dataset.viewStart,
+        el.dataset.viewEnd,
+    ])
+
+type ClickableSpan = { id: string; x: number; y: number }
+
+/** A stacked span, hidden by its stack's window or shown below its top slot, and a point where its bar takes the click. */
+const spanInStack = (
+    page: Page,
+    hidden: boolean
+): Promise<ClickableSpan | undefined> =>
+    page.evaluate((wantHidden) => {
+        const bars = [
+            ...document.querySelectorAll<HTMLElement>('[data-span-id]'),
+        ]
+        return bars.flatMap((bar) => {
+            const id = bar.dataset.spanId!
+            const labelEl = document.querySelector(
+                `[data-layer="cards"] [data-entry-id="${CSS.escape(id)}"]`
+            )
+            if (!labelEl?.closest('[role="list"]')) return []
+            if (!!labelEl.closest('[inert]') !== wantHidden) return []
+            const slot = labelEl.closest('li')!
+            const isTopOfWindow =
+                !slot.previousElementSibling ||
+                slot.previousElementSibling.hasAttribute('inert')
+            if (!wantHidden && isTopOfWindow) return []
+            const rect = bar.getBoundingClientRect()
+            const y = rect.top + rect.height / 2
+            const xs = Array.from(
+                { length: Math.floor(rect.width) },
+                (_, i) => rect.left + i + 0.5
+            ).filter((x) => x >= 0 && x < innerWidth)
+            const x = xs.find((x) => document.elementFromPoint(x, y) === bar)
+            return x === undefined ? [] : [{ id, x, y }]
+        })[0]
+    }, hidden)
+
+const spanHiddenInStack = (page: Page) => spanInStack(page, true)
+const spanShownInStack = (page: Page) => spanInStack(page, false)
+
+test('clicking a bar rings its title for about a second, without zooming or panning', async ({
+    page,
+}) => {
+    await openTimeline(page)
+    const title = label(page, FINISHED_SPAN)
+    await expect(title).toBeInViewport()
+    const viewBefore = await viewRange(page)
+
+    await bar(page, FINISHED_SPAN).click()
+    const clickedAt = Date.now()
+
+    await expect(title).toHaveAttribute('data-bar-highlight', 'on')
+    await expect
+        .poll(() => title.getAttribute('data-bar-highlight'), {
+            intervals: [50],
+            timeout: 3000,
+        })
+        .toBeNull()
+    const litMs = Date.now() - clickedAt
+    expect(litMs).toBeGreaterThanOrEqual(900)
+    expect(litMs).toBeLessThan(2000)
+    expect(await viewRange(page)).toEqual(viewBefore)
+    await expect(page.locator('article')).toHaveCount(0)
+})
+
+test('clicking the bar of a span hidden in a group stack steps the stack to it and rings it', async ({
+    page,
+}) => {
+    await openTimeline(page)
+    const hiddenSpan = await spanHiddenInStack(page)
+    if (!hiddenSpan)
+        throw new Error('no span hidden in a stack at this viewport')
+    const title = label(page, hiddenSpan.id)
+    const isInert = () => title.evaluate((el) => !!el.closest('[inert]'))
+    expect(await isInert()).toBe(true)
+
+    await page.mouse.click(hiddenSpan.x, hiddenSpan.y)
+
+    await expect(title).toHaveAttribute('data-bar-highlight', 'on')
+    expect(await isInert()).toBe(false)
+    await expect(title).toBeInViewport()
+})
+
+test('Enter and Space on a focused bar ring its title like a click', async ({
+    page,
+}) => {
+    await openTimeline(page)
+    const title = label(page, FINISHED_SPAN)
+    const viewBefore = await viewRange(page)
+
+    for (const key of ['Enter', 'Space']) {
+        await bar(page, FINISHED_SPAN).focus()
+        await page.keyboard.press(key)
+        await expect(title).toHaveAttribute('data-bar-highlight', 'on')
+        await expect
+            .poll(() => title.getAttribute('data-bar-highlight'), {
+                intervals: [50],
+                timeout: 3000,
+            })
+            .toBeNull()
+    }
+    expect(await viewRange(page)).toEqual(viewBefore)
+})
+
+test('a click on a stacked member already in view leaves the stack where it is', async ({
+    page,
+}) => {
+    await openTimeline(page)
+    const shownMember = await spanShownInStack(page)
+    if (!shownMember)
+        throw new Error('no span shown in a stack at this viewport')
+    const title = label(page, shownMember.id)
+    const stackPosition = () =>
+        title.evaluate((el) => el.closest('ul')!.style.transform)
+    const positionBefore = await stackPosition()
+
+    await page.mouse.click(shownMember.x, shownMember.y)
+
+    await expect(title).toHaveAttribute('data-bar-highlight', 'on')
+    expect(await stackPosition()).toBe(positionBefore)
+})
+
+test('a drag that starts on a bar pans without ringing the title', async ({
+    page,
+}) => {
+    await openTimeline(page)
+    const box = await bar(page, FINISHED_SPAN).boundingBox()
+    if (!box) throw new Error('no bar')
+    const start = { x: box.x + box.width / 2, y: box.y + box.height / 2 }
+    const viewBefore = await viewRange(page)
+
+    await page.mouse.move(start.x, start.y)
+    await page.mouse.down()
+    await page.mouse.move(start.x + 40, start.y, { steps: 5 })
+    await page.mouse.up()
+
+    expect(await viewRange(page)).not.toEqual(viewBefore)
+    await expect(label(page, FINISHED_SPAN)).not.toHaveAttribute(
+        'data-bar-highlight',
+        /.*/
+    )
+})
+
+test('clicking a bar whose title is off screen pans the title into view', async ({
+    page,
+}) => {
+    await openTimeline(page)
+    for (let zoomStep = 0; zoomStep < 3; zoomStep++) await zoomIn(page)
+    const box = await bar(page, FINISHED_SPAN).boundingBox()
+    if (!box) throw new Error('no bar')
+    const dragFrom = { x: 640, y: 780 }
+    await page.mouse.move(dragFrom.x, dragFrom.y)
+    await page.mouse.down()
+    await page.mouse.move(dragFrom.x - 100 - box.x, dragFrom.y, { steps: 10 })
+    await page.mouse.up()
+    const title = label(page, FINISHED_SPAN)
+    await expect(title).not.toBeInViewport()
+    const shiftedBar = await bar(page, FINISHED_SPAN).boundingBox()
+
+    await page.mouse.click(
+        shiftedBar!.x + 150,
+        shiftedBar!.y + shiftedBar!.height / 2
+    )
+
+    await expect(title).toHaveAttribute('data-bar-highlight', 'on')
+    await expect(title).toBeInViewport()
+})
