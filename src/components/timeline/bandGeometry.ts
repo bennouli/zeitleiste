@@ -20,7 +20,7 @@ const AXIS_LINE_TO_BAND_PX = Math.min(
 )
 /** Below this width the timeline behaves like a phone: one card per group. */
 const PHONE_WIDTH_PX = 640
-/** Room kept free for the "Heute" label and the zoom buttons. */
+/** At least one row per side, however short the band. */
 const MIN_BAND_LEVELS = 1
 
 export type BandGeometry = {
