@@ -22,6 +22,7 @@ import { LABEL_MAX_WIDTH_PX } from './labelMetrics'
 import { spanLayout } from './spanGeometry'
 import { SpanLayer } from './SpanLayer'
 import { TimelineContext, type TimelineContextValue } from './TimelineContext'
+import { useBarHighlight } from './useBarHighlight'
 import { useEntryLayout } from './useEntryLayout'
 import { useGestures } from './useGestures'
 import { useSettled } from './useSettled'
@@ -60,6 +61,12 @@ export function Timeline({
     const gestures = useGestures(elRef, actions, width)
     useCenteredEntry(entries, focusEntryId, actions.zoomToTime)
     const { onFocus } = useEntryFocus(elRef, actions.panStep, width)
+    const { highlight: barHighlight, highlightEntry } = useBarHighlight({
+        sectionRef: elRef,
+        width,
+        wasDrag: gestures.wasDrag,
+        onRevealNeeded: actions.panStep,
+    })
 
     const toX = useCallback(
         (t: number) => timeToX(viewport, width, t),
@@ -171,6 +178,7 @@ export function Timeline({
                                 visibleCount={bands.visibleCount}
                                 slotHeightPx={SLOT_HEIGHT_PX}
                                 focusEntryId={focusEntryId}
+                                barHighlight={barHighlight}
                                 onOpen={open}
                                 onZoomIntoGroup={zoomIntoGroup}
                             />
@@ -179,6 +187,7 @@ export function Timeline({
                                 timeToX={toX}
                                 today={today}
                                 lanes={spanLanes}
+                                onBarClick={highlightEntry}
                             />
                         </div>
                         <div data-layer="below" className="min-h-0 flex-1" />

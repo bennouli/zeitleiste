@@ -10,6 +10,7 @@ import { CARD_FIRST_ROW_OFFSET_PX } from './constants'
 import { EntryLabel } from './EntryLabel'
 import { LABEL_HEIGHT_PX } from './labelMetrics'
 import { Tooltip, TooltipBody, TooltipMeta, TooltipTitle } from './Tooltip'
+import type { BarHighlightPhase } from './useBarHighlight'
 import { useTooltipTrigger } from './useTooltipTrigger'
 
 export type EntryCardProps = {
@@ -23,6 +24,8 @@ export type EntryCardProps = {
     rowHeightPx: number
     /** The entry whose post is open. */
     highlighted?: boolean
+    /** Ring after a click on the entry's span bar. */
+    barHighlight?: BarHighlightPhase
     /** Called on click (not on drag) for entries with a post. */
     onOpen: (id: string) => void
     /** The timeline sets this when the pointer moved (a drag); if it returns true, the click is ignored. */
@@ -38,6 +41,7 @@ export function EntryCard({
     level,
     rowHeightPx,
     highlighted = false,
+    barHighlight,
     onOpen,
     wasDrag,
     inline = false,
@@ -69,8 +73,12 @@ export function EntryCard({
     const cardClass = clsx(
         'block w-max cursor-pointer bg-surface text-left',
         'focus-visible:outline-2 focus-visible:outline-focus',
+        barHighlight && 'outline-2',
+        barHighlight === 'on' && 'outline-focus',
+        barHighlight === 'fading' &&
+            'outline-focus/0 transition-[outline-color] duration-300 ease-out',
         // Inside a stack the card fills the clipping window, so an outer outline would be cut off.
-        inline && 'focus-visible:-outline-offset-2'
+        inline && '-outline-offset-2'
     )
     const cardStyle: CSSProperties = { height: LABEL_HEIGHT_PX }
 
@@ -124,6 +132,7 @@ export function EntryCard({
                 )}
                 data-entry-id={entry.id}
                 data-highlighted={highlighted ? 'true' : undefined}
+                data-bar-highlight={barHighlight}
             >
                 {body}
             </div>
@@ -142,6 +151,7 @@ export function EntryCard({
             style={style}
             data-entry-id={entry.id}
             data-highlighted={highlighted ? 'true' : undefined}
+            data-bar-highlight={barHighlight}
         >
             <Connector side={side} lengthPx={offset} open={highlighted} />
             <AxisDot side={side} lengthPx={offset} open={highlighted} />

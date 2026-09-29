@@ -109,6 +109,8 @@ The other ink steps are Tailwind opacity modifiers on `fg`, so they follow the t
 | ------------------------------- | -------- | ----------------------------------------- | ----------------------- |
 | Post collapse (timeline height) | 500 ms   | `ease-in-out` = `cubic-bezier(.4,0,.2,1)` | `COLLAPSE_ANIMATION_MS` |
 | Zoom and pan                    | 300 ms   | ease-out (cubic)                          | `ZOOM_ANIMATION_MS`     |
+| Bar-click ring on a label       | 1000 ms  | none (on at once)                         | `BAR_HIGHLIGHT_MS`      |
+| Bar-click ring fade-out         | 300 ms   | `ease-out`                                | `BAR_HIGHLIGHT_FADE_MS` |
 | Hover states                    | none     | —                                         | —                       |
 
 Tailwind's defaults nearest the prototype, so the classes stay plain (`duration-500 ease-in-out`). `prefers-reduced-motion` turns all of

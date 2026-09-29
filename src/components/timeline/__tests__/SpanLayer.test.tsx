@@ -4,7 +4,7 @@ import { startOf } from '@/lib/time'
 import { expectNoAxeViolations } from '@/test/axe'
 import { act, fireEvent, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { AXIS_LINE_Y_PX } from '../Axis'
 import { spanLayout } from '../spanGeometry'
 import { SpanLayer, type SpanLayerProps } from '../SpanLayer'
@@ -216,6 +216,17 @@ describe('SpanLayer', () => {
         expect(screen.getByRole('tooltip')).toBeInTheDocument()
         fireEvent.pointerOut(bar, { pointerType: 'mouse' })
         expect(screen.queryByRole('tooltip')).toBeNull()
+    })
+
+    it('hands a click on a bar to onBarClick with its id', async () => {
+        const user = userEvent.setup()
+        const onBarClick = vi.fn()
+        const single = [withoutPost]
+        const { container } = renderLayer({ spans: single, onBarClick })
+
+        await user.click(barEl(container, withoutPost.id))
+
+        expect(onBarClick).toHaveBeenCalledExactlyOnceWith(withoutPost.id)
     })
 
     it('has no axe violations', async () => {

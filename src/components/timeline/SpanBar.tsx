@@ -17,17 +17,20 @@ export type SpanBarProps = {
     bar: SpanBar
     /** Runs until today or later: the bar fades out over its last 40 %. */
     ongoing: boolean
+    /** Click (not keyboard) on the bar. */
+    onClick?: (id: string) => void
 }
 
 /**
  * One time span drawn as a thin bar at [bar.x0, bar.x1]: lane 0 straddles the
  * axis line, further lanes hang below it. Hover or keyboard focus shows the
- * entry's hover note.
+ * entry's hover note; a click is handed to `onClick`.
  */
 export function SpanBarView({
     entry,
     bar,
     ongoing,
+    onClick,
 }: SpanBarProps): JSX.Element {
     const tooltipId = useId()
     const anchorRef = useRef<HTMLDivElement>(null)
@@ -60,6 +63,7 @@ export function SpanBarView({
                 }}
                 {...triggerProps}
                 {...hoverProps}
+                onClick={() => onClick?.(entry.id)}
             />
             <Tooltip
                 id={tooltipId}

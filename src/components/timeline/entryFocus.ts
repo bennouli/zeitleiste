@@ -37,11 +37,8 @@ export function useEntryFocus(
         const target = e.target
         if (target === e.currentTarget) return
         focusedRef.current = { el: target, ids: entryIdsOf(target) }
-        if (width <= 0 || !isFocusVisible(target)) return
-        const rect = target.getBoundingClientRect()
-        if (hasNoLayout(rect)) return
-        const left = rect.left - e.currentTarget.getBoundingClientRect().left
-        const dx = revealDelta(left, left + rect.width, width)
+        if (!isFocusVisible(target)) return
+        const dx = revealDeltaOf(target, e.currentTarget, width)
         if (dx !== 0) onRevealNeeded(dx)
     }
 
@@ -108,6 +105,29 @@ export function findFocusTarget(
         if (groupControl) return groupControl
     }
     return null
+}
+
+/** Horizontal pan that brings the label of entry `id` (or the stack or marker holding it) into view; 0 if it is visible. */
+export function entryRevealDelta(
+    section: HTMLElement,
+    id: string,
+    width: number
+): number {
+    const cards = section.querySelector<HTMLElement>('[data-layer="cards"]')
+    const target = cards && findFocusTarget(cards, [id])
+    return target ? revealDeltaOf(target, section, width) : 0
+}
+
+function revealDeltaOf(
+    el: HTMLElement,
+    container: HTMLElement,
+    width: number
+): number {
+    if (width <= 0) return 0
+    const rect = el.getBoundingClientRect()
+    if (hasNoLayout(rect)) return 0
+    const left = rect.left - container.getBoundingClientRect().left
+    return revealDelta(left, left + rect.width, width)
 }
 
 /** Ids of the entries `el` stands for: its card's, its span bar's or its group's. */
