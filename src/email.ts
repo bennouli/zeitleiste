@@ -34,7 +34,7 @@ export const emailAdapter = (env: unknown) => {
     })
 }
 
-const DEFAULT_SENDER = 'Zeitleiste <noreply@bennoselig.dev>'
+const DEFAULT_SENDER = 'Liniya <noreply@bennoselig.dev>'
 const MAILBOX = /^\s*(\S(?:.*\S)?)\s*<\s*([^\s<>@]+@[^\s<>@]+)\s*>\s*$/
 
 const isFilled = (value: string | undefined): value is string =>
@@ -66,7 +66,7 @@ const MailboxFromString = Schema.String.pipe(
                           new SchemaIssue.InvalidValue(
                               {
                                   message:
-                                      'Expected a sender like "Zeitleiste <noreply@bennoselig.dev>"',
+                                      'Expected a sender like "Liniya <noreply@bennoselig.dev>"',
                               },
                               value,
                               options

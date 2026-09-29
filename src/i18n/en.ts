@@ -4,10 +4,10 @@ const entries = (count: number) => (count === 1 ? 'entry' : 'entries')
 
 export const en = {
     site: {
-        name: 'Timeline',
+        name: 'Liniya',
         description: 'Interactive timeline: Russia and the West since 1700',
-        heading: 'Timeline: Russia and the West',
-        postTitle: (title) => `${title} – Timeline`,
+        heading: 'Liniya: Russia and the West',
+        postTitle: (title) => `${title} – Liniya`,
     },
     notFound: {
         heading: 'Page not found',
@@ -41,7 +41,7 @@ export const en = {
     groupMeta: (count, years) => `${count} ${entries(count)} · ${years}`,
     position: (ordinal, count) => `${ordinal} of ${count}`,
     invitation: {
-        pageTitle: 'Accept invitation – Timeline',
+        pageTitle: 'Accept invitation – Liniya',
         heading: 'Accept invitation',
         intro: 'Choose a password. Afterwards you sign in with your email address and this password.',
         password: 'Password',

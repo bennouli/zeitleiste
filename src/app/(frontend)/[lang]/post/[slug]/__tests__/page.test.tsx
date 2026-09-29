@@ -67,7 +67,7 @@ describe('post page', () => {
     it('sets title and description', async () => {
         const okt = sampleEntry('oktoberrevolution')
         expect(await generateMetadata(params('oktoberrevolution'))).toEqual({
-            title: 'Oktoberrevolution – Zeitleiste',
+            title: 'Oktoberrevolution – Liniya',
             description: okt.summary,
         })
         expect(await generateMetadata(params('gibt-es-nicht'))).toEqual({})
@@ -76,7 +76,7 @@ describe('post page', () => {
     it('names the site in the language of the address', async () => {
         const englishParams = params('oktoberrevolution', 'en')
         expect(await generateMetadata(englishParams)).toMatchObject({
-            title: 'Oktoberrevolution – Timeline',
+            title: 'Oktoberrevolution – Liniya',
         })
     })
 })

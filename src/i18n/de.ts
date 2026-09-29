@@ -5,11 +5,11 @@ const entriesDative = (count: number) => (count === 1 ? 'Eintrag' : 'Einträgen'
 
 export const de = {
     site: {
-        name: 'Zeitleiste',
+        name: 'Liniya',
         description:
             'Interaktive Zeitleiste: Russland und der Westen seit 1700',
-        heading: 'Zeitleiste: Russland und der Westen',
-        postTitle: (title) => `${title} – Zeitleiste`,
+        heading: 'Liniya: Russland und der Westen',
+        postTitle: (title) => `${title} – Liniya`,
     },
     notFound: {
         heading: 'Seite nicht gefunden',
@@ -43,7 +43,7 @@ export const de = {
     groupMeta: (count, years) => `${count} ${entries(count)} · ${years}`,
     position: (ordinal, count) => `${ordinal} von ${count}`,
     invitation: {
-        pageTitle: 'Einladung annehmen – Zeitleiste',
+        pageTitle: 'Einladung annehmen – Liniya',
         heading: 'Einladung annehmen',
         intro: 'Lege ein Passwort fest. Danach meldest du dich mit deiner E-Mail-Adresse und diesem Passwort an.',
         password: 'Passwort',

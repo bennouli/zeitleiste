@@ -30,6 +30,7 @@ describe('German interface texts', () => {
             ])
         )
         expect(germanTexts).not.toContain('Revolution')
+        expect(germanTexts).not.toContain('Liniya')
     })
 
     it('are found when copied into a component', () => {

@@ -27,6 +27,7 @@ export default buildConfig({
     csrf: [...cookieOrigins],
     admin: {
         user: Users.slug,
+        meta: { titleSuffix: '– Liniya' },
         importMap: {
             baseDir: path.resolve(dirname),
         },

@@ -27,7 +27,7 @@ vi.mock('@/components/timeline/Timeline', () => ({
     }: TimelineProps) => (
         <section
             role="region"
-            aria-label="Zeitleiste"
+            aria-label="Liniya"
             tabIndex={0}
             data-testid="timeline"
             data-collapsed={String(collapsed)}
@@ -104,7 +104,7 @@ describe('TimelineShell', () => {
         expect(tl).toHaveAttribute('data-focus', '')
         expect(screen.queryByRole('article')).not.toBeInTheDocument()
         expect(
-            screen.getByRole('heading', { level: 1, name: /Zeitleiste/ })
+            screen.getByRole('heading', { level: 1, name: /Liniya/ })
         ).toBeInTheDocument()
     })
 
@@ -302,7 +302,7 @@ describe('TimelineShell', () => {
         rerenderAt('/de/post/oktoberrevolution', okt)
         const entriesWithoutOkt = entries.filter((e) => e.id !== okt.id)
         rerenderAt('/de', null, entriesWithoutOkt)
-        expect(screen.getByRole('region', { name: 'Zeitleiste' })).toHaveFocus()
+        expect(screen.getByRole('region', { name: 'Liniya' })).toHaveFocus()
     })
 
     it('moves focus to the post heading when a post opens from the timeline', async () => {

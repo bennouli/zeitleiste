@@ -8,7 +8,7 @@ describe('invitationEmail', () => {
             token: 'abc123',
         }
         const email = invitationEmail(link)
-        expect(email.subject).toBe('Einladung zur Zeitleiste')
+        expect(email.subject).toBe('Einladung zu Liniya')
         expect(email.html).toContain(
             'href="https://zeitleiste.example/einladung/abc123"'
         )
@@ -42,7 +42,7 @@ describe('forgotPasswordEmail', () => {
 
     it('has a German subject', () => {
         expect(forgotPasswordEmail(args).subject).toBe(
-            'Neues Passwort für die Zeitleiste'
+            'Neues Passwort für Liniya'
         )
     })
 
