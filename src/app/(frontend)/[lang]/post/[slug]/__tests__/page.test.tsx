@@ -42,7 +42,8 @@ describe('post page', () => {
     })
 
     it('renders the post in the locale of the address', async () => {
-        render(await PostPage(params('oktoberrevolution', 'en')))
+        const englishParams = params('oktoberrevolution', 'en')
+        render(await PostPage(englishParams))
         expect(
             screen.getByRole('heading', { level: 2, name: 'Oktoberrevolution' })
         ).toBeInTheDocument()
@@ -50,9 +51,8 @@ describe('post page', () => {
     })
 
     it('is a 404 under an address without a known locale', async () => {
-        await expect(
-            PostPage(params('oktoberrevolution', 'xx'))
-        ).rejects.toThrow('NEXT_NOT_FOUND')
+        const unknownParams = params('oktoberrevolution', 'xx')
+        await expect(PostPage(unknownParams)).rejects.toThrow('NEXT_NOT_FOUND')
     })
 
     it('is a 404 for unknown slugs and entries without a post', async () => {

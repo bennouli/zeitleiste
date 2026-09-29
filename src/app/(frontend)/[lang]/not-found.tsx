@@ -1,7 +1,7 @@
 'use client'
 
 import { useI18n } from '@/components/I18nContext'
-import { startHref } from '@/lib/posts'
+import { startHref } from '@/i18n/paths'
 import Link from 'next/link'
 
 export default function NotFound() {

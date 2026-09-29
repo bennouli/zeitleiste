@@ -119,13 +119,14 @@ describe('TimelineShell', () => {
     it('keeps English addresses in English', async () => {
         const user = userEvent.setup()
         nav.pathname = '/en/post/oktoberrevolution'
-        render(
+        const englishShell = (
             <I18nProvider locale="en">
                 <TimelineShell entries={entries}>
                     <Post entry={okt} />
                 </TimelineShell>
             </I18nProvider>
         )
+        render(englishShell)
         expect(screen.getByTestId('timeline')).toHaveAttribute(
             'data-focus',
             'oktoberrevolution'

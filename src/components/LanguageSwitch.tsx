@@ -3,7 +3,7 @@
 import { useI18n } from '@/components/I18nContext'
 import { NO_DRAG_ATTR } from '@/components/timeline/useGestures'
 import { LANGUAGE_NAME, type Locale } from '@/i18n/locales'
-import { switchLocalePath } from '@/lib/posts'
+import { switchLocalePath } from '@/i18n/paths'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 

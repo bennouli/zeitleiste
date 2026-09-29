@@ -5,15 +5,10 @@ import { LanguageSwitch } from '@/components/LanguageSwitch'
 import { PostContext } from '@/components/PostContext'
 import { findFocusTarget } from '@/components/timeline/entryFocus'
 import { Timeline } from '@/components/timeline/Timeline'
+import { isStartPath, startHref } from '@/i18n/paths'
 import { isTypingTarget, prefersReducedMotion } from '@/lib/dom'
 import type { Entry } from '@/lib/entry'
-import {
-    findEntry,
-    isStartPath,
-    postHref,
-    slugFromPathname,
-    startHref,
-} from '@/lib/posts'
+import { findEntry, postHref, slugFromPathname } from '@/lib/posts'
 import { animateScroll } from '@/lib/scroll'
 import { usePathname, useRouter } from 'next/navigation'
 import { useCallback, useEffect, useMemo, useRef, type ReactNode } from 'react'

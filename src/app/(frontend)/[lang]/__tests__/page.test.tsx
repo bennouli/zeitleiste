@@ -12,11 +12,13 @@ const params = (lang: string) => ({ params: Promise.resolve({ lang }) })
 
 describe('start page', () => {
     it('renders no post (the timeline lives in the layout)', async () => {
-        const { container } = render(await HomePage(params('en')))
+        const englishParams = params('en')
+        const { container } = render(await HomePage(englishParams))
         expect(container).toBeEmptyDOMElement()
     })
 
     it('is a 404 under an address without a known locale', async () => {
-        await expect(HomePage(params('xx'))).rejects.toThrow('NEXT_NOT_FOUND')
+        const unknownParams = params('xx')
+        await expect(HomePage(unknownParams)).rejects.toThrow('NEXT_NOT_FOUND')
     })
 })

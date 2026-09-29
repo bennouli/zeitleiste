@@ -1,5 +1,5 @@
+import { switchLocalePath } from '@/i18n/paths'
 import { preferredLocale } from '@/i18n/preferredLocale'
-import { switchLocalePath } from '@/lib/posts'
 import { NextResponse, type NextRequest } from 'next/server'
 
 export function proxy(request: NextRequest) {
