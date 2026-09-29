@@ -12,7 +12,7 @@ import { GroupMarker } from './GroupMarker'
 import { GroupStack } from './GroupStack'
 import { LABEL_MAX_WIDTH_PX } from './labelMetrics'
 import { useTimeline } from './TimelineContext'
-import type { EntryHighlight } from './useBarHighlight'
+import type { BarHighlightLookup } from './useBarHighlight'
 import type { LayoutItem } from './useEntryLayout'
 
 /** Paint order: lower rows over higher rows (whose connectors pass behind them), markers over the axis. */
@@ -27,8 +27,8 @@ export type CardLayerProps = {
     visibleCount: number
     slotHeightPx: number
     focusEntryId: string | null
-    /** The label ringed after a click on its span bar; its stack steps to it. */
-    barHighlight: EntryHighlight | null
+    /** The label ringed after a click on its span bar; its stack reveals it. */
+    barHighlight: BarHighlightLookup
     onOpen: (id: string) => void
     /** Activating a group's axis marker. */
     onZoomIntoGroup: (entries: Entry[]) => void
@@ -61,9 +61,7 @@ export function CardLayer({
                 const highlighted = item.entries.some(
                     (e) => e.id === focusEntryId
                 )
-                const raised =
-                    highlighted ||
-                    item.entries.some((e) => e.id === barHighlight?.id)
+                const raised = highlighted || barHighlight.isAmong(item.entries)
                 return [
                     item.kind !== 'marker' && (
                         <AnchoredItem key={item.id} item={item} raised={raised}>
@@ -151,7 +149,7 @@ function CardItem({
             level={item.slot.level}
             rowHeightPx={rowHeightPx}
             highlighted={entry.id === focusEntryId}
-            barHighlight={barPhaseOf(entry, barHighlight)}
+            barHighlight={barHighlight.phaseOf(entry.id)}
             onOpen={onOpen}
             wasDrag={wasDrag}
         />
@@ -172,9 +170,7 @@ function GroupItem({
 }: GroupItemProps) {
     const { timeToX, wasDrag } = useTimeline()
     const side = item.slot.side
-    const barIndex = item.entries.findIndex((e) => e.id === barHighlight?.id)
     const focusIndex = item.entries.findIndex((e) => e.id === focusEntryId)
-    const revealIndex = barIndex >= 0 ? barIndex : focusIndex
     return (
         <div
             data-group-id={item.id}
@@ -191,7 +187,8 @@ function GroupItem({
                 visibleCount={visibleCount}
                 slotHeightPx={slotHeightPx}
                 // Without a highlighted member the window stays put (closing a post must not hide its card).
-                initialIndex={revealIndex >= 0 ? revealIndex : undefined}
+                initialIndex={focusIndex >= 0 ? focusIndex : undefined}
+                reveal={barHighlight.stackRevealOf(item.entries)}
                 label={formatGroupName(item.entries)}
                 side={side}
                 renderCard={(entry) => (
@@ -202,7 +199,7 @@ function GroupItem({
                         level={0}
                         rowHeightPx={rowHeightPx}
                         highlighted={entry.id === focusEntryId}
-                        barHighlight={barPhaseOf(entry, barHighlight)}
+                        barHighlight={barHighlight.phaseOf(entry.id)}
                         onOpen={onOpen}
                         wasDrag={wasDrag}
                         inline
@@ -211,10 +208,6 @@ function GroupItem({
             />
         </div>
     )
-}
-
-function barPhaseOf(entry: Entry, barHighlight: EntryHighlight | null) {
-    return barHighlight?.id === entry.id ? barHighlight.phase : undefined
 }
 
 type MarkerItemProps = Pick<CardLayerProps, 'onZoomIntoGroup'> & {

@@ -1,3 +1,5 @@
+import type { Entry } from '@/lib/entry'
+import { sampleEntry } from '@/test/entries'
 import { stubReducedMotion } from '@/test/motion'
 import { act, renderHook } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -65,16 +67,14 @@ describe('useBarHighlight', () => {
 
         act(() => result.current.highlightEntry(SPAN_ID))
 
-        expect(result.current.highlight).toEqual({ id: SPAN_ID, phase: 'on' })
+        expect(result.current.phaseOf(SPAN_ID)).toBe('on')
+        expect(result.current.phaseOf(OTHER_SPAN_ID)).toBeUndefined()
         act(() => vi.advanceTimersByTime(BAR_HIGHLIGHT_MS - 1))
-        expect(result.current.highlight?.phase).toBe('on')
+        expect(result.current.phaseOf(SPAN_ID)).toBe('on')
         act(() => vi.advanceTimersByTime(1))
-        expect(result.current.highlight).toEqual({
-            id: SPAN_ID,
-            phase: 'fading',
-        })
+        expect(result.current.phaseOf(SPAN_ID)).toBe('fading')
         act(() => vi.advanceTimersByTime(BAR_HIGHLIGHT_FADE_MS))
-        expect(result.current.highlight).toBeNull()
+        expect(result.current.phaseOf(SPAN_ID)).toBeUndefined()
     })
 
     it('clears the ring without a fade under reduced motion', () => {
@@ -84,7 +84,7 @@ describe('useBarHighlight', () => {
         act(() => result.current.highlightEntry(SPAN_ID))
         act(() => vi.advanceTimersByTime(BAR_HIGHLIGHT_MS))
 
-        expect(result.current.highlight).toBeNull()
+        expect(result.current.phaseOf(SPAN_ID)).toBeUndefined()
     })
 
     it('ignores the click that ends a drag', () => {
@@ -93,7 +93,7 @@ describe('useBarHighlight', () => {
 
         act(() => result.current.highlightEntry(SPAN_ID))
 
-        expect(result.current.highlight).toBeNull()
+        expect(result.current.phaseOf(SPAN_ID)).toBeUndefined()
         expect(onRevealNeeded).not.toHaveBeenCalled()
     })
 
@@ -105,10 +105,8 @@ describe('useBarHighlight', () => {
         act(() => result.current.highlightEntry(OTHER_SPAN_ID))
         act(() => vi.advanceTimersByTime(BAR_HIGHLIGHT_MS - 1))
 
-        expect(result.current.highlight).toEqual({
-            id: OTHER_SPAN_ID,
-            phase: 'on',
-        })
+        expect(result.current.phaseOf(OTHER_SPAN_ID)).toBe('on')
+        expect(result.current.phaseOf(SPAN_ID)).toBeUndefined()
     })
 
     it('leaves the view alone when the label is on screen', () => {
@@ -129,5 +127,55 @@ describe('useBarHighlight', () => {
         expect(onRevealNeeded).toHaveBeenCalledExactlyOnceWith(
             WIDTH - REVEAL_MARGIN_PX - (offScreenLeft + LABEL_WIDTH)
         )
+    })
+
+    describe('the stack holding the highlighted entry', () => {
+        const stackEntries: Entry[] = [
+            sampleEntry('kubakrise'),
+            sampleEntry('kalter-krieg'),
+        ]
+        const otherStack: Entry[] = [sampleEntry('dekabristenaufstand')]
+
+        it('is raised and asked to reveal the entry at its index', () => {
+            const { result } = renderBarHighlight()
+
+            act(() => result.current.highlightEntry(SPAN_ID))
+
+            expect(result.current.isAmong(stackEntries)).toBe(true)
+            expect(result.current.stackRevealOf(stackEntries)?.index).toBe(1)
+        })
+
+        it('is left alone when it does not hold the entry', () => {
+            const { result } = renderBarHighlight()
+
+            act(() => result.current.highlightEntry(SPAN_ID))
+
+            expect(result.current.isAmong(otherStack)).toBe(false)
+            expect(result.current.stackRevealOf(otherStack)).toBeUndefined()
+        })
+
+        it('is asked again with a new key when the same bar is clicked again', () => {
+            const { result } = renderBarHighlight()
+            act(() => result.current.highlightEntry(SPAN_ID))
+            const firstReveal = result.current.stackRevealOf(stackEntries)
+
+            act(() => result.current.highlightEntry(SPAN_ID))
+
+            const secondReveal = result.current.stackRevealOf(stackEntries)
+            expect(secondReveal?.index).toBe(firstReveal?.index)
+            expect(secondReveal?.key).not.toBe(firstReveal?.key)
+        })
+
+        it('keeps the key while the ring fades, so a stepped-away stack is not pulled back', () => {
+            const { result } = renderBarHighlight()
+            act(() => result.current.highlightEntry(SPAN_ID))
+            const litReveal = result.current.stackRevealOf(stackEntries)
+
+            act(() => vi.advanceTimersByTime(BAR_HIGHLIGHT_MS))
+
+            expect(result.current.stackRevealOf(stackEntries)).toEqual(
+                litReveal
+            )
+        })
     })
 })

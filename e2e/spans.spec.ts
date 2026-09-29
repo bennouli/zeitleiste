@@ -167,9 +167,12 @@ const viewRange = (page: Page) =>
 
 type ClickableSpan = { id: string; x: number; y: number }
 
-/** A span whose label sits outside its group stack's window, and a point where its bar takes the click. */
-const spanHiddenInStack = (page: Page): Promise<ClickableSpan | undefined> =>
-    page.evaluate(() => {
+/** A stacked span, hidden by its stack's window or shown below its top slot, and a point where its bar takes the click. */
+const spanInStack = (
+    page: Page,
+    hidden: boolean
+): Promise<ClickableSpan | undefined> =>
+    page.evaluate((wantHidden) => {
         const bars = [
             ...document.querySelectorAll<HTMLElement>('[data-span-id]'),
         ]
@@ -178,7 +181,13 @@ const spanHiddenInStack = (page: Page): Promise<ClickableSpan | undefined> =>
             const labelEl = document.querySelector(
                 `[data-layer="cards"] [data-entry-id="${CSS.escape(id)}"]`
             )
-            if (!labelEl?.closest('[inert]')) return []
+            if (!labelEl?.closest('[role="list"]')) return []
+            if (!!labelEl.closest('[inert]') !== wantHidden) return []
+            const slot = labelEl.closest('li')!
+            const isTopOfWindow =
+                !slot.previousElementSibling ||
+                slot.previousElementSibling.hasAttribute('inert')
+            if (!wantHidden && isTopOfWindow) return []
             const rect = bar.getBoundingClientRect()
             const y = rect.top + rect.height / 2
             const xs = Array.from(
@@ -188,7 +197,10 @@ const spanHiddenInStack = (page: Page): Promise<ClickableSpan | undefined> =>
             const x = xs.find((x) => document.elementFromPoint(x, y) === bar)
             return x === undefined ? [] : [{ id, x, y }]
         })[0]
-    })
+    }, hidden)
+
+const spanHiddenInStack = (page: Page) => spanInStack(page, true)
+const spanShownInStack = (page: Page) => spanInStack(page, false)
 
 test('clicking a bar rings its title for about a second, without zooming or panning', async ({
     page,
@@ -231,6 +243,45 @@ test('clicking the bar of a span hidden in a group stack steps the stack to it a
     await expect(title).toHaveAttribute('data-bar-highlight', 'on')
     expect(await isInert()).toBe(false)
     await expect(title).toBeInViewport()
+})
+
+test('Enter and Space on a focused bar ring its title like a click', async ({
+    page,
+}) => {
+    await openTimeline(page)
+    const title = label(page, FINISHED_SPAN)
+    const viewBefore = await viewRange(page)
+
+    for (const key of ['Enter', 'Space']) {
+        await bar(page, FINISHED_SPAN).focus()
+        await page.keyboard.press(key)
+        await expect(title).toHaveAttribute('data-bar-highlight', 'on')
+        await expect
+            .poll(() => title.getAttribute('data-bar-highlight'), {
+                intervals: [50],
+                timeout: 3000,
+            })
+            .toBeNull()
+    }
+    expect(await viewRange(page)).toEqual(viewBefore)
+})
+
+test('a click on a stacked member already in view leaves the stack where it is', async ({
+    page,
+}) => {
+    await openTimeline(page)
+    const shownMember = await spanShownInStack(page)
+    if (!shownMember)
+        throw new Error('no span shown in a stack at this viewport')
+    const title = label(page, shownMember.id)
+    const stackPosition = () =>
+        title.evaluate((el) => el.closest('ul')!.style.transform)
+    const positionBefore = await stackPosition()
+
+    await page.mouse.click(shownMember.x, shownMember.y)
+
+    await expect(title).toHaveAttribute('data-bar-highlight', 'on')
+    expect(await stackPosition()).toBe(positionBefore)
 })
 
 test('a drag that starts on a bar pans without ringing the title', async ({

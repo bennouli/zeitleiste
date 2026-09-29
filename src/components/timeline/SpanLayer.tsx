@@ -15,7 +15,7 @@ export type SpanLayerProps = {
     today: number
     /** Lane per span id, frozen by the timeline between gestures so bars don't jump lanes mid-drag. */
     lanes: ReadonlyMap<string, number>
-    /** Click on a span's bar. */
+    /** Click, Enter or Space on a span's bar. */
     onBarClick?: (id: string) => void
 }
 
@@ -48,7 +48,7 @@ export function SpanLayer({
                     entry={entry}
                     bar={bars.get(entry.id)!}
                     ongoing={isOngoing(entry, today)}
-                    onClick={onBarClick}
+                    onActivate={onBarClick}
                 />
             ))}
         </div>

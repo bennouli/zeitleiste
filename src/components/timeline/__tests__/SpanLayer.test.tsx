@@ -229,6 +229,33 @@ describe('SpanLayer', () => {
         expect(onBarClick).toHaveBeenCalledExactlyOnceWith(withoutPost.id)
     })
 
+    it.each(['{Enter}', ' '])(
+        'hands %s on a focused bar to onBarClick',
+        async (key) => {
+            const user = userEvent.setup()
+            const onBarClick = vi.fn()
+            const single = [withoutPost]
+            const { container } = renderLayer({ spans: single, onBarClick })
+            barEl(container, withoutPost.id).focus()
+
+            await user.keyboard(key)
+
+            expect(onBarClick).toHaveBeenCalledExactlyOnceWith(withoutPost.id)
+        }
+    )
+
+    it('leaves other keys on a focused bar alone', async () => {
+        const user = userEvent.setup()
+        const onBarClick = vi.fn()
+        const single = [withoutPost]
+        const { container } = renderLayer({ spans: single, onBarClick })
+        barEl(container, withoutPost.id).focus()
+
+        await user.keyboard('{ArrowLeft}')
+
+        expect(onBarClick).not.toHaveBeenCalled()
+    })
+
     it('has no axe violations', async () => {
         const { container } = renderLayer()
         await expectNoAxeViolations(container)

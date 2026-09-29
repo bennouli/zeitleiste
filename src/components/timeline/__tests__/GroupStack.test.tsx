@@ -356,6 +356,51 @@ describe('GroupStack', () => {
         expect(screen.getByText('2 von 7')).toBeInTheDocument()
     })
 
+    describe('reveal', () => {
+        const props = {
+            entries: makeEntries(7),
+            visibleCount: 3,
+            slotHeightPx: SLOT,
+            renderCard: titleSpan,
+            label: 'G',
+        }
+
+        it('keeps the window when the member already shows', () => {
+            const shownMember = { index: 2, key: 1 }
+            render(<GroupStack {...props} reveal={shownMember} />)
+            expect(screen.getByText('1 von 7')).toBeInTheDocument()
+        })
+
+        it('moves the window the least that shows a hidden member', () => {
+            const memberBelow = { index: 5, key: 1 }
+            const memberAbove = { index: 1, key: 2 }
+            const { rerender } = render(
+                <GroupStack {...props} reveal={memberBelow} />
+            )
+            expect(screen.getByText('4 von 7')).toBeInTheDocument()
+            rerender(<GroupStack {...props} reveal={memberAbove} />)
+            expect(screen.getByText('2 von 7')).toBeInTheDocument()
+        })
+
+        it('reveals the same member again under a new key after the user stepped away', async () => {
+            const user = userEvent.setup()
+            const firstReveal = { index: 5, key: 1 }
+            const sameReveal = { index: 5, key: 1 }
+            const nextReveal = { index: 5, key: 2 }
+            const { rerender } = render(
+                <GroupStack {...props} reveal={firstReveal} />
+            )
+            await user.click(
+                screen.getByRole('button', { name: 'Einen Eintrag nach oben' })
+            )
+            expect(screen.getByText('3 von 7')).toBeInTheDocument()
+            rerender(<GroupStack {...props} reveal={sameReveal} />)
+            expect(screen.getByText('3 von 7')).toBeInTheDocument()
+            rerender(<GroupStack {...props} reveal={nextReveal} />)
+            expect(screen.getByText('4 von 7')).toBeInTheDocument()
+        })
+    })
+
     it('re-clamps when visibleCount grows', () => {
         const entries = makeEntries(4)
         const { rerender } = render(
@@ -601,6 +646,19 @@ describe('GroupStack', () => {
     it('has no detectable accessibility violations', async () => {
         const { container } = setup()
         await expectNoAxeViolations(container)
+    })
+})
+
+describe('topIndexShowing', () => {
+    const { topIndexShowing } = PRIVATE_UNDER_TESTS
+
+    it.each([
+        ['already in the window', 3, 2, 2],
+        ['above the window', 0, 2, 0],
+        ['below the window', 6, 2, 4],
+        ['below, clamped to the last window', 9, 2, 4],
+    ])('%s', (_, index, topIndex, expected) => {
+        expect(topIndexShowing(index, topIndex, 3, 4)).toBe(expected)
     })
 })
 

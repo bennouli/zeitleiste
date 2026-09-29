@@ -61,7 +61,7 @@ export function Timeline({
     const gestures = useGestures(elRef, actions, width)
     useCenteredEntry(entries, focusEntryId, actions.zoomToTime)
     const { onFocus } = useEntryFocus(elRef, actions.panStep, width)
-    const { highlight: barHighlight, highlightEntry } = useBarHighlight({
+    const { highlightEntry, ...barHighlight } = useBarHighlight({
         sectionRef: elRef,
         width,
         wasDrag: gestures.wasDrag,
