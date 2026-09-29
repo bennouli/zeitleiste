@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
+import { messages } from '../src/i18n/messages'
 import { openTimeline } from './timeline'
 
 type Box = { x: number; y: number; width: number; height: number }
@@ -54,7 +55,7 @@ test('the top bar holds the wordmark, the language switch and the zoom controls'
     const bar = page.locator('[data-top-bar]')
     const barBox = (await bar.boundingBox())!
     const controls = [
-        bar.getByText('Zeitleiste', { exact: true }),
+        bar.getByText(messages.de.site.name, { exact: true }),
         bar.getByRole('link', { name: 'English' }),
         bar.getByRole('button', { name: 'Herauszoomen', exact: true }),
         bar.getByRole('button', { name: 'Hineinzoomen', exact: true }),
