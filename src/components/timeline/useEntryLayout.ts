@@ -124,8 +124,9 @@ function alternatingSides(entries: readonly Entry[]): Map<string, Side> {
  * Groups are placed first and passed on as preceding items, so placeItems chooses each card's side
  * knowing the groups around it; only cards that fit nowhere are merged into groups by climbing the
  * cluster tree, and a cluster that can't be merged further is shown as a bare marker on the axis.
- * A card first tries its side in `preferredSides`, so it keeps that side whatever else is visible.
- * `previous` slots are kept where they still fit, so cards don't flip sides needlessly.
+ * `previous` slots are kept where they still fit, else the card tries the rest of its previous side.
+ * A card without a previous slot first tries its side in `preferredSides`, which does not depend
+ * on what else is visible.
  */
 function layoutEntries(
     entries: Entry[],

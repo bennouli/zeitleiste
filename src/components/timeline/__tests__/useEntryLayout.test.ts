@@ -252,10 +252,11 @@ describe('layoutEntries', () => {
 
         let previous: Map<string, Slot> | null = null
         for (const visibleYears of zoomInAndOut) {
-            const zoomed = layout({
+            const zoomedView: LayoutScenario = {
                 ...desktopNear1918(visibleYears),
                 previous,
-            })
+            }
+            const zoomed = layout(zoomedView)
             recordCardSides(sidesById, zoomed)
             previous = new Map(zoomed.items.map((i) => [i.id, i.slot]))
         }
@@ -268,8 +269,10 @@ describe('layoutEntries', () => {
         const zoomYears = [40, 10, 2]
         const sidesById = new Map<string, Set<Side>>()
 
-        for (const visibleYears of zoomYears)
-            recordCardSides(sidesById, layout(desktopNear1918(visibleYears)))
+        for (const visibleYears of zoomYears) {
+            const freshView = desktopNear1918(visibleYears)
+            recordCardSides(sidesById, layout(freshView))
+        }
 
         expect(sidesById.size).toBeGreaterThan(zoomYears.length)
         expect(idsOnBothSides(sidesById)).toEqual([])
