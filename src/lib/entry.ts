@@ -1,3 +1,5 @@
+import type { PostBody } from './richText'
+
 /** A historical date with year, month or day precision. Gregorian calendar throughout. */
 export type HDate = {
     year: number
@@ -13,8 +15,7 @@ export const ENTRY_TYPES = ['war', 'revolution', 'power', 'event'] as const
 export type EntryType = (typeof ENTRY_TYPES)[number]
 
 export type Post = {
-    /** Plain paragraphs separated by blank lines (prototype only; rich text comes with the CMS). */
-    body: string
+    body: PostBody
 }
 
 export type Entry = {

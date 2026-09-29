@@ -9,7 +9,7 @@ import { Post } from '../Post'
 const okt = sampleEntry('oktoberrevolution')
 
 describe('Post', () => {
-    it('shows title, long date, type, tags, summary and all paragraphs', () => {
+    it('shows title, long date, type, tags, summary and the four body paragraphs', () => {
         render(<Post entry={okt} />)
         expect(
             screen.getByRole('heading', { level: 2, name: 'Oktoberrevolution' })
@@ -19,10 +19,12 @@ describe('Post', () => {
             '7. November 1917 · , Revolution · , Russland'
         )
         expect(screen.getByText(okt.summary)).toBeInTheDocument()
-        const paras = okt.post!.body.split(/\n\s*\n/)
-        expect(paras).toHaveLength(4)
-        for (const p of paras)
-            expect(screen.getByText(p.trim())).toBeInTheDocument()
+        expect(
+            screen.getByText(/^Im Herbst 1917 war die Provisorische Regierung/)
+        ).toHaveClass('text-body')
+        expect(
+            screen.getAllByText(/./, { selector: 'p.text-body' })
+        ).toHaveLength(4)
     })
 
     it('has a heading that can receive focus programmatically but is not in the tab order', () => {

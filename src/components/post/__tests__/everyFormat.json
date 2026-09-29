@@ -1,0 +1,236 @@
+{
+    "root": {
+        "type": "root",
+        "format": "",
+        "indent": 0,
+        "version": 1,
+        "children": [
+            {
+                "tag": "h3",
+                "type": "heading",
+                "format": "",
+                "indent": 0,
+                "version": 1,
+                "children": [
+                    {
+                        "mode": "normal",
+                        "text": "Vorgeschichte",
+                        "type": "text",
+                        "style": "",
+                        "detail": 0,
+                        "format": 0,
+                        "version": 1
+                    }
+                ],
+                "direction": null
+            },
+            {
+                "type": "paragraph",
+                "format": "",
+                "indent": 0,
+                "version": 1,
+                "children": [
+                    {
+                        "mode": "normal",
+                        "text": "Ein Absatz mit ",
+                        "type": "text",
+                        "style": "",
+                        "detail": 0,
+                        "format": 0,
+                        "version": 1
+                    },
+                    {
+                        "mode": "normal",
+                        "text": "fettem",
+                        "type": "text",
+                        "style": "",
+                        "detail": 0,
+                        "format": 1,
+                        "version": 1
+                    },
+                    {
+                        "mode": "normal",
+                        "text": " und ",
+                        "type": "text",
+                        "style": "",
+                        "detail": 0,
+                        "format": 0,
+                        "version": 1
+                    },
+                    {
+                        "mode": "normal",
+                        "text": "kursivem",
+                        "type": "text",
+                        "style": "",
+                        "detail": 0,
+                        "format": 2,
+                        "version": 1
+                    },
+                    {
+                        "mode": "normal",
+                        "text": " Text und einem ",
+                        "type": "text",
+                        "style": "",
+                        "detail": 0,
+                        "format": 0,
+                        "version": 1
+                    },
+                    {
+                        "id": "6abb74acdda2aac4220300f1",
+                        "type": "link",
+                        "fields": {
+                            "url": "https://de.wikipedia.org/wiki/Oktoberrevolution",
+                            "linkType": "custom"
+                        },
+                        "format": "",
+                        "indent": 0,
+                        "version": 3,
+                        "children": [
+                            {
+                                "mode": "normal",
+                                "text": "Verweis",
+                                "type": "text",
+                                "style": "",
+                                "detail": 0,
+                                "format": 0,
+                                "version": 1
+                            }
+                        ],
+                        "direction": null
+                    },
+                    {
+                        "mode": "normal",
+                        "text": ".",
+                        "type": "text",
+                        "style": "",
+                        "detail": 0,
+                        "format": 0,
+                        "version": 1
+                    }
+                ],
+                "direction": null,
+                "textStyle": "",
+                "textFormat": 0
+            },
+            {
+                "tag": "ol",
+                "type": "list",
+                "start": 1,
+                "format": "",
+                "indent": 0,
+                "version": 1,
+                "children": [
+                    {
+                        "type": "listitem",
+                        "value": 1,
+                        "format": "",
+                        "indent": 0,
+                        "version": 1,
+                        "children": [
+                            {
+                                "mode": "normal",
+                                "text": "Erstens",
+                                "type": "text",
+                                "style": "",
+                                "detail": 0,
+                                "format": 0,
+                                "version": 1
+                            }
+                        ],
+                        "direction": null
+                    },
+                    {
+                        "type": "listitem",
+                        "value": 2,
+                        "format": "",
+                        "indent": 0,
+                        "version": 1,
+                        "children": [
+                            {
+                                "mode": "normal",
+                                "text": "Zweitens",
+                                "type": "text",
+                                "style": "",
+                                "detail": 0,
+                                "format": 0,
+                                "version": 1
+                            }
+                        ],
+                        "direction": null
+                    }
+                ],
+                "listType": "number",
+                "direction": null
+            },
+            {
+                "tag": "ul",
+                "type": "list",
+                "start": 1,
+                "format": "",
+                "indent": 0,
+                "version": 1,
+                "children": [
+                    {
+                        "type": "listitem",
+                        "value": 1,
+                        "format": "",
+                        "indent": 0,
+                        "version": 1,
+                        "children": [
+                            {
+                                "mode": "normal",
+                                "text": "Ein Punkt",
+                                "type": "text",
+                                "style": "",
+                                "detail": 0,
+                                "format": 0,
+                                "version": 1
+                            }
+                        ],
+                        "direction": null
+                    }
+                ],
+                "listType": "bullet",
+                "direction": null
+            },
+            {
+                "type": "quote",
+                "format": "",
+                "indent": 0,
+                "version": 1,
+                "children": [
+                    {
+                        "mode": "normal",
+                        "text": "Ein Zitat.",
+                        "type": "text",
+                        "style": "",
+                        "detail": 0,
+                        "format": 0,
+                        "version": 1
+                    }
+                ],
+                "direction": null
+            },
+            {
+                "tag": "h4",
+                "type": "heading",
+                "format": "",
+                "indent": 0,
+                "version": 1,
+                "children": [
+                    {
+                        "mode": "normal",
+                        "text": "Unterabschnitt",
+                        "type": "text",
+                        "style": "",
+                        "detail": 0,
+                        "format": 0,
+                        "version": 1
+                    }
+                ],
+                "direction": null
+            }
+        ],
+        "direction": null
+    }
+}

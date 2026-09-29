@@ -5,14 +5,7 @@ import { type Entry } from '@/lib/entry'
 import { entryMetaParts } from '@/lib/format'
 import { X } from 'lucide-react'
 import { Fragment } from 'react'
-
-/** Splits a plain-text post body into paragraphs at blank lines. */
-function paragraphs(body: string): string[] {
-    return body
-        .split(/\n\s*\n/)
-        .map((p) => p.trim())
-        .filter((p) => p.length > 0)
-}
+import { PostRichText } from './PostRichText'
 
 /** The post of an entry, shown below the collapsed timeline. */
 export function Post({ entry }: { entry: Entry }) {
@@ -50,12 +43,7 @@ export function Post({ entry }: { entry: Entry }) {
                 <p className="font-serif-italic text-lead italic">
                     {entry.summary}
                 </p>
-                {entry.post &&
-                    paragraphs(entry.post.body).map((p, i) => (
-                        <p key={i} className="text-body text-pretty">
-                            {p}
-                        </p>
-                    ))}
+                {entry.post && <PostRichText body={entry.post.body} />}
             </div>
             <button
                 type="button"

@@ -100,7 +100,16 @@ function tagProblems(e: Record<string, unknown>): string[] {
 
 function postProblems(e: Record<string, unknown>): string[] {
     if (e.post === undefined) return []
-    return isRecord(e.post) && nonEmptyString(e.post.body)
+    return isRecord(e.post) && hasContent(e.post.body)
         ? []
-        : ['post.body: must be a non-empty string']
+        : ['post.body: must be rich text with at least one node']
+}
+
+function hasContent(body: unknown): boolean {
+    return (
+        isRecord(body) &&
+        isRecord(body.root) &&
+        Array.isArray(body.root.children) &&
+        body.root.children.length > 0
+    )
 }
