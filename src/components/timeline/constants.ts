@@ -14,7 +14,7 @@ export const COLLAPSED_HEIGHT = '50dvh'
 export const ZOOM_ANIMATION_MS = 300
 /** Duration of the height transition when a post opens or closes; matches `duration-500` on the timeline. */
 export const COLLAPSE_ANIMATION_MS = 500
-/** Minimum horizontal gap between two cards in a row; also the room kept after a card anchored on today. */
+/** Minimum horizontal gap between two cards in a row; also the room kept beside a card anchored on either end of the range. */
 export const CARD_GAP_PX = 8
 /** Points closer than this sit on one spot and always form a group; otherwise grouping only happens when no card slot is free. */
 export const CLUSTER_MIN_GAP_PX = 8

@@ -24,6 +24,8 @@ export type Viewport = {
 export type Bounds = {
     min: number
     max: number
+    /** Fraction of the visible span kept free before `min`, so a card anchored on the first entry fits. Default 0. */
+    startRoom?: number
     /** Fraction of the visible span kept free after `max`, so a card anchored on today fits. Default 0. */
     endRoom?: number
 }
@@ -62,29 +64,42 @@ function gestureSpan(
     return Math.min(span, Math.max(clampSpan(current), rangeSpan(b)))
 }
 
+/** Where a viewport of `span` may start: `min` minus the room before it. */
+function limitStart(b: NormalBounds, span: number): number {
+    return b.min - span * b.startRoom
+}
+
 /** Where a viewport of `span` may end: `max` plus the room after it. */
 function limitEnd(b: NormalBounds, span: number): number {
     return b.max + span * b.endRoom
 }
 
-/** The span at which the whole range and its room fill the viewport. */
+/** The span at which the whole range and both rooms fill the viewport; Infinity when the rooms alone fill it. */
 function rangeSpan(b: NormalBounds): number {
-    return (b.max - b.min) / (1 - b.endRoom)
+    const rangeShare = 1 - b.startRoom - b.endRoom
+    return rangeShare > 0 ? (b.max - b.min) / rangeShare : Infinity
 }
 
 function centeredOn(center: number, span: number): Viewport {
     return { start: center - span / 2, end: center + span / 2 }
 }
 
-/** Returns ordered finite bounds with a room in [0, 1), or null if they are unusable. */
+/** A room in [0, 1); anything else is none. */
+function validRoom(room: number): number {
+    return Number.isFinite(room) && room >= 0 && room < 1 ? room : 0
+}
+
+/** Returns ordered finite bounds with rooms in [0, 1), or null if they are unusable. */
 function normalizeBounds(bounds: Bounds): NormalBounds | null {
-    const { min, max, endRoom = 0 } = bounds
+    const { min, max, startRoom = 0, endRoom = 0 } = bounds
     if (!Number.isFinite(min) || !Number.isFinite(max)) return null
-    const room =
-        Number.isFinite(endRoom) && endRoom >= 0 && endRoom < 1 ? endRoom : 0
+    const rooms = {
+        startRoom: validRoom(startRoom),
+        endRoom: validRoom(endRoom),
+    }
     return min <= max
-        ? { min, max, endRoom: room }
-        : { min: max, max: min, endRoom: room }
+        ? { min, max, ...rooms }
+        : { min: max, max: min, ...rooms }
 }
 
 /** Span of the viewport; 0 for a non-finite viewport so NaN never propagates. */
@@ -111,24 +126,25 @@ function xToTime(vp: Viewport, width: number, x: number): number {
     )
 }
 
-/** Clamp the span to [MIN_VISIBLE_MS, MAX_VISIBLE_MS] around its center, then shift it inside bounds (plus the room after max) without changing the span. If bounds are narrower than the span, center on them. */
+/** Clamp the span to [MIN_VISIBLE_MS, MAX_VISIBLE_MS] around its center, then shift it inside bounds (plus the rooms before min and after max) without changing the span. If bounds are narrower than the span, center on them. */
 export function clampViewport(vp: Viewport, bounds: Bounds): Viewport {
     const b = normalizeBounds(bounds)
     const span = clampSpan(vp.end - vp.start)
     const center = (vp.start + vp.end) / 2
     if (!b) return centeredOn(finiteOr(center, 0), span)
+    const earliestStart = limitStart(b, span)
     const end = limitEnd(b, span)
-    const boundsCenter = (b.min + end) / 2
-    if (span >= end - b.min) return centeredOn(boundsCenter, span)
+    const boundsCenter = (earliestStart + end) / 2
+    if (span >= end - earliestStart) return centeredOn(boundsCenter, span)
     const start = clamp(
         finiteOr(center, boundsCenter) - span / 2,
-        b.min,
+        earliestStart,
         end - span
     )
     return { start, end: start + span }
 }
 
-/** The whole range and its room, or as much of it as MAX_VISIBLE_MS allows, right-aligned so bounds.max (today) sits before the room. Ranges shorter than MIN_VISIBLE_MS are centered. */
+/** The whole range and its rooms, or as much of it as MAX_VISIBLE_MS allows, right-aligned so bounds.max (today) sits before the room after it. Ranges shorter than MIN_VISIBLE_MS are centered. */
 export function initialViewport(bounds: Bounds): Viewport {
     const b = normalizeBounds(bounds)
     if (!b)
@@ -199,7 +215,7 @@ export function panBy(
 ): Viewport {
     const b = normalizeBounds(bounds)
     const rawShift = -finiteOr(dx, 0) * msPerPx(vp, width)
-    const maxShift = b ? rangeSpan(b) + MAX_VISIBLE_MS : Infinity
+    const maxShift = b ? b.max - b.min + 2 * MAX_VISIBLE_MS : Infinity
     // Keep the arithmetic finite for absurd dx; anything beyond the bounds width is clamped anyway.
     const shift = clamp(rawShift, -maxShift, maxShift)
     return clampViewport(

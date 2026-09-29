@@ -225,7 +225,7 @@ export function Timeline({
 }
 
 /**
- * Earliest entry start … today, plus room for one card anchored on today;
+ * Earliest entry start … today, plus room for one card anchored on either end;
  * a century back when no entry lies in the past.
  */
 function dataBounds(entries: Entry[], today: number, width: number): Bounds {
@@ -234,8 +234,8 @@ function dataBounds(entries: Entry[], today: number, width: number): Bounds {
         Number.isFinite(earliest) && earliest < today
             ? earliest
             : today - FALLBACK_HISTORY_MS
-    const endRoom = width > 0 ? (LABEL_MAX_WIDTH_PX + CARD_GAP_PX) / width : 0
-    return { min, max: today, endRoom }
+    const room = width > 0 ? (LABEL_MAX_WIDTH_PX + CARD_GAP_PX) / width : 0
+    return { min, max: today, startRoom: room, endRoom: room }
 }
 
 function useElementSize() {
