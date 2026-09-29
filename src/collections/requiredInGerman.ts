@@ -6,11 +6,7 @@ type Validation<V, O> = (
     options: O
 ) => Promise<string | true> | string | true
 
-/**
- * Payload's own check for a localized field, required in German only:
- * Payload applies `required` to the locale being saved, which would make
- * every English text mandatory.
- */
+/** Payload's own check for a localized field, required in German only. `required: true` would apply to every locale being saved. */
 export function requiredInGerman<
     V,
     O extends { req: PayloadRequest; required?: boolean },

@@ -7,8 +7,7 @@ import type { Slugify } from 'payload/shared'
  * Payload's slug field, generated from `source` with German transliteration
  * until the editor unlocks it. Not `required`: the helper fills the slug in a
  * hook that runs after the required check, so a required slug fails every
- * save that leaves it to the helper. Not localized: both languages share one
- * address.
+ * save that leaves it to the helper.
  */
 export function germanSlugField(source: string): Field {
     return slugField({

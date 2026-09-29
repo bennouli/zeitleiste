@@ -44,11 +44,7 @@ const SluggedRelation = Schema.optional(
     Schema.NullOr(Schema.Union([Id, Slugged]))
 )
 
-/**
- * A published entry as the Local API returns it at depth 1. Its texts are
- * missing in a locale with no fallback to what the editor wrote: an entry
- * written only in English, read in German.
- */
+/** A published entry as the Local API returns it at depth 1; its texts may be missing in the locale read. */
 export const CmsEntry = Schema.Struct({
     slug: Schema.NonEmptyString,
     title: OptionalString,
