@@ -49,7 +49,7 @@ describe('Axis', () => {
         const { container } = renderAxis(todayX, 10)
         const line = container.querySelector<HTMLElement>('[data-axis-line]')!
         expect(line.style.width).toBe(`${WIDTH}px`)
-        expect(line).toHaveClass('left-0', 'bg-fg')
+        expect(line).toHaveClass('left-0', 'bg-axis-line')
         expect(line.style.height).toBe(`${AXIS_LINE_THICKNESS_PX}px`)
     })
 

@@ -10,10 +10,10 @@ export type LaneBox = { top: number; height: number }
 
 /** A span shorter than this is stretched to it, so it stays visible. */
 const SPAN_MIN_WIDTH_PX = 2
-const AXIS_LANE_HEIGHT_PX = 7
-const LOWER_LANE_HEIGHT_PX = 3
-const FIRST_LOWER_LANE_TOP_PX = 8
-const LOWER_LANE_PITCH_PX = 6
+const AXIS_LANE_HEIGHT_PX = 9
+const LOWER_LANE_HEIGHT_PX = 6
+const FIRST_LOWER_LANE_TOP_PX = 7
+const LOWER_LANE_PITCH_PX = 8
 
 /**
  * Bars (with their lanes) for the given spans at the current zoom, keyed by id.

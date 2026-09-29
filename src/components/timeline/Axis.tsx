@@ -42,7 +42,7 @@ export function Axis() {
         >
             <div
                 data-axis-line
-                className="absolute left-0 bg-fg"
+                className="absolute left-0 bg-axis-line"
                 style={{
                     top: AXIS_LINE_Y_PX,
                     width,

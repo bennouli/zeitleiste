@@ -39,15 +39,38 @@ test('spans lie on the axis at every zoom; nothing is reserved below it', async 
         const axis = await axisLineBox(page)
         const axisCentre = axis.y + axis.height / 2
         const boxes = await barBoxes(page)
-        const onAxis = boxes.filter((b) => b.height === 7)
+        const onAxis = boxes.filter((b) => b.height === 9)
         expect(onAxis.length).toBeGreaterThan(0)
         for (const b of onAxis) expect(b.y + b.height / 2).toBe(axisCentre)
         for (const b of boxes) {
-            expect(b.y).toBeGreaterThanOrEqual(axisCentre - 3.5)
+            expect(b.y).toBeGreaterThanOrEqual(axisCentre - 4.5)
             expect(b.y).toBeLessThan(axis.y + 60)
         }
         await zoomIn(page)
     }
+})
+
+const alphaOf = (color: string) =>
+    Number(/\/\s*([\d.]+)\)$/.exec(color)?.[1] ?? 1)
+
+async function barAndAxisAlpha(page: Page) {
+    const backgroundColor = (locator: ReturnType<Page['locator']>) =>
+        locator.evaluate((el) => getComputedStyle(el).backgroundColor)
+    const barColor = await backgroundColor(bar(page, FINISHED_SPAN))
+    const axisColor = await backgroundColor(page.locator('[data-axis-line]'))
+    return { bar: alphaOf(barColor), axis: alphaOf(axisColor) }
+}
+
+test('dark mode brightens the bars and dims the axis line below them; light mode keeps ink 35 % on a full-ink line', async ({
+    page,
+}) => {
+    await openTimeline(page)
+    const light = await barAndAxisAlpha(page)
+    await page.emulateMedia({ colorScheme: 'dark' })
+    const dark = await barAndAxisAlpha(page)
+    expect(light).toEqual({ bar: 0.35, axis: 1 })
+    expect(dark.bar).toBeGreaterThan(light.bar)
+    expect(dark.axis).toBeLessThan(dark.bar)
 })
 
 test('overlapping spans occupy separate lanes without touching', async ({
