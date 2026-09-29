@@ -1,3 +1,5 @@
+import { Locale, LOCALES } from '@/i18n/locales'
+import { Schema } from 'effect'
 import type { Entry } from './entry'
 
 /** Slugs (entry ids) of all entries that have a post. */
@@ -30,7 +32,31 @@ export function slugFromPathname(
     }
 }
 
+/** The start page of the site in this locale. */
+export function startHref(locale: Locale): string {
+    return `/${locale}`
+}
+
 /** The address of the post with this slug. */
-export function postHref(slug: string): string {
-    return `/post/${encodeURIComponent(slug)}`
+export function postHref(slug: string, locale: Locale): string {
+    return `${startHref(locale)}/post/${encodeURIComponent(slug)}`
+}
+
+/** Whether the pathname is a start page (`/de`, `/en`). */
+export function isStartPath(pathname: string): boolean {
+    return LOCALES.some(
+        (locale) => pathname.replace(/\/$/, '') === startHref(locale)
+    )
+}
+
+const isLocale = Schema.is(Locale)
+
+/**
+ * The same address in the target locale: the locale segment is swapped, or put
+ * in front when the pathname has none (`/post/x` → `/en/post/x`).
+ */
+export function switchLocalePath(pathname: string, target: Locale): string {
+    const [first = '', ...rest] = pathname.split('/').filter(Boolean)
+    const unprefixed = isLocale(first) ? rest : [first, ...rest]
+    return [startHref(target), ...unprefixed.filter(Boolean)].join('/')
 }
