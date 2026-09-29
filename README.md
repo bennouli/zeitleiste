@@ -18,40 +18,51 @@ Requires Node.js 20.9 or newer and pnpm.
 ```bash
 git clone https://github.com/bennouli/zeitleiste.git && cd zeitleiste
 pnpm install
-cp .env.example .env.local   # fill in both variables, see below
+cp .env.example .env.local   # DATABASE_URL of the dev branch, a PAYLOAD_SECRET (openssl rand -hex 32)
 pnpm dev
 ```
 
 The timeline runs at http://localhost:3000, the admin at http://localhost:3000/admin. On the first visit the admin asks you to create the
 first user.
 
-### Development database
+### Databases
 
-The database is Postgres on Neon. Production has its own branch; local development runs on a personal branch, so production data stays
-untouched and no Docker is needed.
+Postgres on Neon, one project with three branches. Branches persist; they are reset, never recreated.
 
-1. In the [Neon Console](https://console.neon.tech), open the project and go to **Branches** → **Create branch**. Name it after yourself
-   (`dev-<name>`) and pick the production branch as its parent. The new branch starts as a copy of the parent's data; nothing you do on it
-   reaches the parent.
-2. On the branch, click **Connect** and copy the connection string into `DATABASE_URL` in `.env.local`.
+| Branch       | Managed by                 | Used by                                | Connection string lives in     |
+| ------------ | -------------------------- | -------------------------------------- | ------------------------------ |
+| `production` | migrations (`pnpm run ci`) | the deployed site                      | Vercel, Production environment |
+| `preview`    | migrations (`pnpm run ci`) | Vercel preview deployments of every PR | Vercel, Preview environment    |
+| `dev`        | push (`pnpm dev`)          | local development                      | `.env.local`                   |
 
-With the Neon CLI instead: `neon branches create --name dev-<name>`, then `neon connection-string dev-<name>`.
+`preview` and `dev` are children of `production`. A branch is either push-managed or migration-managed, never both: `pnpm dev` alters the
+`dev` branch directly from the Payload config, the two Vercel branches only ever receive committed migrations. Nothing on a developer
+machine points at `production`.
 
-In development, Payload pushes the schema straight into this branch whenever the Payload config changes: treat the branch as a sandbox, and
-reset or recreate it from its parent when it gets in the way.
+Get a connection string in the [Neon Console](https://console.neon.tech) under **Branches** → the branch → **Connect**, or with the Neon
+CLI: `neon connection-string <branch>`. The Vercel branches use the direct host, without `-pooler`, because they run migrations. Vercel's
+Build Command is `pnpm run ci`.
 
-### Schema changes and production
+### Changing the schema
 
-Production never receives a pushed schema. Every change to the Payload config that touches the database needs a migration:
+1. Edit the collection under `src/collections/`.
+2. `pnpm dev`. Payload pushes the change into the `dev` branch on boot; iterate until the admin looks right.
+3. `pnpm payload migrate:create <name>` writes `src/migrations/<timestamp>_<name>.ts`. It diffs against the last committed migration, not
+   against the `dev` branch.
+4. `pnpm payload generate:types` refreshes `src/payload-types.ts`.
+5. Commit collection, migration and types together, in the PR of the change.
 
-```bash
-pnpm payload migrate:create <name>   # writes src/migrations/<timestamp>_<name>.ts, commit it
-pnpm payload generate:types          # refreshes src/payload-types.ts, commit it
-```
+The PR's preview deployment applies the migration to the `preview` branch. Merging to `main` applies it to `production` during the build,
+once, recorded in `payload_migrations`.
 
-Never run `pnpm payload migrate` against your development branch; push and migrations do not mix on one database. The production build runs
-`pnpm run ci` (`payload migrate && pnpm build`), which applies pending migrations before building. It is the production build command only:
-run locally, it would migrate your development branch.
+Never run `pnpm payload migrate` or `next dev` against a migration-managed branch. `pnpm payload migrate` on the `dev` branch stops at a
+prompt about push mode; answer no.
+
+When a branch drifts — `preview` after two PRs with different migrations, `dev` after experiments — reset it from its parent in the Neon
+Console (**Branches** → the branch → **Reset from parent**). The first `pnpm dev` after resetting `dev` asks once before switching the
+branch back to push mode.
+
+Content typed into a local `/admin` lands on the `dev` branch and stays there. Real content is entered on the deployed admin.
 
 ## License
 
