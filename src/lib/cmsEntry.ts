@@ -3,6 +3,7 @@ import { ENTRY_TYPES, type Entry, type HDate, type Post } from './entry'
 
 const Id = Schema.Number
 const OptionalNumber = Schema.optional(Schema.NullOr(Schema.Number))
+const OptionalString = Schema.optional(Schema.NullOr(Schema.String))
 
 const LexicalNode = Schema.StructWithRest(
     Schema.Struct({ type: Schema.String, version: Schema.Number }),
@@ -43,11 +44,15 @@ const SluggedRelation = Schema.optional(
     Schema.NullOr(Schema.Union([Id, Slugged]))
 )
 
-/** A published entry as the Local API returns it at depth 1. */
+/**
+ * A published entry as the Local API returns it at depth 1. Its texts are
+ * missing in a locale with no fallback to what the editor wrote: an entry
+ * written only in English, read in German.
+ */
 export const CmsEntry = Schema.Struct({
     slug: Schema.NonEmptyString,
-    title: Schema.String,
-    summary: Schema.String,
+    title: OptionalString,
+    summary: OptionalString,
     startYear: Schema.Number,
     startMonth: OptionalNumber,
     startDay: OptionalNumber,
@@ -71,14 +76,22 @@ export const CmsEntry = Schema.Struct({
 })
 export type CmsEntry = typeof CmsEntry.Type
 
+/** A CMS entry with its title and summary in the locale it was read in. */
+export type TextedCmsEntry = CmsEntry & { title: string; summary: string }
+
 type DateParts = {
     year: number
     month?: number | null
     day?: number | null
 }
 
+/** Whether a CMS entry has its title and summary in the locale it was read in. */
+export function hasTexts(doc: CmsEntry): doc is TextedCmsEntry {
+    return Boolean(doc.title) && Boolean(doc.summary)
+}
+
 /** The timeline entry of a CMS entry, with the post it links to if that is loaded. */
-export function entryOf(doc: CmsEntry, post?: Post): Entry {
+export function entryOf(doc: TextedCmsEntry, post?: Post): Entry {
     const end = endOf(doc)
     const subject = slugOf(doc.subject)
     const partOf = slugOf(doc.partOf)
