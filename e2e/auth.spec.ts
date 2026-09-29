@@ -78,7 +78,7 @@ async function jwtFor(
 }
 
 async function adminLogin(page: Page, credentials = ADMIN) {
-    await page.goto('/admin/login')
+    await page.goto('/admin/login', { waitUntil: 'networkidle' })
     await page.getByLabel('Email').fill(credentials.email)
     await page.getByLabel('Password').fill(credentials.password)
     await page.getByRole('button', { name: 'Login' }).click()
@@ -103,7 +103,9 @@ test('an admin invites an editor, who sets a password through the link and logs 
 }) => {
     const invitee = { email: emailFor('invitee'), password: 'invitee-pass-1' }
     await adminLogin(page)
-    await page.goto('/admin/collections/users/create')
+    await page.goto('/admin/collections/users/create', {
+        waitUntil: 'networkidle',
+    })
     await page.getByLabel('Email').fill(invitee.email)
     await page.getByLabel('New Password').fill('throwaway-pass')
     await page.getByLabel('Confirm Password').fill('throwaway-pass')
