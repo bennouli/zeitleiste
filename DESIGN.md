@@ -2,7 +2,7 @@
 
 Source: the Claude Design prototype
 [Zeitleiste Prototyp](https://claude.ai/design/p/c2dd203e-86bf-48da-abda-9d11f8edf01d?file=Zeitleiste+Prototyp.dc.html). The tokens live in
-`src/app/globals.css`, the fonts in `src/app/layout.tsx`, the durations in `src/components/timeline/constants.ts`.
+`src/app/(frontend)/globals.css`, the fonts in `src/app/(frontend)/layout.tsx`, the durations in `src/components/timeline/constants.ts`.
 
 The look is a printed history book: warm paper, near-black ink, a serif to read, a small sans for everything that is data, and no colour
 beyond ink.
@@ -19,8 +19,8 @@ beyond ink.
   packages are not dependencies. No request goes to Google Fonts, at build time or at runtime.
     - `eb-garamond/`: `eb-garamond-{latin,latin-ext}-{400-normal,500-normal,400-italic}.woff2`
     - `ibm-plex-sans/`: `ibm-plex-sans-{latin,latin-ext}-{400-normal,500-normal}.woff2`
-- Three `next/font/local` calls in `src/app/layout.tsx`, all `display: 'swap'` with a metric-adjusted fallback (`adjustFontFallback`), so
-  the page does not shift when the fonts arrive:
+- Three `next/font/local` calls in `src/app/(frontend)/layout.tsx`, all `display: 'swap'` with a metric-adjusted fallback
+  (`adjustFontFallback`), so the page does not shift when the fonts arrive:
     - `ebGaramond`: EB Garamond 400 and 500 upright, fallback Times New Roman, preloaded.
     - `ebGaramondItalic`: EB Garamond 400 italic in a call of its own, so the italic lead gets fallback metrics measured on the italic;
       fallback Times New Roman, not preloaded.

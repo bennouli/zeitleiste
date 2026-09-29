@@ -16,6 +16,8 @@ const eslintConfig = defineConfig([
         'build/**',
         'next-env.d.ts',
         'repos/**',
+        'src/payload-types.ts',
+        'src/app/(payload)/admin/importMap.js',
     ]),
     {
         files: ['src/**/*.{ts,tsx}', 'e2e/**/*.ts'],
@@ -34,7 +36,11 @@ const eslintConfig = defineConfig([
                 'error',
                 {
                     root: import.meta.dirname,
-                    entryPoints: ['src/app'],
+                    entryPoints: [
+                        'src/app',
+                        'src/payload.config.ts',
+                        'src/migrations',
+                    ],
                     testSupport: ['src/test'],
                 },
             ],

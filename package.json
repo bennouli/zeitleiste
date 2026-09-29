@@ -2,10 +2,13 @@
     "name": "zeitleiste",
     "version": "0.1.0",
     "private": true,
+    "type": "module",
     "scripts": {
         "dev": "next dev",
         "build": "next build",
+        "ci": "payload migrate && pnpm build",
         "start": "next start",
+        "payload": "payload",
         "lint": "eslint",
         "typecheck": "next typegen && tsc --noEmit",
         "test": "vitest run",
@@ -17,12 +20,17 @@
         "format:check": "prettier --check ."
     },
     "dependencies": {
+        "@payloadcms/db-postgres": "3.90.2",
+        "@payloadcms/next": "3.90.2",
+        "@payloadcms/richtext-lexical": "3.90.2",
         "clsx": "^2.1.1",
         "d3-scale": "^4.0.2",
         "d3-time": "^3.1.0",
         "effect": "4.0.0-rc.117",
+        "graphql": "16.14.2",
         "lucide-react": "1.48.0",
         "next": "16.3.6",
+        "payload": "3.90.2",
         "react": "19.2.8",
         "react-dom": "19.2.8"
     },
