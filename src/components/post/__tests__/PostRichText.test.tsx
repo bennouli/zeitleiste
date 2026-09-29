@@ -8,6 +8,35 @@ import everyFormatJson from './everyFormat.json'
 
 const everyFormat = everyFormatJson as PostBody
 
+function withLink(fields: Record<string, unknown>): PostBody {
+    return {
+        root: {
+            ...everyFormat.root,
+            children: [
+                {
+                    type: 'paragraph',
+                    version: 1,
+                    children: [
+                        {
+                            type: 'link',
+                            version: 3,
+                            fields,
+                            children: [
+                                {
+                                    type: 'text',
+                                    text: 'Verweis',
+                                    format: 0,
+                                    version: 1,
+                                },
+                            ],
+                        },
+                    ],
+                },
+            ],
+        },
+    }
+}
+
 describe('PostRichText', () => {
     it('renders paragraphs in the body typography, without a wrapper', () => {
         const body = paragraphsToLexical('Erster Absatz.\n\nZweiter Absatz.')
@@ -32,12 +61,12 @@ describe('PostRichText', () => {
 
     it('sets bold in the medium weight and italic in the italic face', () => {
         render(<PostRichText body={everyFormat} />)
-        const bold = screen.getByText('fettem')
-        const italic = screen.getByText('kursivem')
-        expect(bold.tagName).toBe('STRONG')
-        expect(bold).toHaveClass('font-medium')
-        expect(italic.tagName).toBe('EM')
-        expect(italic).toHaveClass('font-serif-italic', 'italic')
+        const boldWord = screen.getByText('fettem')
+        const italicWord = screen.getByText('kursivem')
+        expect(boldWord.tagName).toBe('STRONG')
+        expect(boldWord).toHaveClass('font-medium')
+        expect(italicWord.tagName).toBe('EM')
+        expect(italicWord).toHaveClass('font-serif-italic', 'italic')
     })
 
     it('renders a link with its address', () => {
@@ -53,19 +82,34 @@ describe('PostRichText', () => {
 
     it('renders ordered and unordered lists', () => {
         render(<PostRichText body={everyFormat} />)
-        const [ordered, unordered] = screen.getAllByRole('list')
-        expect(ordered!.tagName).toBe('OL')
-        expect(ordered).toHaveClass('list-decimal')
+        const [orderedList, unorderedList] = screen.getAllByRole('list')
+        expect(orderedList!.tagName).toBe('OL')
+        expect(orderedList).toHaveClass('list-decimal')
         expect(
-            within(ordered!)
+            within(orderedList!)
                 .getAllByRole('listitem')
                 .map((li) => li.textContent)
         ).toEqual(['Erstens', 'Zweitens'])
-        expect(unordered!.tagName).toBe('UL')
-        expect(unordered).toHaveClass('list-disc')
-        expect(within(unordered!).getByRole('listitem')).toHaveTextContent(
+        expect(unorderedList!.tagName).toBe('UL')
+        expect(unorderedList).toHaveClass('list-disc')
+        expect(within(unorderedList!).getByRole('listitem')).toHaveTextContent(
             'Ein Punkt'
         )
+    })
+
+    it('opens a link in a new tab only when the editor asked for it', () => {
+        const body = withLink({ url: 'https://example.org', newTab: true })
+        render(<PostRichText body={body} />)
+        const link = screen.getByRole('link', { name: 'Verweis' })
+        expect(link).toHaveAttribute('target', '_blank')
+        expect(link).toHaveAttribute('rel', 'noopener noreferrer')
+    })
+
+    it('renders a link without an address as its text', () => {
+        const body = withLink({ linkType: 'internal' })
+        render(<PostRichText body={body} />)
+        expect(screen.queryByRole('link')).not.toBeInTheDocument()
+        expect(screen.getByText('Verweis')).toBeInTheDocument()
     })
 
     it('renders a quote', () => {

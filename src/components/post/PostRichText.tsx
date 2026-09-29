@@ -12,6 +12,8 @@ import {
     RichText,
 } from '@payloadcms/richtext-lexical/react'
 
+const READING_CLASS = 'text-body text-pretty'
+
 const LINK_CLASS =
     'underline decoration-fg-muted underline-offset-2 hover:decoration-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus'
 
@@ -31,9 +33,7 @@ const postConverters: JSXConvertersFunction<DefaultNodeTypes> = ({
 }) => ({
     ...defaultConverters,
     paragraph: ({ node, nodesToJSX }) => (
-        <p className="text-body text-pretty">
-            {nodesToJSX({ nodes: node.children })}
-        </p>
+        <p className={READING_CLASS}>{nodesToJSX({ nodes: node.children })}</p>
     ),
     heading: ({ node, nodesToJSX }) => {
         const Heading = node.tag
@@ -47,7 +47,7 @@ const postConverters: JSXConvertersFunction<DefaultNodeTypes> = ({
         const List = node.tag
         return (
             <List
-                className={`flex flex-col gap-1.5 pl-6 text-body text-pretty ${LIST_CLASS[node.listType]}`}
+                className={`flex flex-col gap-1.5 pl-6 ${READING_CLASS} ${LIST_CLASS[node.listType]}`}
             >
                 {nodesToJSX({ nodes: node.children })}
             </List>
@@ -57,7 +57,9 @@ const postConverters: JSXConvertersFunction<DefaultNodeTypes> = ({
         <li>{nodesToJSX({ nodes: node.children })}</li>
     ),
     quote: ({ node, nodesToJSX }) => (
-        <blockquote className="border-l-2 border-border pl-5 text-body text-pretty">
+        <blockquote
+            className={`border-l-2 border-border pl-5 ${READING_CLASS}`}
+        >
             {nodesToJSX({ nodes: node.children })}
         </blockquote>
     ),
@@ -86,16 +88,16 @@ function Link({
 }
 
 function formattedText(text: string, format: number) {
-    const italic =
+    const slantedText =
         format & IS_ITALIC ? (
             <em className="font-serif-italic italic">{text}</em>
         ) : (
             text
         )
     return format & IS_BOLD ? (
-        <strong className="font-medium">{italic}</strong>
+        <strong className="font-medium">{slantedText}</strong>
     ) : (
-        italic
+        slantedText
     )
 }
 

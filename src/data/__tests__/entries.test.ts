@@ -98,6 +98,9 @@ describe('validateEntry', () => {
         type: 'event',
         tags: [],
     }
+    const postWithText = { body: paragraphsToLexical('Text') }
+    const postWithoutText = { body: paragraphsToLexical('') }
+    const postWithPlainString = { body: 'Klartext' }
 
     it('accepts a valid entry', () => {
         expect(validateEntry(valid)).toEqual([])
@@ -118,7 +121,7 @@ describe('validateEntry', () => {
         expect(
             validateEntry({
                 ...valid,
-                post: { body: paragraphsToLexical('Text') },
+                post: postWithText,
             })
         ).toEqual([])
     })
@@ -156,11 +159,11 @@ describe('validateEntry', () => {
         expect(validateEntry({ ...valid, type: 'culture' })).not.toEqual([])
         expect(validateEntry({ ...valid, tags: undefined })).not.toEqual([])
         expect(
-            validateEntry({ ...valid, post: { body: 'Klartext' } })
+            validateEntry({ ...valid, post: postWithPlainString })
         ).not.toEqual([])
-        expect(
-            validateEntry({ ...valid, post: { body: paragraphsToLexical('') } })
-        ).not.toEqual([])
+        expect(validateEntry({ ...valid, post: postWithoutText })).not.toEqual(
+            []
+        )
         expect(validateEntry({ ...valid, tags: [' '] })).not.toEqual([])
         expect(validateEntry({ ...valid, post: { body: '' } })).not.toEqual([])
     })
