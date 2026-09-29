@@ -1,3 +1,4 @@
+import { APP_NAME } from '@/lib/brand'
 import { postgresAdapter } from '@payloadcms/db-postgres'
 import { lexicalEditor } from '@payloadcms/richtext-lexical'
 import { Schema } from 'effect'
@@ -27,7 +28,7 @@ export default buildConfig({
     csrf: [...cookieOrigins],
     admin: {
         user: Users.slug,
-        meta: { titleSuffix: '– Liniya' },
+        meta: { titleSuffix: `– ${APP_NAME}` },
         importMap: {
             baseDir: path.resolve(dirname),
         },

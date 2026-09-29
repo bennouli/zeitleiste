@@ -1,13 +1,14 @@
+import { APP_NAME } from '@/lib/brand'
 import type { Messages } from './messages'
 
 const entries = (count: number) => (count === 1 ? 'entry' : 'entries')
 
 export const en = {
     site: {
-        name: 'Liniya',
+        name: APP_NAME,
         description: 'Interactive timeline: Russia and the West since 1700',
-        heading: 'Liniya: Russia and the West',
-        postTitle: (title) => `${title} – Liniya`,
+        heading: `${APP_NAME}: Russia and the West`,
+        postTitle: (title) => `${title} – ${APP_NAME}`,
     },
     notFound: {
         heading: 'Page not found',
@@ -41,7 +42,7 @@ export const en = {
     groupMeta: (count, years) => `${count} ${entries(count)} · ${years}`,
     position: (ordinal, count) => `${ordinal} of ${count}`,
     invitation: {
-        pageTitle: 'Accept invitation – Liniya',
+        pageTitle: `Accept invitation – ${APP_NAME}`,
         heading: 'Accept invitation',
         intro: 'Choose a password. Afterwards you sign in with your email address and this password.',
         password: 'Password',

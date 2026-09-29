@@ -1,3 +1,4 @@
+import { APP_NAME } from '@/lib/brand'
 import { Schema } from 'effect'
 
 export type AuthEmail = {
@@ -13,10 +14,10 @@ export type TokenLink = {
 export const invitationEmail = ({ serverURL, token }: TokenLink): AuthEmail => {
     const link = `${serverURL}/einladung/${encodeURIComponent(token)}`
     return {
-        subject: 'Einladung zu Liniya',
+        subject: `Einladung zu ${APP_NAME}`,
         html: emailHtml(`
         <p>Hallo,</p>
-        <p>du bist eingeladen, Liniya mitzubearbeiten. Über diesen Link legst du dein Passwort fest:</p>
+        <p>du bist eingeladen, ${APP_NAME} mitzubearbeiten. Über diesen Link legst du dein Passwort fest:</p>
         <p><a href="${link}">${link}</a></p>
         <p>Der Link ist 7 Tage gültig.</p>`),
     }
@@ -31,10 +32,10 @@ export const forgotPasswordEmail = (args: unknown): AuthEmail => {
     } = decodeForgotPasswordEmailArgs(args)
     const link = `${config.serverURL}${config.routes.admin}/reset/${encodeURIComponent(token)}`
     return {
-        subject: 'Neues Passwort für Liniya',
+        subject: `Neues Passwort für ${APP_NAME}`,
         html: emailHtml(`
         <p>Hallo,</p>
-        <p>für dein Konto bei Liniya wurde ein neues Passwort angefordert. Über diesen Link legst du es fest:</p>
+        <p>für dein Konto bei ${APP_NAME} wurde ein neues Passwort angefordert. Über diesen Link legst du es fest:</p>
         <p><a href="${link}">${link}</a></p>
         <p>Der Link ist 7 Tage gültig und funktioniert einmal. Wenn du kein neues Passwort angefordert hast, ignoriere diese E-Mail.</p>`),
     }
