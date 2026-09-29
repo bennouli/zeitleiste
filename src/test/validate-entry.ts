@@ -1,10 +1,12 @@
-import type { HDate } from '@/lib/entry'
+import {
+    daysInMonth,
+    endsBeforeStart,
+    ENTRY_TYPES,
+    type HDate,
+} from '@/lib/entry'
 
 const ID_PATTERN = /^[a-z0-9]+(-[a-z0-9]+)*$/
 const STRING_FIELDS = ['id', 'title', 'summary'] as const
-const REGIONS = ['russia', 'west', 'both'] as const
-const CATEGORIES = ['war', 'revolution', 'power', 'event'] as const
-const IMPORTANCES = [1, 2, 3] as const
 
 /** Problems with a single HDate (proleptic Gregorian calendar); empty if valid. */
 export function validateHDate(d: unknown, label: string): string[] {
@@ -38,7 +40,8 @@ export function validateEntry(e: unknown): string[] {
         ...stringProblems(e),
         ...idProblems(e),
         ...dateProblems(e),
-        ...enumProblems(e),
+        ...oneOf(e.type, ENTRY_TYPES, 'type'),
+        ...tagProblems(e),
         ...postProblems(e),
     ]
 }
@@ -49,15 +52,6 @@ function isRecord(v: unknown): v is Record<string, unknown> {
 
 function isInteger(v: unknown): v is number {
     return Number.isInteger(v)
-}
-
-function daysInMonth(year: number, month: number): number {
-    if (month === 2) return isLeapYear(year) ? 29 : 28
-    return [4, 6, 9, 11].includes(month) ? 30 : 31
-}
-
-function isLeapYear(year: number): boolean {
-    return (year % 4 === 0 && year % 100 !== 0) || year % 400 === 0
 }
 
 function stringProblems(e: Record<string, unknown>): string[] {
@@ -88,23 +82,6 @@ function dateProblems(e: Record<string, unknown>): string[] {
     return [...startProblems, ...endProblems, ...orderProblems]
 }
 
-/** True if `end` lies before `start`, compared only at the precision both share. */
-function endsBeforeStart(start: HDate, end: HDate): boolean {
-    if (end.year !== start.year) return end.year < start.year
-    if (end.month === undefined || start.month === undefined) return false
-    if (end.month !== start.month) return end.month < start.month
-    if (end.day === undefined || start.day === undefined) return false
-    return end.day < start.day
-}
-
-function enumProblems(e: Record<string, unknown>): string[] {
-    return [
-        ...oneOf(e.region, REGIONS, 'region'),
-        ...oneOf(e.category, CATEGORIES, 'category'),
-        ...oneOf(e.importance, IMPORTANCES, 'importance'),
-    ]
-}
-
 function oneOf(
     value: unknown,
     allowed: readonly unknown[],
@@ -113,6 +90,12 @@ function oneOf(
     return allowed.includes(value)
         ? []
         : [`${field}: must be one of ${allowed.join(', ')}`]
+}
+
+function tagProblems(e: Record<string, unknown>): string[] {
+    return Array.isArray(e.tags) && e.tags.every(nonEmptyString)
+        ? []
+        : ['tags: must be a list of non-empty strings']
 }
 
 function postProblems(e: Record<string, unknown>): string[] {

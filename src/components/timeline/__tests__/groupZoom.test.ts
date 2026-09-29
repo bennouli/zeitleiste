@@ -10,9 +10,8 @@ function entryIn(year: number): Entry {
         title: `Eintrag ${year}`,
         summary: 'Zusammenfassung',
         start: { year },
-        region: 'russia',
-        category: 'event',
-        importance: 2,
+        type: 'event',
+        tags: [],
     }
 }
 

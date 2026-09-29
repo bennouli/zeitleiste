@@ -6,9 +6,8 @@ import { findEntry, postHref, postSlugs, slugFromPathname } from '../posts'
 const base = {
     summary: 's',
     start: { year: 1900 },
-    region: 'russia',
-    category: 'event',
-    importance: 1,
+    type: 'event',
+    tags: [],
 } as const
 const sample: Entry[] = [
     { ...base, id: 'a', title: 'A', post: { body: 'x' } },

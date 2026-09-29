@@ -35,9 +35,8 @@ describe('sample entries', () => {
         expect(first.id).toBe('grosser-nordischer-krieg')
         expect(first.start.year).toBe(1700)
         expect(first.end).toMatchObject({ year: 1721 })
-        expect(first.region).toBe('russia')
-        expect(first.category).toBe('war')
-        expect(first.importance).toBe(3)
+        expect(first.type).toBe('war')
+        expect(first.tags).toEqual(['Russland', 'Schweden'])
     })
 
     it('the earliest entry starts in 1700', () => {
@@ -95,9 +94,8 @@ describe('validateEntry', () => {
         title: 'Beispiel',
         summary: 'Ein Beispiel.',
         start: { year: 1900, month: 2, day: 28 },
-        region: 'west',
-        category: 'event',
-        importance: 1,
+        type: 'event',
+        tags: [],
     }
 
     it('accepts a valid entry', () => {
@@ -148,9 +146,9 @@ describe('validateEntry', () => {
         expect(
             validateEntry({ ...valid, end: { year: 1900, month: 2, day: 1 } })
         ).not.toEqual([])
-        expect(validateEntry({ ...valid, region: 'asia' })).not.toEqual([])
-        expect(validateEntry({ ...valid, category: 'culture' })).not.toEqual([])
-        expect(validateEntry({ ...valid, importance: 4 })).not.toEqual([])
+        expect(validateEntry({ ...valid, type: 'culture' })).not.toEqual([])
+        expect(validateEntry({ ...valid, tags: undefined })).not.toEqual([])
+        expect(validateEntry({ ...valid, tags: [' '] })).not.toEqual([])
         expect(validateEntry({ ...valid, post: { body: '' } })).not.toEqual([])
     })
 
@@ -160,9 +158,8 @@ describe('validateEntry', () => {
             title: '',
             start: { year: 1900, month: 0, day: 1.5 },
             end: { year: 1900, month: 2, day: 30 },
-            region: 'asia',
-            category: 'culture',
-            importance: 4,
+            type: 'culture',
+            tags: [''],
             post: {},
         }
         expect(validateEntry(broken)).toEqual([
@@ -172,9 +169,8 @@ describe('validateEntry', () => {
             'start.month: must be an integer 1–12',
             'start.day: must be an integer 1–31',
             'end: 1900-2-30 does not exist',
-            'region: must be one of russia, west, both',
-            'category: must be one of war, revolution, power, event',
-            'importance: must be one of 1, 2, 3',
+            'type: must be one of war, revolution, power, event',
+            'tags: must be a list of non-empty strings',
             'post.body: must be a non-empty string',
         ])
     })

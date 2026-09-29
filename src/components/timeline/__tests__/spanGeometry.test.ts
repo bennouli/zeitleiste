@@ -27,9 +27,8 @@ const finished: Entry = {
     summary: '',
     start: { year: 1900 },
     end: { year: 1950 },
-    region: 'west',
-    category: 'war',
-    importance: 1,
+    type: 'war',
+    tags: [],
 }
 
 describe('spanLayout', () => {

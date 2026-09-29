@@ -1,10 +1,4 @@
-import {
-    CATEGORY_LABEL,
-    precisionOf,
-    REGION_LABEL,
-    type Entry,
-    type HDate,
-} from './entry'
+import { ENTRY_TYPE_LABEL, precisionOf, type Entry, type HDate } from './entry'
 import { startOf } from './time'
 
 export type DateStyle = 'short' | 'long'
@@ -97,13 +91,18 @@ export function entryLabel(entry: Entry): string {
     return entry.post ? `${label}, Beitrag` : label
 }
 
-/** Meta line of an entry's hover note: '1700 – 10. September 1721 · Krieg · Russland/Sowjetunion'. */
-export function formatEntryMeta(entry: Entry): string {
+/** Parts of an entry's meta line: long date, type, then its tags in order. */
+export function entryMetaParts(entry: Entry): string[] {
     return [
         formatEntryDate(entry, 'long'),
-        CATEGORY_LABEL[entry.category],
-        REGION_LABEL[entry.region],
-    ].join(' · ')
+        ENTRY_TYPE_LABEL[entry.type],
+        ...entry.tags,
+    ]
+}
+
+/** Meta line of an entry's hover note: '1700 – 10. September 1721 · Krieg · Russland · Schweden'. */
+export function formatEntryMeta(entry: Entry): string {
+    return entryMetaParts(entry).join(' · ')
 }
 
 /** Years a chronological group covers, from its first to its last entry's start: '1917–1922', or '1917' once. Empty for no entries. */

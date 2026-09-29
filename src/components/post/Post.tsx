@@ -1,9 +1,10 @@
 'use client'
 
 import { usePostControls } from '@/components/PostContext'
-import { CATEGORY_LABEL, REGION_LABEL, type Entry } from '@/lib/entry'
-import { formatEntryDate } from '@/lib/format'
+import { type Entry } from '@/lib/entry'
+import { entryMetaParts } from '@/lib/format'
 import { X } from 'lucide-react'
+import { Fragment } from 'react'
 
 /** Splits a plain-text post body into paragraphs at blank lines. */
 function paragraphs(body: string): string[] {
@@ -25,13 +26,17 @@ export function Post({ entry }: { entry: Entry }) {
         >
             <div className="mx-auto flex max-w-reading flex-col gap-4.5 pt-9 pb-16 font-serif">
                 <p className="pr-8 small-caps text-meta font-medium tracking-meta text-fg-muted">
-                    <span>{formatEntryDate(entry, 'long')}</span>
-                    <span aria-hidden="true"> · </span>
-                    <span className="sr-only">, </span>
-                    {CATEGORY_LABEL[entry.category]}
-                    <span aria-hidden="true"> · </span>
-                    <span className="sr-only">, </span>
-                    {REGION_LABEL[entry.region]}
+                    {entryMetaParts(entry).map((part, i) => (
+                        <Fragment key={i}>
+                            {i > 0 && (
+                                <>
+                                    <span aria-hidden="true"> · </span>
+                                    <span className="sr-only">, </span>
+                                </>
+                            )}
+                            <span>{part}</span>
+                        </Fragment>
+                    ))}
                 </p>
                 {/* Focused by the shell when the post opens. */}
                 <h2

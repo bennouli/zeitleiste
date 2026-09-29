@@ -9,15 +9,15 @@ import { Post } from '../Post'
 const okt = sampleEntry('oktoberrevolution')
 
 describe('Post', () => {
-    it('shows title, long date, category, region, summary and all paragraphs', () => {
+    it('shows title, long date, type, tags, summary and all paragraphs', () => {
         render(<Post entry={okt} />)
         expect(
             screen.getByRole('heading', { level: 2, name: 'Oktoberrevolution' })
         ).toBeInTheDocument()
         expect(screen.getByText('7. November 1917')).toBeInTheDocument()
-        expect(
-            screen.getByText(/Revolution/, { selector: 'p.text-fg-muted' })
-        ).toHaveTextContent(/Revolution.*Russland\/Sowjetunion/)
+        expect(screen.getByText('Revolution').closest('p')).toHaveTextContent(
+            '7. November 1917 · , Revolution · , Russland'
+        )
         expect(screen.getByText(okt.summary)).toBeInTheDocument()
         const paras = okt.post!.body.split(/\n\s*\n/)
         expect(paras).toHaveLength(4)

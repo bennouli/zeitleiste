@@ -8,8 +8,6 @@ export type SpanInput = {
     /** True horizontal extent in px at the current zoom (x1 ≥ x0). */
     x0: number
     x1: number
-    /** Higher importance prefers the lane nearest the axis (lane 0). */
-    importance: number
 }
 
 export type SpanLayoutOptions = {
@@ -60,8 +58,7 @@ const DEFAULT_GAP_PX = 4
  *
  * The minimum width is applied first (see SpanBar and SpanLayoutOptions.maxX);
  * the drawn (possibly extended) extent is what must not overlap, with at least gapPx between bars in a lane. Greedy
- * interval coloring: spans are processed by importance desc, then true x0 asc, then
- * id, and each takes the lowest lane where it fits.
+ * interval coloring: spans are processed by true x0 asc, then id, and each takes the lowest lane where it fits.
  *
  * Inputs must be finite and ids unique. A malformed span with x1 < x0 is
  * treated as zero-length (trueX1 = x0).
@@ -81,8 +78,7 @@ export function layoutSpans(
         : Infinity
 
     const order = [...spans].sort(
-        (a, b) =>
-            b.importance - a.importance || a.x0 - b.x0 || compareIds(a.id, b.id)
+        (a, b) => a.x0 - b.x0 || compareIds(a.id, b.id)
     )
 
     const lanes: SpanBar[][] = []
