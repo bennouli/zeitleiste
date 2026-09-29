@@ -32,15 +32,22 @@ export type BandGeometry = {
     groupLevels: number
 }
 
-/** Splits the timeline's height into the card bands above and below the axis. */
+/**
+ * Splits the timeline's height into the card bands above and below the axis.
+ * The top `topInsetPx` of the band above is kept free, and both sides share one row count.
+ */
 export function bandGeometry(
     height: number,
     width: number,
-    collapsed: boolean
+    collapsed: boolean,
+    topInsetPx: number
 ): BandGeometry {
     const cardBandHeight = Math.max(0, (height - AXIS_HEIGHT_PX) / 2)
     const rowsReachPx =
-        cardBandHeight + AXIS_LINE_TO_BAND_PX - CARD_FIRST_ROW_OFFSET_PX
+        cardBandHeight +
+        AXIS_LINE_TO_BAND_PX -
+        CARD_FIRST_ROW_OFFSET_PX -
+        topInsetPx
     const maxLevels = Math.max(
         MIN_BAND_LEVELS,
         Math.floor((rowsReachPx - LABEL_HEIGHT_PX) / CARD_ROW_HEIGHT_PX) + 1

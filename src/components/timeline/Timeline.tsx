@@ -24,6 +24,7 @@ import {
     COLLAPSE_ANIMATION_MS,
     COLLAPSED_HEIGHT,
     FOCUS_VISIBLE_MS,
+    TOP_BAR_HEIGHT_PX,
 } from './constants'
 import { useEntryFocus } from './entryFocus'
 import { groupZoomTarget } from './groupZoom'
@@ -120,7 +121,7 @@ export function Timeline({
         return new Map([...bars].map(([id, bar]) => [id, bar.lane]))
     }, [spans, layoutToX, today])
     const bands = useMemo(
-        () => bandGeometry(height, width, collapsed),
+        () => bandGeometry(height, width, collapsed, TOP_BAR_HEIGHT_PX),
         [height, width, collapsed]
     )
 
@@ -206,21 +207,27 @@ export function Timeline({
                         <div data-layer="below" className="min-h-0 flex-1" />
                     </>
                 )}
-                <div className="pointer-events-none absolute top-5.5 left-8 z-20 flex items-baseline gap-4">
-                    <p
-                        aria-hidden="true"
-                        className="small-caps text-label-lg font-medium tracking-wordmark text-fg"
-                    >
-                        {t.site.name}
-                    </p>
-                    {besideWordmark}
+                <div
+                    data-top-bar
+                    className="pointer-events-none absolute inset-x-0 top-0 z-20"
+                    style={{ height: TOP_BAR_HEIGHT_PX }}
+                >
+                    <div className="absolute top-5.5 left-8 flex items-baseline gap-4">
+                        <p
+                            aria-hidden="true"
+                            className="small-caps text-label-lg font-medium tracking-wordmark text-fg"
+                        >
+                            {t.site.name}
+                        </p>
+                        {besideWordmark}
+                    </div>
+                    <ZoomControls
+                        canZoomIn={controls.canZoomIn}
+                        canZoomOut={controls.canZoomOut}
+                        onZoomIn={actions.zoomIn}
+                        onZoomOut={actions.zoomOut}
+                    />
                 </div>
-                <ZoomControls
-                    canZoomIn={controls.canZoomIn}
-                    canZoomOut={controls.canZoomOut}
-                    onZoomIn={actions.zoomIn}
-                    onZoomOut={actions.zoomOut}
-                />
             </section>
         </TimelineContext>
     )

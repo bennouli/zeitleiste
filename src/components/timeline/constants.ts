@@ -2,6 +2,8 @@ import { MS_PER_YEAR } from '@/lib/time'
 
 /** Height of the axis band (line, ticks, labels, "Heute" mark). */
 export const AXIS_HEIGHT_PX = 56
+/** Height of the top bar (wordmark, language switch, zoom controls); no card row reaches into it. */
+export const TOP_BAR_HEIGHT_PX = 44
 /** Distance from the axis line to the nearest edge of the first card row. */
 export const CARD_FIRST_ROW_OFFSET_PX = 32
 /** Vertical pitch of one card row above/below the axis. */

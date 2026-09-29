@@ -12,6 +12,7 @@ import { sampleEntry } from '@/test/entries'
 import { renderHook } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 import { bandGeometry } from '../bandGeometry'
+import { TOP_BAR_HEIGHT_PX } from '../constants'
 import { estimateLabelWidthPx, LABEL_MAX_WIDTH_PX } from '../labelMetrics'
 import {
     PRIVATE_UNDER_TESTS,
@@ -580,7 +581,12 @@ function findNode(cluster: Cluster, members: string[]): ClusterNode {
 
 /** A 1920 × 1080 window's bands, `visibleYears` wide around 1918. */
 function desktopNear1918(visibleYears: number): LayoutScenario {
-    const { maxLevels, groupLevels } = bandGeometry(1080, 1920, false)
+    const { maxLevels, groupLevels } = bandGeometry(
+        1080,
+        1920,
+        false,
+        TOP_BAR_HEIGHT_PX
+    )
     return {
         ...WIDE_DESKTOP,
         visibleYears,
