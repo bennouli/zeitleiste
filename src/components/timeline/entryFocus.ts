@@ -175,4 +175,4 @@ function revealDelta(left: number, right: number, width: number): number {
     return 0
 }
 
-export const PRIVATE_UNDER_TESTS = { revealDelta, entryIdsOf }
+export const PRIVATE_UNDER_TESTS = { revealDelta, entryIdsOf, REVEAL_MARGIN_PX }

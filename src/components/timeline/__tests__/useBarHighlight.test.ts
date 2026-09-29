@@ -2,7 +2,10 @@ import { stubReducedMotion } from '@/test/motion'
 import { act, renderHook } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { BAR_HIGHLIGHT_FADE_MS, BAR_HIGHLIGHT_MS } from '../constants'
+import { PRIVATE_UNDER_TESTS } from '../entryFocus'
 import { useBarHighlight, type BarHighlightSource } from '../useBarHighlight'
+
+const { REVEAL_MARGIN_PX } = PRIVATE_UNDER_TESTS
 
 const WIDTH = 1000
 const SPAN_ID = 'kalter-krieg'
@@ -124,7 +127,7 @@ describe('useBarHighlight', () => {
         act(() => result.current.highlightEntry(SPAN_ID))
 
         expect(onRevealNeeded).toHaveBeenCalledExactlyOnceWith(
-            WIDTH - 16 - (offScreenLeft + LABEL_WIDTH)
+            WIDTH - REVEAL_MARGIN_PX - (offScreenLeft + LABEL_WIDTH)
         )
     })
 })

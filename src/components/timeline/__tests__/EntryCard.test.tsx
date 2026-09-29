@@ -535,23 +535,30 @@ describe('EntryCard', () => {
     ] as const)(
         'rings the card while its bar highlight is %s',
         (phase, colourClass, transition) => {
-            renderCard({ entry: span, barHighlight: phase })
-            const w = document.querySelector<HTMLElement>(
+            const ringedSpan = { entry: span, barHighlight: phase }
+            renderCard(ringedSpan)
+            const cardWrapper = document.querySelector<HTMLElement>(
                 `[data-entry-id="${span.id}"]`
             )!
-            expect(w.dataset.barHighlight).toBe(phase)
+            expect(cardWrapper.dataset.barHighlight).toBe(phase)
             expect(card(span)).toHaveClass('outline-2', colourClass)
             if (transition) expect(card(span).className).toMatch(transition)
         }
     )
 
     it('draws no ring without a bar highlight', () => {
-        renderCard({ entry: span })
+        const plainSpan = { entry: span }
+        renderCard(plainSpan)
         expect(card(span)).not.toHaveClass('outline-2')
     })
 
     it('insets the ring inside a stack, whose window would clip it', () => {
-        renderCard({ entry: span, barHighlight: 'on', inline: true })
+        const stackedRingedSpan = {
+            entry: span,
+            barHighlight: 'on',
+            inline: true,
+        } as const
+        renderCard(stackedRingedSpan)
         expect(card(span)).toHaveClass('-outline-offset-2')
     })
 
