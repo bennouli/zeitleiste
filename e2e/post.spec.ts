@@ -5,7 +5,7 @@ import { firstFamily, webFontFamily } from './webFont'
 
 const POST_ENTRY = sampleEntry('oktoberrevolution')
 const SPAN_WITH_POST = sampleEntry('kubakrise')
-const POST_PATH = `/post/${POST_ENTRY.id}`
+const POST_PATH = `/de/post/${POST_ENTRY.id}`
 const FIRST_BODY_PARAGRAPH_START = /^Im Herbst 1917/
 const BODY_PARAGRAPHS = 4
 const DESKTOP = { width: 1920, height: 1080 }
@@ -96,7 +96,7 @@ test('"Beitrag" on a span\'s label opens its post', async ({ page }) => {
         name: new RegExp(`^${SPAN_WITH_POST.title},`),
     })
     await label.getByText('Beitrag').click()
-    await expect(page).toHaveURL(new RegExp(`/post/${SPAN_WITH_POST.id}$`))
+    await expect(page).toHaveURL(new RegExp(`/de/post/${SPAN_WITH_POST.id}$`))
     await expect(
         page.getByRole('article').getByRole('heading', { level: 2 })
     ).toHaveText(SPAN_WITH_POST.title)

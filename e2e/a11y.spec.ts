@@ -7,7 +7,12 @@ const VIEWPORTS = [
     { name: 'phone', size: { width: 390, height: 844 } },
 ] as const
 
-const PAGES = ['/', '/post/oktoberrevolution'] as const
+const PAGES = [
+    '/de',
+    '/de/post/oktoberrevolution',
+    '/en',
+    '/en/post/oktoberrevolution',
+] as const
 
 const COLOR_SCHEMES = ['light', 'dark'] as const
 

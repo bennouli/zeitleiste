@@ -3,7 +3,7 @@
 import { createContext, useContext } from 'react'
 
 export type PostControls = {
-    /** Closes the open post and returns to the full-screen timeline (`/`). */
+    /** Closes the open post and returns to the full-screen timeline (the start page). */
     close: () => void
 }
 

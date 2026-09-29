@@ -1,12 +1,13 @@
-import RootLayout from './(frontend)/layout'
-import NotFound from './(frontend)/not-found'
+import { DEFAULT_LOCALE } from '@/i18n/locales'
+import NotFound from './(frontend)/[lang]/not-found'
+import { Site } from './(frontend)/Site'
 
-export { metadata } from './(frontend)/layout'
+export { metadata } from './(frontend)/[lang]/layout'
 
 export default function GlobalNotFound() {
     return (
-        <RootLayout>
+        <Site locale={DEFAULT_LOCALE}>
             <NotFound />
-        </RootLayout>
+        </Site>
     )
 }

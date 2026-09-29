@@ -39,6 +39,7 @@ const eslintConfig = defineConfig([
                     entryPoints: [
                         'src/app',
                         'src/payload.config.ts',
+                        'src/proxy.ts',
                         'src/migrations',
                     ],
                     testSupport: ['src/test'],

@@ -1,28 +1,25 @@
-import { TimelineShell } from '@/components/TimelineShell'
-import { DEFAULT_LOCALE } from '@/i18n/locales'
-import { loadEntries } from '@/lib/entries'
-import { Effect } from 'effect'
+import { LOCALES } from '@/i18n/locales'
+import { documentLocale } from '@/i18n/routeLocale'
 import type { Metadata } from 'next'
 import type { ReactNode } from 'react'
-import { fontVariables } from '../fonts'
-import './globals.css'
+import { Site } from '../Site'
 
 export const metadata: Metadata = {
     title: 'Zeitleiste',
     description: 'Interaktive Zeitleiste: Russland und der Westen seit 1700',
 }
 
-export default async function RootLayout({
+export function generateStaticParams() {
+    return LOCALES.map((lang) => ({ lang }))
+}
+
+export default async function LocaleLayout({
     children,
+    params,
 }: {
     children: ReactNode
+    params: Promise<{ lang: string }>
 }) {
-    const entries = await Effect.runPromise(loadEntries(DEFAULT_LOCALE))
-    return (
-        <html lang="de" className={fontVariables}>
-            <body className="min-h-screen bg-surface font-sans text-fg antialiased">
-                <TimelineShell entries={entries}>{children}</TimelineShell>
-            </body>
-        </html>
-    )
+    const locale = documentLocale((await params).lang)
+    return <Site locale={locale}>{children}</Site>
 }
