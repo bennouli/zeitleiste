@@ -1,5 +1,6 @@
 'use client'
 
+import { useI18n } from '@/components/I18nContext'
 import type { Entry } from '@/lib/entry'
 import { entryLabel } from '@/lib/format'
 import type { SpanBar } from '@/lib/spans'
@@ -33,6 +34,7 @@ export function SpanBarView({
     onActivate,
 }: SpanBarProps): JSX.Element {
     const tooltipId = useId()
+    const { locale } = useI18n()
     const anchorRef = useRef<HTMLDivElement>(null)
     const { open, triggerProps, hoverProps } = useTooltipTrigger({
         tooltipId,
@@ -47,7 +49,7 @@ export function SpanBarView({
                 ref={anchorRef}
                 data-span-id={entry.id}
                 data-t={startOf(entry.start)}
-                aria-label={entryLabel(entry)}
+                aria-label={entryLabel(entry, locale)}
                 aria-describedby={tooltipId}
                 className={clsx(
                     'absolute',

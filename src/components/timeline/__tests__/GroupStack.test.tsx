@@ -1,5 +1,6 @@
 import type { Entry } from '@/lib/entry'
 import { expectNoAxeViolations } from '@/test/axe'
+import { inLocale } from '@/test/i18n'
 import {
     createEvent,
     fireEvent,
@@ -135,6 +136,29 @@ describe('GroupStack', () => {
         await user.click(up())
         expect(screen.getByText('4 von 7')).toBeInTheDocument()
         expect(onIndexChange).toHaveBeenLastCalledWith(3)
+    })
+
+    it('names the step buttons and the position in English', async () => {
+        const user = userEvent.setup()
+        const english = inLocale('en')
+        const sevenEntries = makeEntries(7)
+        const renderTitle = (entry: Entry) => entry.title
+        render(
+            <GroupStack
+                entries={sevenEntries}
+                visibleCount={3}
+                slotHeightPx={SLOT}
+                renderCard={renderTitle}
+                label="Group"
+            />,
+            { wrapper: english }
+        )
+        expect(screen.getByText('1 of 7')).toBeInTheDocument()
+        await user.click(screen.getByRole('button', { name: 'One entry down' }))
+        expect(screen.getByText('2 of 7')).toBeInTheDocument()
+        expect(
+            screen.getByRole('button', { name: 'One entry up' })
+        ).toHaveAttribute('aria-disabled', 'false')
     })
 
     it('steps with arrow keys and jumps with Home/End', async () => {

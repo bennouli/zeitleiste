@@ -72,4 +72,11 @@ describe('post page', () => {
         })
         expect(await generateMetadata(params('gibt-es-nicht'))).toEqual({})
     })
+
+    it('names the site in the language of the address', async () => {
+        const englishParams = params('oktoberrevolution', 'en')
+        expect(await generateMetadata(englishParams)).toMatchObject({
+            title: 'Oktoberrevolution – Timeline',
+        })
+    })
 })

@@ -78,13 +78,14 @@ function layout({
     groupLevels = DEFAULT_LEVELS,
 }: LayoutScenario): EntryLayout {
     const span = visibleYears * MS_PER_YEAR
-    const geometry = {
+    const geometry: LayoutGeometry = {
         timeToX: timeToXOf({ pts, width, visibleYears, centerT }),
         msPerPx: span / width,
         width,
         maxLevels,
         groupLevels,
         gapPx: GAP_PX,
+        locale: 'de',
     }
     const tree = buildClusterTree(
         pts.map((e) => ({ id: e.id, t: entryAnchor(e) }))
@@ -122,7 +123,7 @@ function extent(
     const x = timeToX(item.t)
     const width =
         item.kind === 'card'
-            ? estimateLabelWidthPx(item.entries[0]!)
+            ? estimateLabelWidthPx(item.entries[0]!, 'de')
             : LABEL_MAX_WIDTH_PX
     return [x, x + width]
 }
@@ -348,8 +349,8 @@ describe('layoutEntries', () => {
             end: { year: 1900, month: 11, day: 30 },
         }
         const asPoint: Entry = { ...span, end: undefined }
-        const spanWidth = estimateLabelWidthPx(span)
-        const pointWidth = estimateLabelWidthPx(asPoint)
+        const spanWidth = estimateLabelWidthPx(span, 'de')
+        const pointWidth = estimateLabelWidthPx(asPoint, 'de')
         const betweenPointAndSpanEnd = Math.round((spanWidth + pointWidth) / 2)
         const early: Entry = {
             ...POINT,
@@ -372,6 +373,7 @@ describe('layoutEntries', () => {
             maxLevels: 1,
             groupLevels: 1,
             gapPx: GAP_PX,
+            locale: 'de',
         }
         const layoutOf = (pts: Entry[]) => {
             const tree = buildClusterTree(
@@ -411,6 +413,7 @@ describe('useEntryLayout', () => {
             maxLevels: DEFAULT_LEVELS,
             groupLevels: DEFAULT_LEVELS,
             gapPx: GAP_PX,
+            locale: 'de',
         }
 
         const { result } = renderHook(() =>

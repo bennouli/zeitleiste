@@ -1,4 +1,5 @@
 import { expect, type Locator, type Page } from '@playwright/test'
+import { messages } from '../src/i18n/messages'
 
 const MAX_TABS = 120
 
@@ -13,8 +14,13 @@ export type Focused = {
     outline: string
 }
 
+const TIMELINE_NAMES = Object.values(messages).map((t) => t.site.name)
+
+/** The timeline in either language. */
 export function timelineRegion(page: Page): Locator {
-    return page.getByRole('region', { name: 'Zeitleiste' })
+    return page.getByRole('region', {
+        name: new RegExp(`^(${TIMELINE_NAMES.join('|')})$`),
+    })
 }
 
 export async function openTimeline(page: Page, path = '/de') {

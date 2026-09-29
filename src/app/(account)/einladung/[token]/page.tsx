@@ -1,7 +1,10 @@
 import { AcceptInvitationForm } from '@/components/account/AcceptInvitationForm'
-import { INVITATION_TEXT } from '@/components/account/invitationText'
+import { DEFAULT_LOCALE } from '@/i18n/locales'
+import { messages } from '@/i18n/messages'
 import type { Metadata } from 'next'
 import { acceptInvitationAction } from './actions'
+
+const INVITATION_TEXT = messages[DEFAULT_LOCALE].invitation
 
 type Props = {
     params: Promise<{ token: string }>

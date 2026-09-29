@@ -1,3 +1,4 @@
+import { de } from '@/i18n/de'
 import type { PostBody } from './richText'
 
 /** A historical date with year, month or day precision. Gregorian calendar throughout. */
@@ -67,9 +68,4 @@ function isLeapYear(year: number): boolean {
     return (year % 4 === 0 && year % 100 !== 0) || year % 400 === 0
 }
 
-export const ENTRY_TYPE_LABEL: Record<EntryType, string> = {
-    war: 'Krieg',
-    revolution: 'Revolution',
-    power: 'Machtwechsel',
-    event: 'Ereignis',
-}
+export const ENTRY_TYPE_LABEL: Record<EntryType, string> = de.entryType

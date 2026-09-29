@@ -1,5 +1,6 @@
 'use client'
 
+import { useI18n } from '@/components/I18nContext'
 import type { Entry } from '@/lib/entry'
 import { formatGroupName, formatGroupZoomName } from '@/lib/format'
 import { compareIds } from '@/lib/order'
@@ -169,6 +170,7 @@ function GroupItem({
     onOpen,
 }: GroupItemProps) {
     const { timeToX, wasDrag } = useTimeline()
+    const { locale } = useI18n()
     const side = item.slot.side
     const focusIndex = item.entries.findIndex((e) => e.id === focusEntryId)
     return (
@@ -189,7 +191,7 @@ function GroupItem({
                 // Without a highlighted member the window stays put (closing a post must not hide its card).
                 initialIndex={focusIndex >= 0 ? focusIndex : undefined}
                 reveal={barHighlight.stackRevealOf(item.entries)}
-                label={formatGroupName(item.entries)}
+                label={formatGroupName(item.entries, locale)}
                 side={side}
                 renderCard={(entry) => (
                     <EntryCard
@@ -217,6 +219,7 @@ type MarkerItemProps = Pick<CardLayerProps, 'onZoomIntoGroup'> & {
 
 function MarkerItem({ item, highlighted, onZoomIntoGroup }: MarkerItemProps) {
     const { timeToX, wasDrag } = useTimeline()
+    const { locale } = useI18n()
     return (
         <div
             data-group-marker={item.id}
@@ -233,7 +236,7 @@ function MarkerItem({ item, highlighted, onZoomIntoGroup }: MarkerItemProps) {
         >
             <GroupMarker
                 entries={item.entries}
-                label={formatGroupZoomName(item.entries)}
+                label={formatGroupZoomName(item.entries, locale)}
                 side={item.slot.side}
                 highlighted={highlighted}
                 onActivate={() => {

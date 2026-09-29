@@ -1,5 +1,6 @@
 'use client'
 
+import { useI18n } from '@/components/I18nContext'
 import type { Entry } from '@/lib/entry'
 import { entryLabel, formatEntryMeta } from '@/lib/format'
 import clsx from 'clsx'
@@ -56,7 +57,8 @@ export function EntryCard({
             touchToggle: !hasPost,
         })
 
-    const label = entryLabel(entry)
+    const { locale } = useI18n()
+    const label = entryLabel(entry, locale)
 
     const cardProps = {
         ...triggerProps,
@@ -162,9 +164,10 @@ export function EntryCard({
 
 /** Hover note of an entry; the title is hidden from screen readers because the anchor's label names it. */
 export function EntryTooltipContent({ entry }: { entry: Entry }) {
+    const { locale } = useI18n()
     return (
         <>
-            <TooltipMeta>{formatEntryMeta(entry)}</TooltipMeta>
+            <TooltipMeta>{formatEntryMeta(entry, locale)}</TooltipMeta>
             <TooltipTitle aria-hidden="true">{entry.title}</TooltipTitle>
             <TooltipBody>{entry.summary}</TooltipBody>
         </>

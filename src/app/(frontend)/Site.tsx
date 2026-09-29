@@ -1,10 +1,18 @@
 import { I18nProvider } from '@/components/I18nContext'
 import { TimelineShell } from '@/components/TimelineShell'
 import type { Locale } from '@/i18n/locales'
+import { messages } from '@/i18n/messages'
 import { loadEntries } from '@/lib/entries'
 import { Effect } from 'effect'
+import type { Metadata } from 'next'
 import type { ReactNode } from 'react'
 import { Document } from '../Document'
+
+/** Title and description of the site in one locale. */
+export function siteMetadata(locale: Locale): Metadata {
+    const { name, description } = messages[locale].site
+    return { title: name, description }
+}
 
 /** The public site in one locale: the timeline, with the page below it. */
 export async function Site({

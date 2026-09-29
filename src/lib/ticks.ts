@@ -1,3 +1,4 @@
+import type { Locale } from '@/i18n/locales'
 import { formatDay, formatMonth, formatYear } from '@/lib/format'
 import { MS_PER_DAY } from '@/lib/time'
 import {
@@ -43,8 +44,6 @@ export type TicksOptions = {
     charWidthPx?: number
     /** Steps finer than a year (with month names) only when a year spans at least this many px; default 0. */
     minYearWidthForMonthsPx?: number
-    /** Default 'de'. */
-    locale?: string
 }
 
 export type TickResult = {
@@ -184,7 +183,7 @@ function isMajor(unit: TickUnit, d: Date): boolean {
     }
 }
 
-function labelFor(c: Candidate, d: Date, locale: string): string {
+function labelFor(c: Candidate, d: Date, locale: Locale): string {
     const t = d.getTime()
     switch (c.unit) {
         case 'half-year':
@@ -208,7 +207,7 @@ function build(
     c: Candidate,
     start: number,
     end: number,
-    locale: string
+    locale: Locale
 ): Tick[] {
     // One tick strictly before start and one strictly after end.
     const lo = c.interval.floor(new Date(start - 1))
@@ -249,6 +248,7 @@ export function ticks(
     start: number,
     end: number,
     widthPx: number,
+    locale: Locale,
     options: TicksOptions = {}
 ): TickResult {
     const minLabelGapPx = positiveOr(options.minLabelGapPx, 72)
@@ -257,7 +257,6 @@ export function ticks(
         options.minYearWidthForMonthsPx,
         0
     )
-    const locale = options.locale ?? 'de'
     const fallback = CENTURY
     if (
         ![start, end, widthPx].every(Number.isFinite) ||

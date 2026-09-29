@@ -4,6 +4,35 @@ import { defineConfig, globalIgnores } from 'eslint/config'
 import noTestOnlyExports from './eslint/no-test-only-exports.mjs'
 
 const TESTS = ['src/**/__tests__/**', 'e2e/**']
+const TEXT_ALLOWED = ['src/i18n/**', 'src/collections/**']
+
+const PRIVATE_UNDER_TESTS_SELECTORS = [
+    {
+        selector: 'ImportSpecifier[imported.name="PRIVATE_UNDER_TESTS"]',
+        message: 'PRIVATE_UNDER_TESTS is read by the tests only.',
+    },
+    {
+        selector: 'MemberExpression[property.name="PRIVATE_UNDER_TESTS"]',
+        message: 'PRIVATE_UNDER_TESTS is read by the tests only.',
+    },
+    {
+        selector: 'ExportSpecifier[local.name="PRIVATE_UNDER_TESTS"]',
+        message: 'PRIVATE_UNDER_TESTS is read by the tests only.',
+    },
+]
+
+const TEXT_ATTRIBUTE =
+    'JSXAttribute[name.name=/^(aria-label|title|alt|placeholder|label)$/]'
+const INTERFACE_TEXT_MESSAGE =
+    'Interface text lives in src/i18n (de.ts, en.ts); read it with useI18n() or messages[locale].'
+
+const INTERFACE_TEXT_SELECTORS = [
+    'JSXText[value=/\\p{L}/u]',
+    `${TEXT_ATTRIBUTE} > Literal[value=/\\p{L}/u]`,
+    `${TEXT_ATTRIBUTE} > JSXExpressionContainer > Literal[value=/\\p{L}/u]`,
+    `${TEXT_ATTRIBUTE} > JSXExpressionContainer > TemplateLiteral`,
+    `${TEXT_ATTRIBUTE} > JSXExpressionContainer > ConditionalExpression > Literal[value=/\\p{L}/u]`,
+].map((selector) => ({ selector, message: INTERFACE_TEXT_MESSAGE }))
 
 const eslintConfig = defineConfig([
     ...nextVitals,
@@ -45,23 +74,17 @@ const eslintConfig = defineConfig([
                     testSupport: ['src/test'],
                 },
             ],
+            'no-restricted-syntax': ['error', ...PRIVATE_UNDER_TESTS_SELECTORS],
+        },
+    },
+    {
+        files: ['src/**/*.{ts,tsx}'],
+        ignores: [...TESTS, ...TEXT_ALLOWED],
+        rules: {
             'no-restricted-syntax': [
                 'error',
-                {
-                    selector:
-                        'ImportSpecifier[imported.name="PRIVATE_UNDER_TESTS"]',
-                    message: 'PRIVATE_UNDER_TESTS is read by the tests only.',
-                },
-                {
-                    selector:
-                        'MemberExpression[property.name="PRIVATE_UNDER_TESTS"]',
-                    message: 'PRIVATE_UNDER_TESTS is read by the tests only.',
-                },
-                {
-                    selector:
-                        'ExportSpecifier[local.name="PRIVATE_UNDER_TESTS"]',
-                    message: 'PRIVATE_UNDER_TESTS is read by the tests only.',
-                },
+                ...PRIVATE_UNDER_TESTS_SELECTORS,
+                ...INTERFACE_TEXT_SELECTORS,
             ],
         },
     },
