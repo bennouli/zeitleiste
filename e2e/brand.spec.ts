@@ -2,7 +2,7 @@ import { expect, test } from '@playwright/test'
 import { messages } from '../src/i18n/messages'
 import { openTimeline, timelineRegion } from './timeline'
 
-const BRAND = 'Liniya'
+const BRAND = 'liniya'
 
 const PAGES = [
     { path: '/de', title: BRAND },
@@ -25,7 +25,7 @@ for (const { path, title } of PAGES) {
 
         await expect(page).toHaveTitle(title)
         await expect(
-            timelineRegion(page).getByText(BRAND, { exact: true })
+            timelineRegion(page).getByRole('img', { name: BRAND })
         ).toBeVisible()
     })
 }

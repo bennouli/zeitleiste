@@ -28,3 +28,7 @@ export const KEY_PAN_FRACTION = 0.1
 export const BAR_HIGHLIGHT_MS = 1000
 /** Fade-out of that ring; matches `duration-300` on the label. */
 export const BAR_HIGHLIGHT_FADE_MS = 300
+/** How long the wordmark reads «линия» before the first letter is replaced. */
+export const WORDMARK_HOLD_MS = 400
+/** Time per replaced letter of the wordmark; five steps after the hold end the change at 1500 ms. */
+export const WORDMARK_STEP_MS = 220

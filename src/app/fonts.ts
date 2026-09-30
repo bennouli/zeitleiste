@@ -92,7 +92,6 @@ const googleSansCyrillic = localFont({
     ],
     display: 'swap',
     adjustFontFallback: false,
-    preload: false,
     declarations: [
         {
             prop: 'unicode-range',

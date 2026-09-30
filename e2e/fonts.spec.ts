@@ -1,4 +1,5 @@
 import { expect, test, type Request } from '@playwright/test'
+import { readFileSync } from 'node:fs'
 import { openTimeline } from './timeline'
 import { families, firstFamily, webFontFamily } from './webFont'
 
@@ -36,6 +37,13 @@ const FONTS_BY_PAGE = [
 const GOOGLE_FONTS_HOST = /^https?:\/\/fonts\.(googleapis|gstatic)\.com\//
 
 const CYRILLIC_SAMPLE = 'линия'
+
+const CYRILLIC_WORDMARK_FILE = readFileSync(
+    new URL(
+        '../src/fonts/google-sans/google-sans-cyrillic-500-normal.woff2',
+        import.meta.url
+    )
+)
 
 const isForeignFontRequest = (request: Request, origin: string) =>
     GOOGLE_FONTS_HOST.test(request.url()) ||
@@ -106,46 +114,31 @@ for (const path of PAGES) {
     })
 }
 
-test('Cyrillic in font-sans is set in Google Sans, fetched only once it is on the page', async ({
-    page,
-}) => {
+test('the Cyrillic face of the wordmark is preloaded', async ({ page }) => {
     await openTimeline(page, '/de')
-    await page.evaluate(() => document.fonts.ready)
+    const preloadedFonts = await page
+        .locator('link[rel="preload"][as="font"]')
+        .evaluateAll((links) => links.map((l) => (l as HTMLLinkElement).href))
+    const preloadedBytes = await Promise.all(
+        preloadedFonts.map(async (href) =>
+            (await page.request.get(href)).body()
+        )
+    )
     const cyrillicFamily = await webFontFamily(
         page,
         '--font-google-sans-cyrillic'
     )
-    const cyrillicFaceStatuses = () =>
-        page.evaluate(
-            (family) =>
-                [...document.fonts]
-                    .filter(
-                        (f) =>
-                            f.family.replace(/['"]/g, '') === family &&
-                            f.weight === '500'
-                    )
-                    .map((f) => f.status),
-            cyrillicFamily
-        )
-    const cyrillicFaceReady = () =>
-        page.evaluate(
-            ({ family, text }) =>
-                document.fonts.check(`500 13px "${family}"`, text),
-            { family: cyrillicFamily, text: CYRILLIC_SAMPLE }
-        )
 
-    expect(await cyrillicFaceStatuses()).toEqual(['unloaded'])
-    expect(await cyrillicFaceReady()).toBe(false)
+    const cyrillicFaceReady = await page.evaluate(
+        ({ family, text }) =>
+            document.fonts.check(`500 13px "${family}"`, text),
+        { family: cyrillicFamily, text: CYRILLIC_SAMPLE }
+    )
 
-    await page.evaluate((text) => {
-        const wordmark = document.createElement('p')
-        wordmark.className = 'small-caps text-label-lg font-medium'
-        wordmark.textContent = text
-        document.body.append(wordmark)
-    }, CYRILLIC_SAMPLE)
-
-    await expect.poll(cyrillicFaceStatuses).toEqual(['loaded'])
-    expect(await cyrillicFaceReady()).toBe(true)
+    expect(
+        preloadedBytes.some((bytes) => bytes.equals(CYRILLIC_WORDMARK_FILE))
+    ).toBe(true)
+    expect(cyrillicFaceReady).toBe(true)
 })
 
 test('the post page does not shift layout when the fonts arrive', async ({

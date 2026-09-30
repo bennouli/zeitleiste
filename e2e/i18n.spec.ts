@@ -4,10 +4,10 @@ import { containsText, germanOnlyTexts } from '../src/test/germanTexts'
 import { openTimeline } from './timeline'
 
 const ENGLISH_PAGES = [
-    { path: '/en', title: 'Liniya' },
+    { path: '/en', title: 'liniya' },
     {
         path: '/en/post/oktoberrevolution',
-        title: 'Oktoberrevolution – Liniya',
+        title: 'Oktoberrevolution – liniya',
     },
 ] as const
 

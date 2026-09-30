@@ -55,7 +55,7 @@ test('the top bar holds the wordmark, the language switch and the zoom controls'
     const bar = page.locator('[data-top-bar]')
     const barBox = (await bar.boundingBox())!
     const controls = [
-        bar.getByText(messages.de.site.name, { exact: true }),
+        bar.getByRole('img', { name: messages.de.site.name }),
         bar.getByRole('link', { name: 'English' }),
         bar.getByRole('button', { name: 'Herauszoomen', exact: true }),
         bar.getByRole('button', { name: 'Hineinzoomen', exact: true }),
