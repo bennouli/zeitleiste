@@ -1,7 +1,7 @@
 export type TodayAlign = 'left' | 'center' | 'right'
 
-/** Half the estimated width of the today label ("Heute", "Today"). */
-const TODAY_LABEL_HALF_WIDTH_PX = 24
+/** Half the widest today label: "Today" in Google Sans 500 at 12 px with the 8 px padding of an edge alignment measures 51.6 px. */
+const TODAY_LABEL_HALF_WIDTH_PX = 26
 /** Free space kept between a tick label and the today label. */
 const LABEL_CLEARANCE_PX = 8
 
