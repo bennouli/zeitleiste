@@ -210,7 +210,9 @@ describe('acceptsSeed', () => {
 
 describe('the sample tags', () => {
     it('are 15 actors and 3 places', () => {
-        const tagNames = tagNamesOf(entries.map(seedEntryOf))
+        const seedEntries = entries.map(seedEntryOf)
+
+        const tagNames = tagNamesOf(seedEntries)
 
         expect(
             tagNames.filter((name) => tagKindOf(name) === 'actor')

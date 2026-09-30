@@ -84,7 +84,7 @@ const SeedEnv = Schema.Struct({ VERCEL_ENV: Schema.optional(VercelEnv) })
 
 export const decodeSeedEnv = Schema.decodeUnknownEffect(SeedEnv)
 
-export type SeedScope = 'tags' | 'sample content'
+type SeedScope = 'tags' | 'sample content'
 
 export function seedScopeOf(vercelEnv: VercelEnv | undefined): SeedScope {
     return vercelEnv === 'production' ? 'tags' : 'sample content'
