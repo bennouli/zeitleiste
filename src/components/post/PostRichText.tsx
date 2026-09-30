@@ -1,3 +1,5 @@
+'use client'
+
 import type { PostBody } from '@/lib/richText'
 import type { Media } from '@/payload-types'
 import type {
@@ -12,7 +14,7 @@ import {
     type JSXConvertersFunction,
     RichText,
 } from '@payloadcms/richtext-lexical/react'
-import Image from 'next/image'
+import Image, { type ImageLoader } from 'next/image'
 
 const READING_CLASS = 'text-body text-pretty'
 
@@ -96,23 +98,29 @@ function Link({
     )
 }
 
+type ImageVariant = { url: string; width: number; height: number }
+
+/** Serves each width `next/image` asks for from the smallest copy Payload made that covers it. */
 function PostImage({ media }: { media: Media }) {
-    const largest = media.sizes?.w1600
-    const { url, width, height } = largest?.url ? largest : media
-    if (!url || !width || !height) return null
+    const variants = imageVariants(media)
+    const largest = variants.at(-1)
+    if (largest === undefined) return null
+    const loader: ImageLoader = ({ width }) =>
+        (variants.find((variant) => variant.width >= width) ?? largest).url
     const hasCaption = Boolean(media.caption || media.credit)
     return (
         <figure className="flex flex-col gap-2 py-1.5">
             <Image
-                src={url}
-                width={width}
-                height={height}
+                loader={loader}
+                src={largest.url}
+                width={largest.width}
+                height={largest.height}
                 alt={media.alt ?? ''}
                 sizes={IMAGE_SIZES}
                 className="h-auto w-full"
             />
             {hasCaption && (
-                <figcaption className="text-meta tracking-meta text-fg-muted">
+                <figcaption className="text-meta text-fg-muted">
                     {media.caption}
                     {media.caption && media.credit && (
                         <>
@@ -121,7 +129,7 @@ function PostImage({ media }: { media: Media }) {
                         </>
                     )}
                     {media.credit && (
-                        <span className="small-caps font-medium">
+                        <span className="small-caps font-medium tracking-meta">
                             {media.credit}
                         </span>
                     )}
@@ -130,6 +138,22 @@ function PostImage({ media }: { media: Media }) {
         </figure>
     )
 }
+
+/** Payload's resized copies, narrowest first; the original only if there are none. */
+function imageVariants(media: Media): ImageVariant[] {
+    const copies: ImageSource[] = Object.values(media.sizes ?? {})
+    const sources = copies.some(isImageVariant) ? copies : [media]
+    return sources.filter(isImageVariant).toSorted((a, b) => a.width - b.width)
+}
+
+type ImageSource = {
+    url?: string | null
+    width?: number | null
+    height?: number | null
+}
+
+const isImageVariant = (image: ImageSource): image is ImageVariant =>
+    Boolean(image.url) && Boolean(image.width) && Boolean(image.height)
 
 function formattedText(text: string, format: number) {
     const slantedText =

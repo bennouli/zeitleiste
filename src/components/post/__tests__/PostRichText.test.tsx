@@ -47,6 +47,16 @@ const ZAR: Media = {
     caption: 'Der Zar 1913',
     credit: 'Wikimedia Commons',
     sizes: {
+        w480: {
+            url: '/api/media/file/zar-480x300.png',
+            width: 480,
+            height: 300,
+        },
+        w960: {
+            url: '/api/media/file/zar-960x600.png',
+            width: 960,
+            height: 600,
+        },
         w1600: {
             url: '/api/media/file/zar-1600x1000.png',
             width: 1600,
@@ -74,6 +84,23 @@ function withImage(value: Media | number): PostBody {
             ],
         },
     }
+}
+
+const COPIES = Object.values(ZAR.sizes!).toSorted(
+    (a, b) => a!.width! - b!.width!
+)
+
+const copyCovering = (width: number) =>
+    (COPIES.find((copy) => copy!.width! >= width) ?? COPIES.at(-1))!.url
+
+function srcsetOf(image: HTMLElement) {
+    return image
+        .getAttribute('srcset')!
+        .split(', ')
+        .map((candidate) => {
+            const [url, descriptor] = candidate.split(' ')
+            return { url, width: parseInt(descriptor!, 10) }
+        })
 }
 
 describe('PostRichText', () => {
@@ -156,7 +183,7 @@ describe('PostRichText', () => {
         expect(screen.getByText('Ein Zitat.').tagName).toBe('BLOCKQUOTE')
     })
 
-    it('renders an image as a figure at its largest size, sized to the reading column', () => {
+    it('renders an image as a figure at its largest copy, sized to the reading column', () => {
         const body = withImage(ZAR)
         render(<PostRichText body={body} />)
         const image = screen.getByRole('img', { name: ZAR.alt! })
@@ -167,9 +194,16 @@ describe('PostRichText', () => {
             'sizes',
             '(min-width: 45.25rem) 41.25rem, calc(100vw - 4rem)'
         )
-        expect(image.getAttribute('srcset')).toContain(
-            encodeURIComponent('/api/media/file/zar-1600x1000.png')
-        )
+    })
+
+    it("serves every width from the smallest of Payload's copies that covers it", () => {
+        const body = withImage(ZAR)
+        render(<PostRichText body={body} />)
+        const candidates = srcsetOf(screen.getByRole('img'))
+        expect(candidates.length).toBeGreaterThan(1)
+        expect(
+            candidates.every(({ url, width }) => url === copyCovering(width))
+        ).toBe(true)
     })
 
     it('captions an image with its caption and source credit', () => {
@@ -194,10 +228,14 @@ describe('PostRichText', () => {
         ).toBeNull()
     })
 
-    it('uses the original of an image smaller than its largest size', () => {
-        const body = withImage({ ...ZAR, width: 800, height: 500, sizes: {} })
+    it('uses the original of an image without copies', () => {
+        const body = withImage({ ...ZAR, sizes: {} })
         render(<PostRichText body={body} />)
-        expect(screen.getByRole('img')).toHaveAttribute('width', '800')
+        const candidates = srcsetOf(screen.getByRole('img'))
+        expect(new Set(candidates.map(({ url }) => url))).toEqual(
+            new Set([ZAR.url])
+        )
+        expect(screen.getByRole('img')).toHaveAttribute('width', '3200')
     })
 
     it('leaves out an image that was deleted', () => {

@@ -1,9 +1,8 @@
+import { MEDIA_WIDTHS } from '@/lib/media'
 import type { CollectionConfig } from 'payload'
 import { text } from 'payload/shared'
 import { requiredInGerman } from './requiredInGerman'
 import { loggedIn } from './userAccess'
-
-const MEDIA_WIDTHS = [480, 960, 1600] as const
 
 /**
  * Images for posts. `canStoreUploads` is false where an upload would land on a

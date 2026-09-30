@@ -98,7 +98,7 @@ test('an image in a post shows with its alt text, caption and a srcset', async (
 
     const figure = page.getByRole('article').getByRole('figure')
     const image = figure.getByRole('img', { name: ALT })
-    await expect(image).toHaveAttribute('srcset', /\d+w/)
+    await expect(image).toHaveAttribute('srcset', /480w, .* 960w, .* 1600w$/)
     await expect(figure).toContainText(CAPTION)
     await expect(figure).toContainText(CREDIT)
     await expect
