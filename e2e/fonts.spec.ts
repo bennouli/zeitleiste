@@ -1,10 +1,10 @@
-import { expect, test } from '@playwright/test'
+import { expect, test, type Request } from '@playwright/test'
 import { openTimeline } from './timeline'
-import { firstFamily, webFontFamily } from './webFont'
+import { families, firstFamily, webFontFamily } from './webFont'
 
 const POST_PATH = '/de/post/oktoberrevolution'
 
-const PAGES = ['/de', POST_PATH] as const
+const PAGES = ['/de', '/en', POST_PATH] as const
 
 const FONT_DELAY_MS = 1000
 
@@ -15,66 +15,138 @@ const MAX_FONT_LAYOUT_SHIFT = 0.01
 const SHIFT_OBSERVE_MS = 500
 
 const SERIF = {
-    variable: '--font-eb-garamond',
-    selector: '[data-entry-id] .font-serif',
+    variables: ['--font-eb-garamond'],
+    selectors: ['[data-entry-id] .font-serif'],
 }
-const SANS = { variable: '--font-ibm-plex-sans', selector: 'body' }
+const SANS = {
+    variables: ['--font-google-sans-cyrillic', '--font-google-sans'],
+    selectors: ['body', '[data-tick] span', '[data-top-bar] p'],
+}
 const SERIF_ITALIC = {
-    variable: '--font-eb-garamond-italic',
-    selector: '.font-serif-italic',
+    variables: ['--font-eb-garamond-italic'],
+    selectors: ['.font-serif-italic'],
 }
 
 const FONTS_BY_PAGE = [
     { path: '/de', fonts: [SERIF, SANS] },
+    { path: '/en', fonts: [SANS] },
     { path: POST_PATH, fonts: [SERIF, SANS, SERIF_ITALIC] },
 ] as const
 
 const GOOGLE_FONTS_HOST = /^https?:\/\/fonts\.(googleapis|gstatic)\.com\//
 
+const CYRILLIC_SAMPLE = 'линия'
+
+const isForeignFontRequest = (request: Request, origin: string) =>
+    GOOGLE_FONTS_HOST.test(request.url()) ||
+    (request.resourceType() === 'font' &&
+        new URL(request.url()).origin !== origin)
+
 for (const { path, fonts } of FONTS_BY_PAGE) {
     test(`${path} renders its text in the web fonts`, async ({ page }) => {
         await openTimeline(page, path)
         await page.evaluate(() => document.fonts.ready)
-        for (const { variable, selector } of fonts) {
-            const family = await webFontFamily(page, variable)
-            const renderedFace = await page
-                .locator(selector)
-                .first()
-                .evaluate((el) => {
-                    const style = getComputedStyle(el)
-                    return {
-                        fontFamily: style.fontFamily,
-                        fontStyle: style.fontStyle,
-                    }
-                })
-            const loadedFaces = await page.evaluate(() =>
-                [...document.fonts]
-                    .filter((f) => f.status === 'loaded')
-                    .map((f) => ({ family: f.family, style: f.style }))
+        for (const { variables, selectors } of fonts) {
+            const stack = await Promise.all(
+                variables.map((variable) => webFontFamily(page, variable))
             )
-            expect(firstFamily(renderedFace.fontFamily)).toBe(family)
-            expect(
-                loadedFaces.some(
-                    (f) =>
-                        firstFamily(f.family) === family &&
-                        f.style === renderedFace.fontStyle
+            const textFamily = stack.at(-1)
+            for (const selector of selectors) {
+                const renderedFace = await page
+                    .locator(selector)
+                    .first()
+                    .evaluate((el) => {
+                        const style = getComputedStyle(el)
+                        return {
+                            fontFamily: style.fontFamily,
+                            fontStyle: style.fontStyle,
+                            fontWeight: style.fontWeight,
+                        }
+                    })
+                const loadedFaces = await page.evaluate(() =>
+                    [...document.fonts]
+                        .filter((f) => f.status === 'loaded')
+                        .map((f) => ({ family: f.family, style: f.style }))
                 )
-            ).toBe(true)
+                const faceReady = await page.evaluate(
+                    ({ fontStyle, fontWeight, family }) =>
+                        document.fonts.check(
+                            `${fontStyle} ${fontWeight} 12px "${family}"`
+                        ),
+                    { ...renderedFace, family: textFamily }
+                )
+                expect(
+                    families(renderedFace.fontFamily).slice(0, stack.length)
+                ).toEqual(stack)
+                expect(
+                    loadedFaces.some(
+                        (f) =>
+                            firstFamily(f.family) === textFamily &&
+                            f.style === renderedFace.fontStyle
+                    )
+                ).toBe(true)
+                expect(faceReady).toBe(true)
+            }
         }
     })
 }
 
 for (const path of PAGES) {
-    test(`${path} requests nothing from Google Fonts`, async ({ page }) => {
-        const requestedUrls: string[] = []
-        page.on('request', (request) => requestedUrls.push(request.url()))
+    test(`${path} requests no font from another origin`, async ({ page }) => {
+        const requests: Request[] = []
+        page.on('request', (request) => requests.push(request))
         await openTimeline(page, path)
         await page.evaluate(() => document.fonts.ready)
+        const origin = new URL(page.url()).origin
         expect(
-            requestedUrls.filter((url) => GOOGLE_FONTS_HOST.test(url))
+            requests
+                .filter((request) => isForeignFontRequest(request, origin))
+                .map((request) => request.url())
         ).toEqual([])
     })
 }
+
+test('Cyrillic in font-sans is set in Google Sans, fetched only once it is on the page', async ({
+    page,
+}) => {
+    await openTimeline(page, '/de')
+    await page.evaluate(() => document.fonts.ready)
+    const cyrillicFamily = await webFontFamily(
+        page,
+        '--font-google-sans-cyrillic'
+    )
+    const cyrillicFaceStatuses = () =>
+        page.evaluate(
+            (family) =>
+                [...document.fonts]
+                    .filter(
+                        (f) =>
+                            f.family.replace(/['"]/g, '') === family &&
+                            f.weight === '500'
+                    )
+                    .map((f) => f.status),
+            cyrillicFamily
+        )
+    const cyrillicFaceReady = () =>
+        page.evaluate(
+            ({ family, text }) =>
+                document.fonts.check(`500 13px "${family}"`, text),
+            { family: cyrillicFamily, text: CYRILLIC_SAMPLE }
+        )
+
+    expect(await cyrillicFaceStatuses()).toEqual(['unloaded'])
+    expect(await cyrillicFaceReady()).toBe(false)
+
+    await page.evaluate((text) => {
+        const wordmark = document.createElement('p')
+        wordmark.className = 'small-caps text-label-lg font-medium'
+        wordmark.textContent = text
+        document.body.append(wordmark)
+    }, CYRILLIC_SAMPLE)
+
+    await expect.poll(cyrillicFaceStatuses).toEqual(['loaded'])
+    expect(await cyrillicFaceReady()).toBe(true)
+})
 
 test('the post page does not shift layout when the fonts arrive', async ({
     page,

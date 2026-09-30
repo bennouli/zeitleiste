@@ -12,7 +12,8 @@ export const AXIS_LINE_Y_PX = 24
 export const AXIS_LINE_THICKNESS_PX = 1
 const LABEL_TOP_PX = AXIS_LINE_Y_PX + 14
 const TODAY_MARK_HEIGHT_PX = 16
-const TICK_OPTIONS = { minYearWidthForMonthsPx: 420, charWidthPx: 7.7 }
+/** `charWidthPx`: the widest year label, "2000" in Google Sans 500 at 12 px, measures 8.25 px per character. */
+const TICK_OPTIONS = { minYearWidthForMonthsPx: 420, charWidthPx: 8.3 }
 /** Ties with a focused card layer item (`focus-within:z-300`), which wins by DOM order. */
 const Z_AXIS_LABEL = 300
 
