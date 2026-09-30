@@ -60,7 +60,6 @@ function findPublishedEntries(locale: Locale, where: Where) {
 /**
  * Posts are readable by editors only, so the Local API leaves an anonymous
  * entry's `post` as an id. Only ids taken from a published entry reach here.
- * Depth 1 populates the images in the body.
  */
 function findPost(id: number, locale: Locale) {
     return payloadCall('find post', (payload) =>

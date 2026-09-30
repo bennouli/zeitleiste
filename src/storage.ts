@@ -6,11 +6,6 @@ export type MediaStorage = {
     readonly canStoreUploads: boolean
 }
 
-/**
- * Where uploaded images go: Vercel Blob when a store is connected, the local
- * `media/` directory otherwise. On Vercel the local disk does not outlive the
- * request, so without a store uploads cannot be stored at all.
- */
 export const mediaStorage = (env: unknown): MediaStorage => {
     const { BLOB_READ_WRITE_TOKEN, VERCEL } = decodeStorageEnv(env)
     const blobToken = nonBlank(BLOB_READ_WRITE_TOKEN)

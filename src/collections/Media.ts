@@ -4,10 +4,6 @@ import { text } from 'payload/shared'
 import { requiredInGerman } from './requiredInGerman'
 import { loggedIn } from './userAccess'
 
-/**
- * Images for posts. `canStoreUploads` is false where an upload would land on a
- * disk that does not outlive the request (Vercel without a Blob store).
- */
 export const mediaCollection = ({
     canStoreUploads,
 }: {

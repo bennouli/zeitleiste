@@ -113,6 +113,7 @@ describe('loadPost', () => {
                 collection: 'posts',
                 where: { id: { equals: 7 } },
                 locale: 'de',
+                select: { body: true },
                 depth: 1,
             })
         )

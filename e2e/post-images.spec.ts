@@ -14,7 +14,7 @@ const CREDIT = 'e2e-Fixture'
 type Created = { collection: 'entries' | 'posts' | 'media'; id: number }
 
 let payload: Payload
-const created: Created[] = []
+const createdDocs: Created[] = []
 
 test.describe.configure({ mode: 'serial' })
 
@@ -23,7 +23,7 @@ test.beforeAll(async () => {
 })
 
 test.afterAll(async () => {
-    for (const { collection, id } of created.reverse()) {
+    for (const { collection, id } of createdDocs.reverse()) {
         await payload.delete({ collection, id, context: QUIET })
     }
 })
@@ -42,7 +42,7 @@ async function createImage() {
         data: { alt: ALT, caption: CAPTION, credit: CREDIT },
         file,
     })
-    created.push({ collection: 'media', id: doc.id })
+    createdDocs.push({ collection: 'media', id: doc.id })
     return doc
 }
 
@@ -64,7 +64,7 @@ async function createPostWithImage(mediaId: number) {
         data: { body },
         context: QUIET,
     })
-    created.push({ collection: 'posts', id: doc.id })
+    createdDocs.push({ collection: 'posts', id: doc.id })
     return doc
 }
 
@@ -83,7 +83,7 @@ async function createEntry(post: number) {
         data,
         context: QUIET,
     })
-    created.push({ collection: 'entries', id: doc.id })
+    createdDocs.push({ collection: 'entries', id: doc.id })
     return doc
 }
 
