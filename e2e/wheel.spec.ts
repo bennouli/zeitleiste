@@ -40,7 +40,7 @@ test('wheel over the timeline zooms in and out and does not scroll the page', as
     expect(await page.evaluate(() => window.scrollY)).toBe(0)
 })
 
-test('Shift + wheel up and a leftward swipe pan towards later dates', async ({
+test('Shift + wheel down and a leftward swipe pan towards later dates', async ({
     page,
 }) => {
     await openTimeline(page)
@@ -56,7 +56,7 @@ test('Shift + wheel up and a leftward swipe pan towards later dates', async ({
     const before = await view(page)
 
     await page.keyboard.down('Shift')
-    await page.mouse.wheel(0, -300)
+    await page.mouse.wheel(0, 300)
     await page.keyboard.up('Shift')
 
     await expect
