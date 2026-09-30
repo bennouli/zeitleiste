@@ -16,8 +16,8 @@ const POST_CHEVRON_WIDTH_PX = POST_CHEVRON_SIZE_PX + 2
 
 /** Advance of one title glyph (EB Garamond 20 px): the widest sample title measures 10.5 px per character. */
 const TITLE_CHAR_WIDTH_PX = 10.5
-/** Advance of one date-line glyph (IBM Plex Sans 12 px, uppercase, 0.1 em tracking): the widest sample date measures 8.4 px per character. */
-const DATE_CHAR_WIDTH_PX = 8.4
+/** Advance of one date-line glyph (Google Sans 12 px, uppercase, 0.1 em tracking): the widest sample date measures 8 px per character. */
+const DATE_CHAR_WIDTH_PX = 8
 
 /** Estimated rendered width of an entry's label: its truncated title or its date line, whichever is wider. */
 export function estimateLabelWidthPx(entry: Entry, locale: Locale): number {

@@ -60,10 +60,14 @@ describe('estimateLabelWidthPx', () => {
     })
 
     it("lets a span's range line widen the label past the title cap", () => {
-        const rangeLine = '24. Juni 1812 – Dez. 1812'
+        const spanFromSeptember: Entry = {
+            ...spanAcrossMonths,
+            start: { year: 1812, month: 9, day: 24 },
+        }
+        const rangeLine = '24. Sept. 1812 – Dez. 1812'
         const rangeWidth = rangeLine.length * DATE_CHAR_WIDTH_PX
         expect(rangeWidth).toBeGreaterThan(LABEL_MAX_WIDTH_PX)
-        expect(estimateLabelWidthPx(spanAcrossMonths, 'de')).toBe(rangeWidth)
+        expect(estimateLabelWidthPx(spanFromSeptember, 'de')).toBe(rangeWidth)
     })
 
     it('measures the date line in the language shown', () => {

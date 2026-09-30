@@ -48,32 +48,58 @@ const ebGaramondItalic = localFont({
     variable: '--font-eb-garamond-italic',
 })
 
-const ibmPlexSans = localFont({
+const googleSans = localFont({
     src: [
         {
-            path: '../fonts/ibm-plex-sans/ibm-plex-sans-latin-ext-400-normal.woff2',
+            path: '../fonts/google-sans/google-sans-latin-ext-400-normal.woff2',
             weight: '400',
             style: 'normal',
         },
         {
-            path: '../fonts/ibm-plex-sans/ibm-plex-sans-latin-400-normal.woff2',
+            path: '../fonts/google-sans/google-sans-latin-400-normal.woff2',
             weight: '400',
             style: 'normal',
         },
         {
-            path: '../fonts/ibm-plex-sans/ibm-plex-sans-latin-ext-500-normal.woff2',
+            path: '../fonts/google-sans/google-sans-latin-ext-500-normal.woff2',
             weight: '500',
             style: 'normal',
         },
         {
-            path: '../fonts/ibm-plex-sans/ibm-plex-sans-latin-500-normal.woff2',
+            path: '../fonts/google-sans/google-sans-latin-500-normal.woff2',
             weight: '500',
             style: 'normal',
         },
     ],
     display: 'swap',
     adjustFontFallback: 'Arial',
-    variable: '--font-ibm-plex-sans',
+    variable: '--font-google-sans',
 })
 
-export const fontVariables = `${ebGaramond.variable} ${ebGaramondItalic.variable} ${ibmPlexSans.variable}`
+// Footgun: this family goes before `--font-google-sans` in a stack, and has no fallback of its own (DESIGN.md § Fonts).
+const googleSansCyrillic = localFont({
+    src: [
+        {
+            path: '../fonts/google-sans/google-sans-cyrillic-400-normal.woff2',
+            weight: '400',
+            style: 'normal',
+        },
+        {
+            path: '../fonts/google-sans/google-sans-cyrillic-500-normal.woff2',
+            weight: '500',
+            style: 'normal',
+        },
+    ],
+    display: 'swap',
+    adjustFontFallback: false,
+    preload: false,
+    declarations: [
+        {
+            prop: 'unicode-range',
+            value: 'U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116',
+        },
+    ],
+    variable: '--font-google-sans-cyrillic',
+})
+
+export const fontVariables = `${ebGaramond.variable} ${ebGaramondItalic.variable} ${googleSans.variable} ${googleSansCyrillic.variable}`

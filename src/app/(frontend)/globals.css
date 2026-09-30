@@ -66,8 +66,9 @@
 @theme static {
     --container-reading: 41.25rem;
     --font-sans:
-        var(--font-ibm-plex-sans), ui-sans-serif, system-ui, -apple-system,
-        'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+        var(--font-google-sans-cyrillic), var(--font-google-sans),
+        ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto,
+        'Helvetica Neue', Arial, sans-serif;
     --font-serif:
         var(--font-eb-garamond), ui-serif, Georgia, Cambria, 'Times New Roman',
         Times, serif;
