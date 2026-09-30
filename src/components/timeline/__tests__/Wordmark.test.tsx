@@ -7,6 +7,7 @@ import { PRIVATE_UNDER_TESTS } from '../useWordmarkTyping'
 import { Wordmark } from '../Wordmark'
 
 const TYPING_MS = 1500
+const renderOptions = { wrapper: inLocale('de') }
 
 beforeEach(() => {
     vi.useFakeTimers()
@@ -21,13 +22,13 @@ afterEach(() => {
 
 describe('Wordmark', () => {
     it('is named by the Latin name while it reads «линия»', () => {
-        render(<Wordmark />, { wrapper: inLocale('de') })
+        render(<Wordmark />, renderOptions)
 
         expect(screen.getByRole('img', { name: APP_NAME })).toBeVisible()
     })
 
     it('carries the name, hidden while motion is allowed, beside the «линия» frame with a caret', () => {
-        const { container } = render(<Wordmark />, { wrapper: inLocale('de') })
+        const { container } = render(<Wordmark />, renderOptions)
         const name = screen.getByText(APP_NAME, { exact: true })
         const typing = container.querySelector('[data-wordmark-typing]')!
 
@@ -38,7 +39,7 @@ describe('Wordmark', () => {
     })
 
     it('ends as the plain name, without the Cyrillic or the caret', () => {
-        const { container } = render(<Wordmark />, { wrapper: inLocale('de') })
+        const { container } = render(<Wordmark />, renderOptions)
 
         act(() => vi.advanceTimersByTime(TYPING_MS))
 

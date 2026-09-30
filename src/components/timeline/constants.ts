@@ -30,5 +30,5 @@ export const BAR_HIGHLIGHT_MS = 1000
 export const BAR_HIGHLIGHT_FADE_MS = 300
 /** How long the wordmark reads «линия» before the first letter is replaced. */
 export const WORDMARK_HOLD_MS = 400
-/** Time per replaced letter of the wordmark; five steps after the hold end the change at 1500 ms. */
+/** Time per replaced letter of the wordmark. */
 export const WORDMARK_STEP_MS = 220

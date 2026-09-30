@@ -3,21 +3,21 @@ import { messages } from '../src/i18n/messages'
 import { sampleEntry } from '../src/test/entries'
 import { openTimeline, timelineRegion } from './timeline'
 
-type WordmarkFrame = { text: string; switchX: number; t: number }
+type SampledFrame = { text: string; switchX: number; t: number }
 
-type RecordingWindow = typeof window & { wordmarkFrames: WordmarkFrame[] }
+type RecordingWindow = typeof window & { wordmarkFrames: SampledFrame[] }
 
 const BRAND = messages.de.site.name
 const CYRILLIC = 'линия'
 const HAS_CYRILLIC = /[Ѐ-ӿ]/
 const TYPING_MS = 1500
-/** One frame at 60 Hz on either end of the measurement. */
+/** Three frames at 60 Hz: the step due at 1500 ms paints on the next frame, and the sampler records it on the frame after. */
 const FRAME_SLACK_MS = 50
 const POST_ENTRY = sampleEntry('kubakrise')
 
 /** From the first frame on, records every change of the wordmark's visible text and of the language switch's x position. */
 function recordWordmarkFrames() {
-    const frames: WordmarkFrame[] = []
+    const frames: SampledFrame[] = []
     Object.assign(window, { wordmarkFrames: frames })
     const isShown = (el: Element) =>
         el.checkVisibility({ visibilityProperty: true })
@@ -30,8 +30,8 @@ function recordWordmarkFrames() {
                 .map((el) => el.textContent)
                 .join('')
             const switchX = languageSwitch.getBoundingClientRect().x
-            const last = frames.at(-1)
-            if (last?.text !== text || last.switchX !== switchX)
+            const lastFrame = frames.at(-1)
+            if (lastFrame?.text !== text || lastFrame.switchX !== switchX)
                 frames.push({
                     text,
                     switchX,
@@ -170,7 +170,7 @@ test.describe('with reduced motion', () => {
         page,
     }) => {
         await openTimeline(page)
-        await page.waitForTimeout(TYPING_MS + FRAME_SLACK_MS)
+        await expect(page.locator('[data-wordmark-typing]')).toHaveCount(0)
 
         const texts = (await wordmarkFrames(page)).map((f) => f.text)
 

@@ -4,7 +4,7 @@ import { prefersReducedMotion } from '@/lib/dom'
 import { useEffect, useState } from 'react'
 import { WORDMARK_HOLD_MS, WORDMARK_STEP_MS } from './constants'
 
-export type WordmarkFrame = {
+type WordmarkFrame = {
     /** Latin letters typed so far; the whole name once typing is over. */
     typed: string
     /** Cyrillic letters not yet replaced. */
@@ -25,10 +25,8 @@ const STEPS = LETTERS.map((_, i) => i + 1)
 
 const WORDMARK_TYPING_MS = stepDueMs(LETTERS.length)
 
-/** When this document first painted the wordmark, in `performance.now()` time; the typing plays once per full page load. */
 let typingStartedAt: number | null = null
 
-/** The wordmark typing itself from «линия» into its Latin name, once per document. */
 export function useWordmarkTyping(): WordmarkFrame {
     const [step, setStep] = useState(() =>
         typingStartedAt === null

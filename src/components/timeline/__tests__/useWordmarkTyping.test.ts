@@ -91,9 +91,9 @@ describe('useWordmarkTyping', () => {
     })
 
     it('does not replay when the wordmark mounts again in the same document', () => {
-        const first = renderHook(useWordmarkTyping)
+        const firstMount = renderHook(useWordmarkTyping)
         advance(TYPING_MS)
-        first.unmount()
+        firstMount.unmount()
 
         const { result } = renderHook(useWordmarkTyping)
 
@@ -105,9 +105,9 @@ describe('useWordmarkTyping', () => {
     })
 
     it('carries on where it was when the wordmark mounts again mid-way', () => {
-        const first = renderHook(useWordmarkTyping)
+        const firstMount = renderHook(useWordmarkTyping)
         advance(WORDMARK_HOLD_MS + 2 * WORDMARK_STEP_MS)
-        first.unmount()
+        firstMount.unmount()
 
         const { result } = renderHook(useWordmarkTyping)
         const frameOnRemount = result.current

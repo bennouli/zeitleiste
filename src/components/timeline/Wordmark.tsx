@@ -4,7 +4,6 @@ import { useI18n } from '@/components/I18nContext'
 import clsx from 'clsx'
 import { useWordmarkTyping } from './useWordmarkTyping'
 
-/** The site's name, typed from «линия» into Latin once per page load. */
 export function Wordmark() {
     const { t } = useI18n()
     const { typed, untyped, isTyping } = useWordmarkTyping()
