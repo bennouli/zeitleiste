@@ -93,7 +93,7 @@ describe('loadEntries', () => {
 })
 
 describe('loadPost', () => {
-    it('loads the post of the published entry at the slug', async () => {
+    it('loads the post of the published entry at the slug, with its images', async () => {
         find.mockResolvedValueOnce(withPost)
         find.mockResolvedValueOnce(post)
         const entry = await Effect.runPromise(loadPost('krimkrieg', 'de'))
@@ -113,6 +113,7 @@ describe('loadPost', () => {
                 collection: 'posts',
                 where: { id: { equals: 7 } },
                 locale: 'de',
+                depth: 1,
             })
         )
     })

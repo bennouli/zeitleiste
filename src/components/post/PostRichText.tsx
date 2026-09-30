@@ -1,4 +1,5 @@
 import type { PostBody } from '@/lib/richText'
+import type { Media } from '@/payload-types'
 import type {
     DefaultNodeTypes,
     SerializedHeadingNode,
@@ -11,6 +12,7 @@ import {
     type JSXConvertersFunction,
     RichText,
 } from '@payloadcms/richtext-lexical/react'
+import Image from 'next/image'
 
 const READING_CLASS = 'text-body text-pretty'
 
@@ -21,6 +23,9 @@ const HEADING_CLASS: Partial<Record<SerializedHeadingNode['tag'], string>> = {
     h3: 'pt-3 text-lead font-medium',
     h4: 'pt-1.5 text-body font-medium',
 }
+
+/** The reading column: `max-w-reading`, less the article's `mx-8` on narrower screens. */
+const IMAGE_SIZES = '(min-width: 45.25rem) 41.25rem, calc(100vw - 4rem)'
 
 const LIST_CLASS: Record<SerializedListNode['listType'], string> = {
     bullet: 'list-disc',
@@ -67,6 +72,10 @@ const postConverters: JSXConvertersFunction<DefaultNodeTypes> = ({
         <Link node={node} nodesToJSX={nodesToJSX} />
     ),
     text: ({ node }) => formattedText(node.text, node.format),
+    upload: ({ node }) =>
+        node.relationTo === 'media' && typeof node.value === 'object' ? (
+            <PostImage media={node.value} />
+        ) : null,
 })
 
 function Link({
@@ -84,6 +93,41 @@ function Link({
         >
             {children}
         </a>
+    )
+}
+
+function PostImage({ media }: { media: Media }) {
+    const largest = media.sizes?.w1600
+    const { url, width, height } = largest?.url ? largest : media
+    if (!url || !width || !height) return null
+    const hasCaption = Boolean(media.caption || media.credit)
+    return (
+        <figure className="flex flex-col gap-2 py-1.5">
+            <Image
+                src={url}
+                width={width}
+                height={height}
+                alt={media.alt ?? ''}
+                sizes={IMAGE_SIZES}
+                className="h-auto w-full"
+            />
+            {hasCaption && (
+                <figcaption className="text-meta tracking-meta text-fg-muted">
+                    {media.caption}
+                    {media.caption && media.credit && (
+                        <>
+                            <span aria-hidden="true"> · </span>
+                            <span className="sr-only">, </span>
+                        </>
+                    )}
+                    {media.credit && (
+                        <span className="small-caps font-medium">
+                            {media.credit}
+                        </span>
+                    )}
+                </figcaption>
+            )}
+        </figure>
     )
 }
 
