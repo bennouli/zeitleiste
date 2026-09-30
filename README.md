@@ -1,6 +1,6 @@
-# Liniya
+# liniya
 
-Liniya is an interactive timeline of Russian, Soviet and Western history from 1700 to today: wars, revolutions and changes of power. Entries
+liniya is an interactive timeline of Russian, Soviet and Western history from 1700 to today: wars, revolutions and changes of power. Entries
 are points in time or spans. Each one has a title and a short summary, and optionally a blog-style post that opens below the timeline. The
 site is available in German and English, and editors maintain the content in a small admin area.
 

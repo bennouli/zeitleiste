@@ -1,3 +1,4 @@
+import { APP_NAME } from '@/lib/brand'
 import { containsText, germanOnlyTexts } from '@/test/germanTexts'
 import { readdirSync, readFileSync } from 'node:fs'
 import path from 'node:path'
@@ -30,7 +31,7 @@ describe('German interface texts', () => {
             ])
         )
         expect(germanTexts).not.toContain('Revolution')
-        expect(germanTexts).not.toContain('Liniya')
+        expect(germanTexts).not.toContain(APP_NAME)
     })
 
     it('are found when copied into a component', () => {

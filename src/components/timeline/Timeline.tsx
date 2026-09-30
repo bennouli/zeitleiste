@@ -37,6 +37,7 @@ import { useEntryLayout } from './useEntryLayout'
 import { useGestures } from './useGestures'
 import { useSettled } from './useSettled'
 import { useViewport, type ViewportActions } from './useViewport'
+import { Wordmark } from './Wordmark'
 import { ZoomControls } from './ZoomControls'
 
 export type TimelineProps = {
@@ -213,12 +214,7 @@ export function Timeline({
                     style={{ height: TOP_BAR_HEIGHT_PX }}
                 >
                     <div className="absolute top-5.5 left-8 flex items-baseline gap-4">
-                        <p
-                            aria-hidden="true"
-                            className="small-caps text-label-lg font-medium tracking-wordmark text-fg"
-                        >
-                            {t.site.name}
-                        </p>
+                        <Wordmark />
                         {besideWordmark}
                     </div>
                     <ZoomControls

@@ -26,20 +26,37 @@ beyond ink.
       fallback Times New Roman, not preloaded.
     - `googleSans`: Google Sans 400 and 500, latin and latin-ext, fallback Arial, preloaded.
     - `googleSansCyrillic`: Google Sans 400 and 500, cyrillic, with the subset's `unicode-range` (`declarations`), no fallback of its own
-      (`adjustFontFallback: false`), not preloaded.
+      (`adjustFontFallback: false`), preloaded.
 - `next/font/local` has no per-file `unicode-range`: `declarations` apply to every file of a call, and every file of a preloaded call is
   preloaded. Latin and latin-ext of a face share one call without a `unicode-range`, and the browser falls back from one file to the other
   per glyph. The fallback metrics come from one file per call; the order of `src` in each call is chosen so that file is the latin one (a
   latin-ext file yields default metrics, `size-adjust: 100%`). Check the `* Fallback` rules in the built CSS after reordering.
-- Cyrillic has a call of its own so that a Latin-only page never fetches its two files (19.8 KB). Its family comes first in `--font-sans`:
-  its faces cover only Cyrillic, so Latin text falls through to `--font-google-sans`. Placed after `--font-google-sans` it would never
-  render, because that variable ends in a local Arial fallback with Cyrillic glyphs. Until its file arrives, Cyrillic text shows in the next
-  font of the stack that has the glyphs.
+- Cyrillic has a call of its own because its `unicode-range` would otherwise apply to the Latin files too. Every page needs it: the wordmark
+  opens as «линия» (§ Wordmark). It is preloaded so the first frame is set in Google Sans; the preload takes both files (19.8 KB), because
+  every file of a preloaded call is preloaded, and the 400 is kept in the same call so Cyrillic text keeps one family. The call has no
+  metric-adjusted fallback: the `next/font` docs do not say whether `declarations` reach the generated fallback face, and a fallback face
+  without the `unicode-range` would be a local Arial covering Latin text, ahead of `--font-google-sans` in the stack. Its family comes first
+  in `--font-sans`: its faces cover only Cyrillic, so Latin text falls through to `--font-google-sans`. Placed after `--font-google-sans` it
+  would never render, because that variable ends in a local Arial fallback with Cyrillic glyphs. Until its file arrives, Cyrillic text shows
+  in the next font of the stack that has the glyphs.
 - Widths of text columns are set in `rem` (`max-w-reading`, 41.25 rem = 660 px): a `ch` width changes when the web font replaces its
   fallback.
 - **Small caps** = uppercase, letter-spacing 0.06–0.18 em, 12–13 px, Google Sans. It is the label style for dates, tick labels and meta
   lines. The `small-caps` utility in `globals.css` sets the font and uppercase; each use adds its size (`text-label`, `text-label-lg`,
-  `text-meta`) and its tracking token.
+  `text-meta`) and its tracking token. The wordmark is not small caps: it keeps the language switch's size and tracking, in lowercase.
+
+## Wordmark
+
+The name is written lowercase everywhere: liniya. In the top bar it opens as «линия», the Russian word it comes from, and types itself into
+Latin once per full page load (§ Motion): л→l, и→i, н→n, и→i, я→ya, a 1 px ink caret at the replacement point, then the caret goes.
+
+- The server HTML holds both the name and the «линия» frame; `motion-safe` hides the name and `motion-reduce` hides the frame, so the first
+  paint is correct before any script runs. With reduced motion the Cyrillic never shows.
+- Without JavaScript a `<noscript>` style shows the name and hides the frame.
+- The wordmark is decoration (`aria-hidden`): the sr-only `<h1>` names the site, so assistive tech never meets the Cyrillic.
+- `min-w-wordmark` (`--container-wordmark`, 3.1875 rem = 51 px) reserves the width of «линия», the widest frame (50.7 px measured in Google
+  Sans 500 at `text-label-lg` / `tracking-wordmark`; liniya is 45 px), so the language switch never moves.
+- A client navigation (opening a post, switching language) does not replay it: the start time is kept per document.
 
 ## Type scale
 
@@ -120,10 +137,13 @@ The other ink steps are Tailwind opacity modifiers on `fg`, so they follow the t
 | Zoom and pan                    | 300 ms   | ease-out (cubic)                          | `ZOOM_ANIMATION_MS`     |
 | Bar-click ring on a label       | 1000 ms  | none (on at once)                         | `BAR_HIGHLIGHT_MS`      |
 | Bar-click ring fade-out         | 300 ms   | `ease-out`                                | `BAR_HIGHLIGHT_FADE_MS` |
+| Wordmark hold on «линия»        | 400 ms   | none (steps)                              | `WORDMARK_HOLD_MS`      |
+| Wordmark letter step (× 5)      | 220 ms   | none (steps)                              | `WORDMARK_STEP_MS`      |
 | Hover states                    | none     | —                                         | —                       |
 
 Tailwind's defaults nearest the prototype, so the classes stay plain (`duration-500 ease-in-out`). `prefers-reduced-motion` turns all of
-them off.
+them off. The wordmark's hold and five steps end 1500 ms after the first contentful paint, not after hydration, so the page's script
+arriving late shortens the hold instead of stretching the whole.
 
 ## Unchanged
 
