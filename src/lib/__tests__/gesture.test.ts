@@ -438,8 +438,8 @@ describe('wheelIntent', () => {
     })
 
     it.each([
-        ['later', 'up', -100, -100],
-        ['earlier', 'down', 100, 100],
+        ['later', 'down', 100, -100],
+        ['earlier', 'up', -100, 100],
     ])(
         'pans towards %s dates on Shift + wheel %s reported vertically',
         (_dates, _direction, deltaY, contentShiftPx) => {
@@ -451,8 +451,8 @@ describe('wheelIntent', () => {
         }
     )
 
-    it('pans towards later dates on Shift + wheel up reported horizontally', () => {
-        const scroll = wheel({ deltaX: -100, shiftKey: true })
+    it('pans towards later dates on Shift + wheel down reported horizontally', () => {
+        const scroll = wheel({ deltaX: 100, shiftKey: true })
         expect(wheelIntent(scroll, PAGE_PX)).toEqual({
             type: 'pan',
             contentShiftPx: -100,

@@ -314,7 +314,7 @@ describe('Timeline', () => {
         })
 
         it.each([
-            ['Shift + wheel up', { deltaY: -100, shiftKey: true }],
+            ['Shift + wheel down', { deltaY: 100, shiftKey: true }],
             ['a leftward swipe', { deltaX: 100 }],
         ])(
             'pans towards later dates on %s without changing the span',

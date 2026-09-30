@@ -143,12 +143,11 @@ export type WheelIntent =
     | { type: 'zoom'; deltaPx: number }
 
 /**
- * Ctrl/Cmd + wheel stays with the browser. Shift + wheel pans by the dominant
- * axis (browsers differ in which axis they report it on): wheel up brings later
- * dates in. A mostly horizontal delta without Shift pans with the content
- * following the fingers: swiping left brings later dates in. Anything else
- * zooms by the vertical delta. `pagePx` is the size of one page for page-mode
- * deltas.
+ * Ctrl/Cmd + wheel stays with the browser. Shift + wheel and a mostly
+ * horizontal delta pan by the dominant axis (browsers differ in which axis they
+ * report Shift + wheel on): wheel down or swiping left brings later dates in.
+ * Anything else zooms by the vertical delta. `pagePx` is the size of one page
+ * for page-mode deltas.
  */
 export function wheelIntent(sample: WheelSample, pagePx: number): WheelIntent {
     if (sample.ctrlKey || sample.metaKey) return { type: 'browser' }
@@ -156,9 +155,11 @@ export function wheelIntent(sample: WheelSample, pagePx: number): WheelIntent {
     const deltaX = finiteOr(sample.deltaX, 0) * pxPerUnit
     const deltaY = finiteOr(sample.deltaY, 0) * pxPerUnit
     const isHorizontal = Math.abs(deltaX) > Math.abs(deltaY)
-    if (sample.shiftKey)
-        return { type: 'pan', contentShiftPx: isHorizontal ? deltaX : deltaY }
-    if (isHorizontal) return { type: 'pan', contentShiftPx: -deltaX }
+    if (sample.shiftKey || isHorizontal)
+        return {
+            type: 'pan',
+            contentShiftPx: -(isHorizontal ? deltaX : deltaY),
+        }
     return { type: 'zoom', deltaPx: deltaY }
 }
 
