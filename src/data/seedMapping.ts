@@ -1,6 +1,7 @@
 import type { Entry } from '@/lib/entry'
 import type { PostBody } from '@/lib/richText'
 import type { Entry as EntryDocument, Tag } from '@/payload-types'
+import { Schema } from 'effect'
 
 type EntryFields = Pick<
     EntryDocument,
@@ -72,6 +73,19 @@ export function missingKeys(
     return keys.filter((key) => !storedIds.has(key))
 }
 
-export function acceptsSeed(storedEntryCount: number): boolean {
-    return storedEntryCount === 0
+export function acceptsSeed(storedCount: number): boolean {
+    return storedCount === 0
+}
+
+const VercelEnv = Schema.Literals(['production', 'preview', 'development'])
+type VercelEnv = typeof VercelEnv.Type
+
+const SeedEnv = Schema.Struct({ VERCEL_ENV: Schema.optional(VercelEnv) })
+
+export const decodeSeedEnv = Schema.decodeUnknownEffect(SeedEnv)
+
+export type SeedScope = 'tags' | 'sample content'
+
+export function seedScopeOf(vercelEnv: VercelEnv | undefined): SeedScope {
+    return vercelEnv === 'production' ? 'tags' : 'sample content'
 }
