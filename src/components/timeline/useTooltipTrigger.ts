@@ -1,6 +1,6 @@
 'use client'
 
-import { isTypingTarget } from '@/lib/dom'
+import { isFocusVisible, isTypingTarget } from '@/lib/dom'
 import type { FocusEvent, PointerEvent, RefObject } from 'react'
 import { useEffect, useRef, useState } from 'react'
 
@@ -69,7 +69,11 @@ export function useTooltipTrigger({
         onFocus: (e: FocusEvent) => {
             const pressedAt = lastPressAt.current
             lastPressAt.current = null
-            if (isFocusFromPress(pressedAt, e.timeStamp)) return
+            if (
+                isFocusFromPress(pressedAt, e.timeStamp) ||
+                !isFocusVisible(e.currentTarget)
+            )
+                return
             setFocused(true)
             setDismissed(false)
         },

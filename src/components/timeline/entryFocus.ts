@@ -1,6 +1,6 @@
 'use client'
 
-import { hasNoLayout } from '@/lib/dom'
+import { hasNoLayout, isFocusVisible } from '@/lib/dom'
 import type { FocusEvent, RefObject } from 'react'
 import { useEffect, useLayoutEffect, useRef } from 'react'
 
@@ -142,14 +142,6 @@ function entryIdsOf(el: HTMLElement): string[] {
         : spanId
           ? [spanId]
           : (entryIds ?? '').split(' ').filter(Boolean)
-}
-
-function isFocusVisible(el: HTMLElement): boolean {
-    try {
-        return el.matches(':focus-visible')
-    } catch {
-        return true
-    }
 }
 
 function isStillFocusable(el: HTMLElement): boolean {

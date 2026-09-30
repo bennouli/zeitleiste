@@ -1,8 +1,9 @@
 import AxeBuilder from '@axe-core/playwright'
-import { expect, test, type Page } from '@playwright/test'
-import { openTimeline } from './timeline'
+import { expect, test, type Locator, type Page } from '@playwright/test'
+import { describeFocus, openTimeline, tabUntil } from './timeline'
 
 const VIEWPORT = { width: 1280, height: 800 }
+const PHONE = { width: 390, height: 844 }
 
 const CURSOR_OFFSET_PX = 14
 
@@ -27,6 +28,15 @@ async function entryInView(page: Page) {
         if (box && isRoomy(box)) return card
     }
     throw new Error('no entry card inside the viewport')
+}
+
+async function firstInPhoneView(candidates: Locator) {
+    for (const candidate of await candidates.all()) {
+        const box = await candidate.boundingBox()
+        if (box && box.x >= 0 && box.x + box.width <= PHONE.width)
+            return candidate
+    }
+    throw new Error('none inside the viewport')
 }
 
 const noteBox = async (page: Page) =>
@@ -75,4 +85,81 @@ test('an open hover note resolves aria-describedby and has no axe violations', a
             nodes: v.nodes.map((n) => n.target.join(' ')),
         }))
     ).toEqual([])
+})
+
+test.describe('focus handed on after zooming into a group', () => {
+    test.use({ viewport: PHONE, reducedMotion: 'reduce' })
+
+    const markerInView = (page: Page) =>
+        firstInPhoneView(page.getByRole('button', { name: /^Hineinzoomen: / }))
+
+    const markerIds = async (marker: Locator) =>
+        (
+            (await marker
+                .locator('xpath=ancestor::*[@data-entry-ids][1]')
+                .getAttribute('data-entry-ids')) ?? ''
+        )
+            .split(' ')
+            .filter(Boolean)
+
+    const focusReaches = async (page: Page, ids: string[]) =>
+        expect
+            .poll(async () =>
+                (await describeFocus(page)).ids.some((id) => ids.includes(id))
+            )
+            .toBe(true)
+
+    test('a click on a group opens no hover note; hovering an entry still does', async ({
+        page,
+    }) => {
+        await openTimeline(page)
+        const marker = await markerInView(page)
+        const ids = await markerIds(marker)
+
+        await marker.click()
+        await page.mouse.move(0, 0)
+        await focusReaches(page, ids)
+        await expect(page.getByRole('tooltip')).toBeHidden()
+
+        const entry = await firstInPhoneView(
+            page.locator('[data-layer="cards"] [aria-describedby]')
+        )
+        await entry.hover()
+        await expect(page.getByRole('tooltip')).toBeVisible()
+    })
+
+    test('Enter on a group moves focus to its first entry and opens its note', async ({
+        page,
+    }) => {
+        await openTimeline(page)
+        await page.keyboard.press('Tab')
+        const marker = await tabUntil(page, (f) =>
+            f.name.startsWith('Hineinzoomen: ')
+        )
+        expect(marker?.name).toMatch(/^Hineinzoomen: /)
+
+        await page.keyboard.press('Enter')
+        await expect
+            .poll(async () => (await describeFocus(page)).ids)
+            .toContain(marker!.ids[0])
+        const describedBy = await page.evaluate(() =>
+            document.activeElement!.getAttribute('aria-describedby')
+        )
+        await expect(page.getByRole('tooltip')).toHaveId(describedBy!)
+        await expect(page.getByRole('tooltip')).toBeVisible()
+    })
+
+    test.describe('on a touch screen', () => {
+        test.use({ hasTouch: true })
+
+        test('a tap on a group opens no hover note', async ({ page }) => {
+            await openTimeline(page)
+            const marker = await markerInView(page)
+            const ids = await markerIds(marker)
+
+            await marker.tap()
+            await focusReaches(page, ids)
+            await expect(page.getByRole('tooltip')).toBeHidden()
+        })
+    })
 })

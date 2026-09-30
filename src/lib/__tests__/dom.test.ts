@@ -1,9 +1,16 @@
+import { stubFocusVisible } from '@/test/focus'
 import { stubReducedMotion } from '@/test/motion'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { hasNoLayout, isTypingTarget, prefersReducedMotion } from '../dom'
+import {
+    hasNoLayout,
+    isFocusVisible,
+    isTypingTarget,
+    prefersReducedMotion,
+} from '../dom'
 
 afterEach(() => {
     vi.unstubAllGlobals()
+    vi.restoreAllMocks()
 })
 
 describe('hasNoLayout', () => {
@@ -15,6 +22,22 @@ describe('hasNoLayout', () => {
         expect(hasNoLayout(zeroSize)).toBe(true)
         expect(hasNoLayout(zeroWidth)).toBe(false)
         expect(hasNoLayout(zeroHeight)).toBe(false)
+    })
+})
+
+describe('isFocusVisible', () => {
+    it.each([true, false])('answers %s as :focus-visible does', (visible) => {
+        const button = document.createElement('button')
+        stubFocusVisible(button, visible)
+        expect(isFocusVisible(button)).toBe(visible)
+    })
+
+    it('is true where :focus-visible cannot be evaluated', () => {
+        const button = document.createElement('button')
+        vi.spyOn(button, 'matches').mockImplementation(() => {
+            throw new SyntaxError(':focus-visible')
+        })
+        expect(isFocusVisible(button)).toBe(true)
     })
 })
 
