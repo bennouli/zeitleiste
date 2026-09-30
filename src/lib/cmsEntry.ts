@@ -26,9 +26,7 @@ const CmsMedia = Schema.StructWithRest(
         alt: OptionalString,
         caption: OptionalString,
         credit: OptionalString,
-        sizes: Schema.optional(
-            Schema.Struct({ w1600: Schema.optional(CmsImageSize) })
-        ),
+        sizes: Schema.optional(Schema.Record(Schema.String, CmsImageSize)),
         updatedAt: Schema.String,
         createdAt: Schema.String,
     }),
@@ -43,7 +41,6 @@ const CmsUploadNode = Schema.StructWithRest(
         id: Schema.String,
         relationTo: Schema.Literal('media'),
         value: Schema.Union([Id, CmsMedia]),
-        fields: Schema.Record(Schema.String, Schema.Unknown),
     }),
     [Schema.Record(Schema.String, Schema.Unknown)]
 )

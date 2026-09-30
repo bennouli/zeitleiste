@@ -149,7 +149,10 @@ describe('CmsPost', () => {
             alt: 'Der Zar',
             caption: null,
             credit: 'Wikimedia Commons',
-            sizes: { w1600: { url: '/api/media/file/zar.png' } },
+            sizes: {
+                w480: { url: '/api/media/file/zar-480x320.png', width: 480 },
+                w1600: { url: '/api/media/file/zar.png' },
+            },
             updatedAt: '',
             createdAt: '',
         }
@@ -179,7 +182,7 @@ function uploadNode(value: unknown) {
         id: 'node-1',
         relationTo: 'media',
         value,
-        fields: {},
+        fields: null,
     }
 }
 
