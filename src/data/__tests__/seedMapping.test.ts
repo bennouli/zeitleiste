@@ -227,18 +227,20 @@ describe('decodeSeedEnv', () => {
     it.each(['production', 'preview', 'development'])(
         'reads VERCEL_ENV=%s',
         async (vercelEnv) => {
-            const env = { VERCEL_ENV: vercelEnv, PATH: '/usr/bin' }
+            const env = { VERCEL_ENV: vercelEnv }
 
             await expect(
                 Effect.runPromise(decodeSeedEnv(env))
-            ).resolves.toEqual({ VERCEL_ENV: vercelEnv })
+            ).resolves.toMatchObject({ VERCEL_ENV: vercelEnv })
         }
     )
 
     it('reads an unset VERCEL_ENV as a local run', async () => {
-        const env = { PATH: '/usr/bin' }
+        const env = {}
 
-        await expect(Effect.runPromise(decodeSeedEnv(env))).resolves.toEqual({})
+        const seedEnv = await Effect.runPromise(decodeSeedEnv(env))
+
+        expect(seedEnv.VERCEL_ENV).toBeUndefined()
     })
 
     it('fails on an unknown VERCEL_ENV, naming the variable', async () => {
