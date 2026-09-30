@@ -22,7 +22,7 @@ function recordWordmarkFrames() {
     const isShown = (el: Element) =>
         el.checkVisibility({ visibilityProperty: true })
     const sample = () => {
-        const wordmark = document.querySelector('[data-top-bar] [role="img"]')
+        const wordmark = document.querySelector('[data-wordmark]')
         const languageSwitch = document.querySelector('[data-top-bar] a')
         if (wordmark && languageSwitch) {
             const text = [...wordmark.children]
@@ -59,8 +59,7 @@ async function waitForTypingEnd(page: Page) {
     await expect(page.locator('[data-wordmark-typing]')).toHaveCount(0)
 }
 
-const wordmark = (page: Page) =>
-    timelineRegion(page).getByRole('img', { name: BRAND })
+const wordmark = (page: Page) => timelineRegion(page).locator('[data-wordmark]')
 
 test.beforeEach(async ({ page }) => {
     await page.addInitScript(recordWordmarkFrames)
@@ -117,19 +116,21 @@ test.describe('with motion', () => {
         expect(new Set(switchXs).size).toBe(1)
     })
 
-    test(`the wordmark is named "${BRAND}" during and after the typing, and never in Cyrillic`, async ({
+    test(`the page exposes no Cyrillic while the wordmark types, and its heading names "${BRAND}"`, async ({
         page,
     }) => {
         await openTimeline(page)
-        const bar = page.locator('[data-top-bar]')
+        const main = page.getByRole('main')
         await expect(wordmark(page)).toBeVisible()
-        const treeWhileTyping = await bar.ariaSnapshot()
+        const treeWhileTyping = await main.ariaSnapshot()
         await waitForTypingEnd(page)
-        const treeAfterTyping = await bar.ariaSnapshot()
+        const treeAfterTyping = await main.ariaSnapshot()
 
-        expect(treeWhileTyping).toContain(`img "${BRAND}"`)
         expect(treeWhileTyping).not.toMatch(HAS_CYRILLIC)
-        expect(treeAfterTyping).toBe(treeWhileTyping)
+        expect(treeAfterTyping).not.toMatch(HAS_CYRILLIC)
+        await expect(
+            page.getByRole('heading', { level: 1, name: new RegExp(BRAND) })
+        ).toBeAttached()
     })
 
     test('opening a post and switching language do not replay it; a reload does', async ({
@@ -176,5 +177,20 @@ test.describe('with reduced motion', () => {
 
         expect(texts[0]).toBe(BRAND)
         expect(texts.filter((text) => HAS_CYRILLIC.test(text))).toEqual([])
+    })
+})
+
+test.describe('without JavaScript', () => {
+    test.use({ javaScriptEnabled: false, reducedMotion: 'no-preference' })
+
+    test(`the wordmark reads "${BRAND}" with no Cyrillic frame`, async ({
+        page,
+    }) => {
+        await page.goto('/de')
+
+        await expect(
+            wordmark(page).getByText(BRAND, { exact: true })
+        ).toBeVisible()
+        await expect(page.locator('[data-wordmark-typing]')).toBeHidden()
     })
 })

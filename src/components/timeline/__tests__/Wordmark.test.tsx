@@ -21,10 +21,13 @@ afterEach(() => {
 })
 
 describe('Wordmark', () => {
-    it('is named by the Latin name while it reads «линия»', () => {
-        render(<Wordmark />, renderOptions)
+    it('is hidden from assistive tech, which reads the site heading instead', () => {
+        const { container } = render(<Wordmark />, renderOptions)
 
-        expect(screen.getByRole('img', { name: APP_NAME })).toBeVisible()
+        expect(container.querySelector('[data-wordmark]')).toHaveAttribute(
+            'aria-hidden',
+            'true'
+        )
     })
 
     it('carries the name, hidden while motion is allowed, beside the «линия» frame with a caret', () => {

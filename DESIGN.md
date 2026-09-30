@@ -52,7 +52,8 @@ Latin once per full page load (§ Motion): л→l, и→i, н→n, и→i, я→
 
 - The server HTML holds both the name and the «линия» frame; `motion-safe` hides the name and `motion-reduce` hides the frame, so the first
   paint is correct before any script runs. With reduced motion the Cyrillic never shows.
-- The accessible name is always liniya (`role="img"`, `aria-label`); both visual layers are `aria-hidden`.
+- Without JavaScript a `<noscript>` style shows the name and hides the frame.
+- The wordmark is decoration (`aria-hidden`): the sr-only `<h1>` names the site, so assistive tech never meets the Cyrillic.
 - `min-w-wordmark` (`--container-wordmark`, 3.1875 rem = 51 px) reserves the width of «линия», the widest frame (50.7 px measured in Google
   Sans 500 at `text-label-lg` / `tracking-wordmark`; liniya is 45 px), so the language switch never moves.
 - A client navigation (opening a post, switching language) does not replay it: the start time is kept per document.

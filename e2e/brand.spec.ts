@@ -25,7 +25,7 @@ for (const { path, title } of PAGES) {
 
         await expect(page).toHaveTitle(title)
         await expect(
-            timelineRegion(page).getByRole('img', { name: BRAND })
+            timelineRegion(page).getByText(BRAND, { exact: true })
         ).toBeVisible()
     })
 }
