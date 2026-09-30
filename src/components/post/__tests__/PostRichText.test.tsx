@@ -1,5 +1,6 @@
 import type { PostBody } from '@/lib/richText'
 import { paragraphsToLexical } from '@/lib/richText'
+import type { Media } from '@/payload-types'
 import { expectNoAxeViolations } from '@/test/axe'
 import { render, screen, within } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
@@ -35,6 +36,64 @@ function withLink(fields: Record<string, unknown>): PostBody {
             ],
         },
     }
+}
+
+const ZAR: Media = {
+    id: 3,
+    url: '/api/media/file/zar.png',
+    width: 3200,
+    height: 2000,
+    alt: 'Zar Nikolaus II. in Uniform',
+    caption: 'Der Zar 1913',
+    credit: 'Wikimedia Commons',
+    sizes: {
+        w480: {
+            url: '/api/media/file/zar-480x300.png',
+            width: 480,
+            height: 300,
+        },
+        w960: {
+            url: '/api/media/file/zar-960x600.png',
+            width: 960,
+            height: 600,
+        },
+        w1600: {
+            url: '/api/media/file/zar-1600x1000.png',
+            width: 1600,
+            height: 1000,
+        },
+    },
+    updatedAt: '',
+    createdAt: '',
+}
+
+function withImage(value: Media | number): PostBody {
+    return {
+        root: {
+            ...everyFormat.root,
+            children: [
+                {
+                    type: 'upload',
+                    version: 3,
+                    format: '',
+                    id: 'node-1',
+                    relationTo: 'media',
+                    value,
+                    fields: {},
+                },
+            ],
+        },
+    }
+}
+
+function srcsetOf(image: HTMLElement) {
+    return image
+        .getAttribute('srcset')!
+        .split(', ')
+        .map((candidate) => {
+            const [url, descriptor] = candidate.split(' ')
+            return { url, width: parseInt(descriptor!, 10) }
+        })
 }
 
 describe('PostRichText', () => {
@@ -117,8 +176,64 @@ describe('PostRichText', () => {
         expect(screen.getByText('Ein Zitat.').tagName).toBe('BLOCKQUOTE')
     })
 
+    it('renders an image as a figure at its largest copy, sized to the reading column', () => {
+        const body = withImage(ZAR)
+        render(<PostRichText body={body} />)
+        const image = screen.getByRole('img', { name: ZAR.alt! })
+        expect(image.closest('figure')).not.toBeNull()
+        expect(image).toHaveAttribute('width', '1600')
+        expect(image).toHaveAttribute('height', '1000')
+        expect(image).toHaveAttribute(
+            'sizes',
+            '(min-width: 45.25rem) 41.25rem, calc(100vw - 4rem)'
+        )
+    })
+
+    it("fills the srcset from Payload's copies only", () => {
+        const body = withImage(ZAR)
+        render(<PostRichText body={body} />)
+        const urls = srcsetOf(screen.getByRole('img')).map(({ url }) => url)
+        const copyUrls = Object.values(ZAR.sizes!).map((copy) => copy!.url)
+        expect(urls.length).toBeGreaterThan(1)
+        expect(urls.every((url) => copyUrls.includes(url))).toBe(true)
+    })
+
+    it('captions an image with its caption and source credit', () => {
+        const body = withImage(ZAR)
+        render(<PostRichText body={body} />)
+        const figure = screen.getByRole('figure')
+        expect(within(figure).getByText('Der Zar 1913')).toBeInTheDocument()
+        expect(within(figure).getByText('Wikimedia Commons')).toHaveClass(
+            'small-caps'
+        )
+        expect(figure.querySelector('figcaption')).toHaveClass(
+            'text-meta',
+            'text-fg-muted'
+        )
+    })
+
+    it('leaves out the caption of an image without caption and credit', () => {
+        const body = withImage({ ...ZAR, caption: null, credit: null })
+        render(<PostRichText body={body} />)
+        expect(
+            screen.getByRole('figure').querySelector('figcaption')
+        ).toBeNull()
+    })
+
+    it('leaves out an image that was deleted', () => {
+        const body = withImage(3)
+        const { container } = render(<PostRichText body={body} />)
+        expect(container).toBeEmptyDOMElement()
+    })
+
     it('has no detectable accessibility violations', async () => {
-        const { container } = render(<PostRichText body={everyFormat} />)
+        const bodyWithImage = withImage(ZAR)
+        const { container } = render(
+            <>
+                <PostRichText body={everyFormat} />
+                <PostRichText body={bodyWithImage} />
+            </>
+        )
         await expectNoAxeViolations(container)
     })
 })

@@ -69,7 +69,8 @@ function findPost(id: number, locale: Locale) {
             overrideAccess: true,
             locale,
             fallbackLocale: DEFAULT_LOCALE,
-            depth: 0,
+            select: { body: true },
+            depth: 1,
             limit: 1,
             pagination: false,
         })

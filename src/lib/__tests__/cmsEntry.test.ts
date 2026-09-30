@@ -140,8 +140,53 @@ describe('CmsPost', () => {
         expect(decodePost(post).body).toEqual(body)
     })
 
+    it('keeps an image in the body, populated or left as the id of a deleted one', () => {
+        const media = {
+            id: 3,
+            url: '/api/media/file/zar.png',
+            width: 1200,
+            height: 800,
+            alt: 'Der Zar',
+            caption: null,
+            credit: 'Wikimedia Commons',
+            sizes: {
+                w480: { url: '/api/media/file/zar-480x320.png', width: 480 },
+                w1600: { url: '/api/media/file/zar.png' },
+            },
+            updatedAt: '',
+            createdAt: '',
+        }
+        const body = withRootChildren([uploadNode(media), uploadNode(4)])
+        const post = { id: 1, body }
+        expect(decodePost(post).body).toEqual(body)
+    })
+
+    it('rejects an image without its dimensions', () => {
+        const media = { id: 3, url: '/api/media/file/zar.png' }
+        const body = withRootChildren([uploadNode(media)])
+        const post = { id: 1, body }
+        expect(() => decodePost(post)).toThrow()
+    })
+
     it('rejects a post without a body', () => {
         const post = { id: 1 }
         expect(() => decodePost(post)).toThrow()
     })
 })
+
+function uploadNode(value: unknown) {
+    return {
+        type: 'upload',
+        version: 3,
+        format: '',
+        id: 'node-1',
+        relationTo: 'media',
+        value,
+        fields: null,
+    }
+}
+
+function withRootChildren(children: unknown[]) {
+    const { root } = paragraphsToLexical('Ein Absatz.')
+    return { root: { ...root, children: [...root.children, ...children] } }
+}

@@ -3,6 +3,7 @@ import * as migration_20260929_072911_entries from './20260929_072911_entries'
 import * as migration_20260929_081446_posts from './20260929_081446_posts'
 import * as migration_20260929_090007_invite_editors from './20260929_090007_invite_editors'
 import * as migration_20260929_095427_entry_languages from './20260929_095427_entry_languages'
+import * as migration_20260930_064021_media from './20260930_064021_media'
 
 export const migrations = [
     {
@@ -29,5 +30,10 @@ export const migrations = [
         up: migration_20260929_095427_entry_languages.up,
         down: migration_20260929_095427_entry_languages.down,
         name: '20260929_095427_entry_languages',
+    },
+    {
+        up: migration_20260930_064021_media.up,
+        down: migration_20260930_064021_media.down,
+        name: '20260930_064021_media',
     },
 ]

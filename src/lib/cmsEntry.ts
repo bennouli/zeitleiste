@@ -10,11 +10,54 @@ const LexicalNode = Schema.StructWithRest(
     [Schema.Record(Schema.String, Schema.Unknown)]
 )
 
+const CmsImageSize = Schema.Struct({
+    url: OptionalString,
+    width: OptionalNumber,
+    height: OptionalNumber,
+})
+
+/** An image as the Local API populates it into a post's upload node, texts in the locale read. */
+const CmsMedia = Schema.StructWithRest(
+    Schema.Struct({
+        id: Id,
+        url: Schema.NonEmptyString,
+        width: Schema.Number,
+        height: Schema.Number,
+        alt: OptionalString,
+        caption: OptionalString,
+        credit: OptionalString,
+        sizes: Schema.optional(Schema.Record(Schema.String, CmsImageSize)),
+        updatedAt: Schema.String,
+        createdAt: Schema.String,
+    }),
+    [Schema.Record(Schema.String, Schema.Unknown)]
+)
+
+/** An image in a post; a deleted image leaves its id behind. */
+const CmsUploadNode = Schema.StructWithRest(
+    Schema.Struct({
+        type: Schema.Literal('upload'),
+        version: Schema.Number,
+        id: Schema.String,
+        relationTo: Schema.Literal('media'),
+        value: Schema.Union([Id, CmsMedia]),
+    }),
+    [Schema.Record(Schema.String, Schema.Unknown)]
+)
+
+const NonUploadNode = LexicalNode.check(
+    Schema.makeFilter(
+        (node) => node.type !== 'upload' || 'Expected a well-formed image'
+    )
+)
+
 const CmsPostBody = Schema.StructWithRest(
     Schema.Struct({
         root: Schema.Struct({
             type: Schema.String,
-            children: Schema.mutable(Schema.Array(LexicalNode)),
+            children: Schema.mutable(
+                Schema.Array(Schema.Union([CmsUploadNode, NonUploadNode]))
+            ),
             direction: Schema.NullOr(Schema.Literals(['ltr', 'rtl'])),
             format: Schema.Literals([
                 'left',
