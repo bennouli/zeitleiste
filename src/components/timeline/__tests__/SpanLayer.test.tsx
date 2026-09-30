@@ -3,6 +3,7 @@ import { isSpan, type Entry } from '@/lib/entry'
 import { paragraphsToLexical } from '@/lib/richText'
 import { startOf } from '@/lib/time'
 import { expectNoAxeViolations } from '@/test/axe'
+import { stubFocusVisible } from '@/test/focus'
 import { act, fireEvent, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
@@ -199,6 +200,7 @@ describe('SpanLayer', () => {
         const single = [withoutPost]
         renderLayer({ spans: single })
         const bar = screen.getByRole('group', { name: /Ohne Beitrag/ })
+        stubFocusVisible(bar)
         act(() => bar.focus())
         expect(screen.getByRole('tooltip')).toBeInTheDocument()
         act(() => bar.blur())

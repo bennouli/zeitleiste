@@ -7,6 +7,7 @@ import {
 } from '@/lib/viewport'
 import { expectNoAxeViolations } from '@/test/axe'
 import { sampleEntry } from '@/test/entries'
+import { stubFocusVisible } from '@/test/focus'
 import { stubReducedMotion } from '@/test/motion'
 import {
     act,
@@ -584,15 +585,6 @@ describe('Timeline', () => {
             ].filter((el) => !el.closest('[inert]'))
         const tOf = (el: HTMLElement) =>
             Number(el.closest<HTMLElement>('[data-t]')!.dataset.t)
-        // jsdom never treats programmatic focus as :focus-visible (keyboard focus).
-        const asKeyboardFocus = (el: HTMLElement) =>
-            vi
-                .spyOn(el, 'matches')
-                .mockImplementation(
-                    (sel) =>
-                        sel === ':focus-visible' ||
-                        Element.prototype.matches.call(el, sel)
-                )
 
         it('renders every entry, spans too, off-screen ones too, in chronological DOM order', () => {
             const { container } = renderTimeline()
@@ -655,7 +647,7 @@ describe('Timeline', () => {
             vi.spyOn(target, 'getBoundingClientRect').mockReturnValue(
                 new DOMRect(-500, 100, 176, 56)
             )
-            asKeyboardFocus(target)
+            stubFocusVisible(target)
             act(() => target.focus())
             const after = view(region)
             // Moved right by 516 px: the card's left edge lands on the 16 px margin.
@@ -680,7 +672,7 @@ describe('Timeline', () => {
             vi.spyOn(target, 'getBoundingClientRect').mockReturnValue(
                 new DOMRect(300, 100, 176, 56)
             )
-            asKeyboardFocus(target)
+            stubFocusVisible(target)
             act(() => target.focus())
             expect(view(region)).toEqual(before)
         })

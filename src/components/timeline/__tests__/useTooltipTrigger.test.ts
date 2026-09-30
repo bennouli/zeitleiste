@@ -1,3 +1,4 @@
+import { stubFocusVisible } from '@/test/focus'
 import { act, renderHook } from '@testing-library/react'
 import type { FocusEvent, PointerEvent } from 'react'
 import { afterEach, describe, expect, it } from 'vitest'
@@ -19,8 +20,14 @@ function pointerAt(timeStamp: number, pointerType = 'mouse') {
     return { timeStamp, pointerType } as PointerEvent
 }
 
-function focusAt(timeStamp: number) {
-    return { timeStamp } as FocusEvent
+function triggerElement(focusVisible = true) {
+    const button = document.createElement('button')
+    stubFocusVisible(button, focusVisible)
+    return button
+}
+
+function focusAt(timeStamp: number, currentTarget = triggerElement()) {
+    return { timeStamp, currentTarget } as Partial<FocusEvent> as FocusEvent
 }
 
 function pressEscape(
@@ -53,6 +60,14 @@ describe('useTooltipTrigger', () => {
         const keyboardFocus = focusAt(KEYBOARD_FOCUS_AT_MS)
         act(() => result.current.triggerProps.onFocus(keyboardFocus))
         expect(result.current.open).toBe(true)
+    })
+
+    it('ignores a focus that shows no keyboard focus, as one handed on after a click', () => {
+        const { result } = renderTrigger()
+        const clickedTrigger = triggerElement(false)
+        const handedOnFocus = focusAt(KEYBOARD_FOCUS_AT_MS, clickedTrigger)
+        act(() => result.current.triggerProps.onFocus(handedOnFocus))
+        expect(result.current.open).toBe(false)
     })
 
     it('ignores a focus caused by a press', () => {
