@@ -155,9 +155,12 @@ export function wheelIntent(sample: WheelSample, pagePx: number): WheelIntent {
     const deltaX = finiteOr(sample.deltaX, 0) * pxPerUnit
     const deltaY = finiteOr(sample.deltaY, 0) * pxPerUnit
     const isHorizontal = Math.abs(deltaX) > Math.abs(deltaY)
-    if (!sample.shiftKey && !isHorizontal)
-        return { type: 'zoom', deltaPx: deltaY }
-    return { type: 'pan', contentShiftPx: -(isHorizontal ? deltaX : deltaY) }
+    if (sample.shiftKey || isHorizontal)
+        return {
+            type: 'pan',
+            contentShiftPx: -(isHorizontal ? deltaX : deltaY),
+        }
+    return { type: 'zoom', deltaPx: deltaY }
 }
 
 function dropStalePress(
