@@ -1,6 +1,7 @@
 import type { Entry } from '@/lib/entry'
 import type { PostBody } from '@/lib/richText'
 import type { Entry as EntryDocument, Tag } from '@/payload-types'
+import { Schema } from 'effect'
 
 type EntryFields = Pick<
     EntryDocument,
@@ -72,6 +73,45 @@ export function missingKeys(
     return keys.filter((key) => !storedIds.has(key))
 }
 
-export function acceptsSeed(storedEntryCount: number): boolean {
-    return storedEntryCount === 0
+export function acceptsSeed(storedCount: number): boolean {
+    return storedCount === 0
+}
+
+const VERCEL_ENVS = ['production', 'preview', 'development'] as const
+type VercelEnv = (typeof VERCEL_ENVS)[number]
+
+const isVercelEnv = (value: string): value is VercelEnv =>
+    VERCEL_ENVS.some((vercelEnv) => vercelEnv === value)
+
+const VercelEnv = Schema.String.check(
+    Schema.makeFilter(
+        (value) =>
+            isVercelEnv(value) ||
+            `Expected "production", "preview" or "development", got "${value}"`
+    )
+).pipe(Schema.refine(isVercelEnv))
+
+const isVercelBuild = (vercel: string | undefined) =>
+    vercel !== undefined && vercel.trim() !== ''
+
+const SeedEnv = Schema.Struct({
+    VERCEL: Schema.optional(Schema.String),
+    VERCEL_ENV: Schema.optional(VercelEnv),
+}).check(
+    Schema.makeFilter(
+        ({ VERCEL, VERCEL_ENV }) =>
+            !isVercelBuild(VERCEL) ||
+            VERCEL_ENV !== undefined || {
+                path: ['VERCEL_ENV'],
+                issue: 'Missing on a Vercel build (VERCEL is set); the seed cannot tell production from preview',
+            }
+    )
+)
+
+export const decodeSeedEnv = Schema.decodeUnknownEffect(SeedEnv)
+
+type SeedScope = 'tags' | 'sample content'
+
+export function seedScopeOf(vercelEnv: VercelEnv | undefined): SeedScope {
+    return vercelEnv === 'production' ? 'tags' : 'sample content'
 }

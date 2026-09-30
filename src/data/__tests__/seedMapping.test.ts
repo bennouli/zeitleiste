@@ -1,10 +1,13 @@
 import type { Entry, HDate } from '@/lib/entry'
+import { Effect } from 'effect'
 import { describe, expect, it } from 'vitest'
 import { entries } from '../entries'
 import {
     acceptsSeed,
+    decodeSeedEnv,
     missingKeys,
     seedEntryOf,
+    seedScopeOf,
     tagKindOf,
     tagNamesOf,
     type SeedEntry,
@@ -192,15 +195,96 @@ describe('missingKeys', () => {
 })
 
 describe('acceptsSeed', () => {
-    it('seeds an empty entries collection', () => {
-        const storedEntryCount = 0
+    it('seeds an empty collection', () => {
+        const storedCount = 0
 
-        expect(acceptsSeed(storedEntryCount)).toBe(true)
+        expect(acceptsSeed(storedCount)).toBe(true)
     })
 
-    it('leaves a collection with any entry alone', () => {
-        const storedEntryCount = 1
+    it('leaves a collection with any document alone', () => {
+        const storedCount = 1
 
-        expect(acceptsSeed(storedEntryCount)).toBe(false)
+        expect(acceptsSeed(storedCount)).toBe(false)
     })
+})
+
+describe('the sample tags', () => {
+    it('are 15 actors and 3 places', () => {
+        const seedEntries = entries.map(seedEntryOf)
+
+        const tagNames = tagNamesOf(seedEntries)
+
+        expect(
+            tagNames.filter((name) => tagKindOf(name) === 'actor')
+        ).toHaveLength(15)
+        expect(tagNames.filter((name) => tagKindOf(name) === 'place')).toEqual([
+            'Sankt Petersburg',
+            'Berlin',
+            'Krim',
+        ])
+    })
+})
+
+function seedScopeOfEnv(env: Record<string, string>) {
+    return Effect.runPromise(
+        decodeSeedEnv(env).pipe(
+            Effect.map(({ VERCEL_ENV }) => seedScopeOf(VERCEL_ENV))
+        )
+    )
+}
+
+describe('decodeSeedEnv', () => {
+    it.each(['production', 'preview', 'development'])(
+        'reads VERCEL_ENV=%s',
+        async (vercelEnv) => {
+            const env = { VERCEL: '1', VERCEL_ENV: vercelEnv }
+
+            await expect(
+                Effect.runPromise(decodeSeedEnv(env))
+            ).resolves.toMatchObject({ VERCEL_ENV: vercelEnv })
+        }
+    )
+
+    it('seeds only the tags on a Vercel production build', async () => {
+        const env = { VERCEL: '1', VERCEL_ENV: 'production' }
+
+        await expect(seedScopeOfEnv(env)).resolves.toBe('tags')
+    })
+
+    it('seeds the sample content on a local run, without VERCEL or VERCEL_ENV', async () => {
+        const env = {}
+
+        await expect(seedScopeOfEnv(env)).resolves.toBe('sample content')
+    })
+
+    it('fails a Vercel build without VERCEL_ENV, naming the variable', async () => {
+        const env = { VERCEL: '1' }
+
+        await expect(seedScopeOfEnv(env)).rejects.toThrow(
+            /Missing on a Vercel build[\s\S]*VERCEL_ENV/
+        )
+    })
+
+    it('fails on an unknown VERCEL_ENV, naming the value', async () => {
+        const env = { VERCEL: '1', VERCEL_ENV: 'staging' }
+
+        await expect(seedScopeOfEnv(env)).rejects.toThrow(
+            /got "staging"[\s\S]*VERCEL_ENV/
+        )
+    })
+})
+
+describe('seedScopeOf', () => {
+    it('seeds only the tags on production', () => {
+        const vercelEnv = 'production'
+
+        expect(seedScopeOf(vercelEnv)).toBe('tags')
+    })
+
+    it.each(['preview', 'development', undefined] as const)(
+        'seeds the sample content on VERCEL_ENV=%s',
+        (vercelEnv) => {
+            expect(seedScopeOf(vercelEnv)).toBe('sample content')
+        }
+    )
 })

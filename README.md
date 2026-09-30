@@ -74,6 +74,11 @@ Build Command is `pnpm run ci`.
 `pnpm run ci` runs it after the migrations, so a fresh database receives the sample content once, and an entry deleted or re-slugged in the
 admin never comes back.
 
+On production (`VERCEL_ENV=production`) the seed creates only the 18 sample tags, and only while the tags collection is empty; entries and
+posts there are the owner's. Preview deployments and local runs (`VERCEL_ENV` `preview`, `development` or unset) get the full sample
+content. Any other `VERCEL_ENV` fails the seed, and so does a Vercel build (`VERCEL` set) without one. `NODE_ENV` cannot tell the two apart:
+`pnpm seed` sets it to `production` everywhere.
+
 ### Changing the schema
 
 1. Edit the collection under `src/collections/`.

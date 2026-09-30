@@ -4,8 +4,10 @@ import { getPayload, type Payload, type PayloadRequest } from 'payload'
 import { entries } from './entries'
 import {
     acceptsSeed,
+    decodeSeedEnv,
     missingKeys,
     seedEntryOf,
+    seedScopeOf,
     tagKindOf,
     tagNamesOf,
     type SeedEntry,
@@ -31,6 +33,7 @@ type IdByKey = ReadonlyMap<string, number>
 
 const LOCALE = 'de'
 const NOTHING_SEEDED = 'entries present, nothing seeded'
+const NO_TAGS_SEEDED = 'production: tags present, nothing seeded'
 
 function payloadCall<A>(operation: string, run: () => Promise<A>) {
     return Effect.tryPromise({
@@ -77,10 +80,27 @@ const seedSampleContent = Effect.fn('seedSampleContent')(function* (
         new Map([...storedEntryIds, ...createdEntryIds])
     )
     return [
+        'sample content: tags, entries and posts',
         `tags: ${missingTagNames.length} created, ${tagNames.length - missingTagNames.length} skipped`,
         `entries: ${newEntries.length} created, ${seedEntries.length - newEntries.length} skipped`,
         `posts: ${newEntries.filter((e) => e.postBody !== undefined).length} created`,
         `partOf links: ${partOfLinks} set`,
+    ].join('\n')
+})
+
+const seedTags = Effect.fn('seedTags')(function* (
+    payload: Payload,
+    req: Transaction
+) {
+    const storedTags = yield* payloadCall('count tags', () =>
+        payload.count({ collection: 'tags', req })
+    )
+    if (!acceptsSeed(storedTags.totalDocs)) return NO_TAGS_SEEDED
+    const tagNames = tagNamesOf(entries.map(seedEntryOf))
+    yield* Effect.forEach(tagNames, (name) => createTag(payload, req, name))
+    return [
+        'production: tags only, entries and posts are the owner’s',
+        `tags: ${tagNames.length} created`,
     ].join('\n')
 })
 
@@ -267,11 +287,14 @@ function inTransaction<A, E>(
 }
 
 const seed = Effect.gen(function* () {
+    const { VERCEL_ENV } = yield* decodeSeedEnv(process.env)
     const payload = yield* payloadCall('start payload', () =>
         getPayload({ config })
     )
     const summary = yield* inTransaction(payload, (req) =>
-        seedSampleContent(payload, req)
+        seedScopeOf(VERCEL_ENV) === 'tags'
+            ? seedTags(payload, req)
+            : seedSampleContent(payload, req)
     )
     yield* Console.log(summary)
 })
