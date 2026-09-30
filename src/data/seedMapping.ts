@@ -77,10 +77,36 @@ export function acceptsSeed(storedCount: number): boolean {
     return storedCount === 0
 }
 
-const VercelEnv = Schema.Literals(['production', 'preview', 'development'])
-type VercelEnv = typeof VercelEnv.Type
+const VERCEL_ENVS = ['production', 'preview', 'development'] as const
+type VercelEnv = (typeof VERCEL_ENVS)[number]
 
-const SeedEnv = Schema.Struct({ VERCEL_ENV: Schema.optional(VercelEnv) })
+const isVercelEnv = (value: string): value is VercelEnv =>
+    VERCEL_ENVS.some((vercelEnv) => vercelEnv === value)
+
+const VercelEnv = Schema.String.check(
+    Schema.makeFilter(
+        (value) =>
+            isVercelEnv(value) ||
+            `Expected "production", "preview" or "development", got "${value}"`
+    )
+).pipe(Schema.refine(isVercelEnv))
+
+const isVercelBuild = (vercel: string | undefined) =>
+    vercel !== undefined && vercel.trim() !== ''
+
+const SeedEnv = Schema.Struct({
+    VERCEL: Schema.optional(Schema.String),
+    VERCEL_ENV: Schema.optional(VercelEnv),
+}).check(
+    Schema.makeFilter(
+        ({ VERCEL, VERCEL_ENV }) =>
+            !isVercelBuild(VERCEL) ||
+            VERCEL_ENV !== undefined || {
+                path: ['VERCEL_ENV'],
+                issue: 'Missing on a Vercel build (VERCEL is set); the seed cannot tell production from preview',
+            }
+    )
+)
 
 export const decodeSeedEnv = Schema.decodeUnknownEffect(SeedEnv)
 

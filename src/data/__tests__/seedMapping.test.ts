@@ -225,11 +225,19 @@ describe('the sample tags', () => {
     })
 })
 
+function seedScopeOfEnv(env: Record<string, string>) {
+    return Effect.runPromise(
+        decodeSeedEnv(env).pipe(
+            Effect.map(({ VERCEL_ENV }) => seedScopeOf(VERCEL_ENV))
+        )
+    )
+}
+
 describe('decodeSeedEnv', () => {
     it.each(['production', 'preview', 'development'])(
         'reads VERCEL_ENV=%s',
         async (vercelEnv) => {
-            const env = { VERCEL_ENV: vercelEnv }
+            const env = { VERCEL: '1', VERCEL_ENV: vercelEnv }
 
             await expect(
                 Effect.runPromise(decodeSeedEnv(env))
@@ -237,19 +245,31 @@ describe('decodeSeedEnv', () => {
         }
     )
 
-    it('reads an unset VERCEL_ENV as a local run', async () => {
-        const env = {}
+    it('seeds only the tags on a Vercel production build', async () => {
+        const env = { VERCEL: '1', VERCEL_ENV: 'production' }
 
-        const seedEnv = await Effect.runPromise(decodeSeedEnv(env))
-
-        expect(seedEnv.VERCEL_ENV).toBeUndefined()
+        await expect(seedScopeOfEnv(env)).resolves.toBe('tags')
     })
 
-    it('fails on an unknown VERCEL_ENV, naming the variable', async () => {
-        const env = { VERCEL_ENV: 'staging' }
+    it('seeds the sample content on a local run, without VERCEL or VERCEL_ENV', async () => {
+        const env = {}
 
-        await expect(Effect.runPromise(decodeSeedEnv(env))).rejects.toThrow(
-            /VERCEL_ENV/
+        await expect(seedScopeOfEnv(env)).resolves.toBe('sample content')
+    })
+
+    it('fails a Vercel build without VERCEL_ENV, naming the variable', async () => {
+        const env = { VERCEL: '1' }
+
+        await expect(seedScopeOfEnv(env)).rejects.toThrow(
+            /Missing on a Vercel build[\s\S]*VERCEL_ENV/
+        )
+    })
+
+    it('fails on an unknown VERCEL_ENV, naming the value', async () => {
+        const env = { VERCEL: '1', VERCEL_ENV: 'staging' }
+
+        await expect(seedScopeOfEnv(env)).rejects.toThrow(
+            /got "staging"[\s\S]*VERCEL_ENV/
         )
     })
 })
