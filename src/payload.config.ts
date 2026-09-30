@@ -4,8 +4,10 @@ import { lexicalEditor } from '@payloadcms/richtext-lexical'
 import { Schema } from 'effect'
 import path from 'path'
 import { buildConfig } from 'payload'
+import sharp from 'sharp'
 import { fileURLToPath } from 'url'
 import { Entries } from './collections/Entries'
+import { mediaCollection } from './collections/Media'
 import { Posts } from './collections/Posts'
 import { Subjects } from './collections/Subjects'
 import { Tags } from './collections/Tags'
@@ -13,6 +15,7 @@ import { Users } from './collections/Users'
 import { deploymentOrigins } from './deployment'
 import { emailAdapter } from './email'
 import { DEFAULT_LOCALE } from './i18n/locales'
+import { blobStoragePlugin, mediaStorage } from './storage'
 
 const PayloadEnv = Schema.Struct({
     DATABASE_URL: Schema.NonEmptyString,
@@ -21,6 +24,7 @@ const PayloadEnv = Schema.Struct({
 
 const payloadEnv = Schema.decodeUnknownSync(PayloadEnv)(process.env)
 const { serverURL, cookieOrigins } = deploymentOrigins(process.env)
+const storage = mediaStorage(process.env)
 const dirname = path.dirname(fileURLToPath(import.meta.url))
 
 export default buildConfig({
@@ -33,7 +37,14 @@ export default buildConfig({
             baseDir: path.resolve(dirname),
         },
     },
-    collections: [Users, Entries, Posts, Subjects, Tags],
+    collections: [
+        Users,
+        Entries,
+        Posts,
+        Subjects,
+        Tags,
+        mediaCollection(storage),
+    ],
     localization: {
         locales: [
             { code: 'de', label: 'Deutsch' },
@@ -48,6 +59,8 @@ export default buildConfig({
     typescript: {
         outputFile: path.resolve(dirname, 'payload-types.ts'),
     },
+    plugins: [blobStoragePlugin(storage)],
+    sharp,
     db: postgresAdapter({
         pool: {
             connectionString: payloadEnv.DATABASE_URL,

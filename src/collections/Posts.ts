@@ -10,6 +10,7 @@ import {
     OrderedListFeature,
     ParagraphFeature,
     UnorderedListFeature,
+    UploadFeature,
 } from '@payloadcms/richtext-lexical'
 import type { CollectionConfig } from 'payload'
 import { richText } from 'payload/shared'
@@ -26,6 +27,7 @@ const postEditor = lexicalEditor({
         OrderedListFeature(),
         LinkFeature({ enabledCollections: [] }),
         BlockquoteFeature(),
+        UploadFeature({ enabledCollections: ['media'], maxDepth: 1 }),
         FixedToolbarFeature(),
         InlineToolbarFeature(),
     ],

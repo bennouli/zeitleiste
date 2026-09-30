@@ -36,6 +36,13 @@ Links in these emails start with `SERVER_URL`. Unset, it is `https://$VERCEL_PRO
 `https://$VERCEL_URL` in previews and `http://localhost:3000` locally. Payload accepts login cookies only from that origin (and, on Vercel,
 from the deployment and branch URLs), so a dev server on another port needs `SERVER_URL=http://localhost:<port>`.
 
+### Images
+
+Images in posts are uploaded under `/admin` → Bilder: JPEG, PNG, WebP or AVIF, with alt text (required in German), a caption and a source
+credit. Payload stores each upload with copies 480, 960 and 1600 px wide. Locally the files land in `media/` (gitignored). On Vercel they go
+to Vercel Blob when `BLOB_READ_WRITE_TOKEN` is set, straight from the browser, which avoids the 4.5 MB limit on requests to a Vercel
+function; without the token, uploads are refused there, since the function's disk does not keep them.
+
 ### Accounts
 
 Admins invite editors in `/admin` → Benutzer → create: email, role and a throwaway password (the create form requires one; nobody can log in
@@ -103,9 +110,11 @@ repository (`pnpm run ci`: migrations, then the one-off seed, then `next build`)
 | `SMTP_HOST` … `SMTP_PASS` | Scaleway                   | Scaleway               | § Email               |
 | `EMAIL_FROM`              | optional                   | optional               | § Email               |
 | `SERVER_URL`              | optional (own domain only) | unset                  | § Email               |
+| `BLOB_READ_WRITE_TOKEN`   | set by the Blob store      | set by the Blob store  | § Images              |
 
-Mark `DATABASE_URL`, `PAYLOAD_SECRET` and `SMTP_PASS` as sensitive. Nothing is set for the Development environment: local machines use
-`.env.local`.
+`BLOB_READ_WRITE_TOKEN` appears once a Blob store is connected to the project: Vercel → Storage → Create → Blob, then connect it to the
+project for Production and Preview. Mark `DATABASE_URL`, `PAYLOAD_SECRET` and `SMTP_PASS` as sensitive. Nothing is set for the Development
+environment: local machines use `.env.local`.
 
 The first deploy after a schema change applies the migration to that environment's branch during the build. A failed build leaves the
 previous deployment serving; fix forward, never edit a migration that a branch has already applied.

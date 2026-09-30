@@ -18,6 +18,9 @@ coverage/
 .DS_Store
 *.log
 
+# uploads stored on the local disk (no Blob store configured)
+/media/
+
 # misc
 *.pem
 .pnp
