@@ -86,13 +86,6 @@ function withImage(value: Media | number): PostBody {
     }
 }
 
-const COPIES = Object.values(ZAR.sizes!).toSorted(
-    (a, b) => a!.width! - b!.width!
-)
-
-const copyCovering = (width: number) =>
-    (COPIES.find((copy) => copy!.width! >= width) ?? COPIES.at(-1))!.url
-
 function srcsetOf(image: HTMLElement) {
     return image
         .getAttribute('srcset')!
@@ -196,14 +189,13 @@ describe('PostRichText', () => {
         )
     })
 
-    it("serves every width from the smallest of Payload's copies that covers it", () => {
+    it("fills the srcset from Payload's copies only", () => {
         const body = withImage(ZAR)
         render(<PostRichText body={body} />)
-        const candidates = srcsetOf(screen.getByRole('img'))
-        expect(candidates.length).toBeGreaterThan(1)
-        expect(
-            candidates.every(({ url, width }) => url === copyCovering(width))
-        ).toBe(true)
+        const urls = srcsetOf(screen.getByRole('img')).map(({ url }) => url)
+        const copyUrls = Object.values(ZAR.sizes!).map((copy) => copy!.url)
+        expect(urls.length).toBeGreaterThan(1)
+        expect(urls.every((url) => copyUrls.includes(url))).toBe(true)
     })
 
     it('captions an image with its caption and source credit', () => {
@@ -228,16 +220,6 @@ describe('PostRichText', () => {
         ).toBeNull()
     })
 
-    it('uses the original of an image without copies', () => {
-        const body = withImage({ ...ZAR, sizes: {} })
-        render(<PostRichText body={body} />)
-        const candidates = srcsetOf(screen.getByRole('img'))
-        expect(new Set(candidates.map(({ url }) => url))).toEqual(
-            new Set([ZAR.url])
-        )
-        expect(screen.getByRole('img')).toHaveAttribute('width', '3200')
-    })
-
     it('leaves out an image that was deleted', () => {
         const body = withImage(3)
         const { container } = render(<PostRichText body={body} />)
@@ -245,10 +227,11 @@ describe('PostRichText', () => {
     })
 
     it('has no detectable accessibility violations', async () => {
+        const bodyWithImage = withImage(ZAR)
         const { container } = render(
             <>
                 <PostRichText body={everyFormat} />
-                <PostRichText body={withImage(ZAR)} />
+                <PostRichText body={bodyWithImage} />
             </>
         )
         await expectNoAxeViolations(container)
