@@ -17,8 +17,16 @@ const UNUSABLE =
     'Die Einladung ist abgelaufen oder wurde schon verwendet. Bitte um eine neue Einladung.'
 const ACCEPTED = 'Dein Passwort ist gespeichert. Du kannst dich jetzt anmelden.'
 const EIGHT_DAYS_MS = 8 * MS_PER_DAY
+const ENTRY = {
+    title: `E2E Bearbeitet ${RUN}`,
+    summary: 'Die Zusammenfassung vor der Bearbeitung.',
+    startYear: 1991,
+    type: 'event',
+    _status: 'draft',
+} as const
 
 let payload: Payload
+let entryId: number
 
 test.describe.configure({ mode: 'serial' })
 
@@ -33,9 +41,16 @@ test.beforeAll(async () => {
         collection: 'users',
         data: { ...EDITOR, role: 'editor', invitationAcceptedAt: acceptedAt },
     })
+    const entry = await payload.create({
+        collection: 'entries',
+        data: ENTRY,
+        draft: true,
+    })
+    entryId = entry.id
 })
 
 test.afterAll(async () => {
+    await payload.delete({ collection: 'entries', id: entryId })
     await payload.delete({
         collection: 'users',
         where: { email: { like: `-${RUN}@example.test` } },
@@ -97,7 +112,25 @@ async function setInvitationPassword(
     await page.getByRole('button', { name: 'Passwort festlegen' }).click()
 }
 
-test('an admin invites an editor, who sets a password through the link and logs in', async ({
+async function saveEntrySummary(page: Page, id: number, summary: string) {
+    await page.goto(`/admin/collections/entries/${id}`, {
+        waitUntil: 'networkidle',
+    })
+    await page.getByLabel('Zusammenfassung').fill(summary)
+    await page.getByRole('button', { name: 'Save Draft' }).click()
+}
+
+async function storedSummary(id: number) {
+    const entry = await payload.findByID({
+        collection: 'entries',
+        id,
+        draft: true,
+        locale: 'de',
+    })
+    return entry.summary
+}
+
+test('an admin invites an editor, who sets a password through the link, logs in and edits an entry', async ({
     page,
     browser,
     request,
@@ -133,6 +166,10 @@ test('an admin invites an editor, who sets a password through the link and logs 
 
     expect((await apiLogin(request, invitee)).status()).toBe(200)
     await adminLogin(inviteePage, invitee)
+
+    const editedSummary = 'Die Zusammenfassung nach der Bearbeitung.'
+    await saveEntrySummary(inviteePage, entryId, editedSummary)
+    await expect.poll(() => storedSummary(entryId)).toBe(editedSummary)
 
     await setInvitationPassword(inviteePage, token, 'another-pass-1')
     await expect(inviteePage.getByText(UNUSABLE)).toBeVisible()
