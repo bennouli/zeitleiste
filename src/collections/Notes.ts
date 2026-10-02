@@ -1,5 +1,5 @@
 import type { CollectionConfig, FieldHook } from 'payload'
-import { bodyEditor } from './bodyEditor'
+import { noteEditor } from './editors'
 import { loggedIn, ownerOnly } from './userAccess'
 
 const stampOwnerOnCreate: FieldHook = ({ operation, req, value }) =>
@@ -34,7 +34,7 @@ export const Notes: CollectionConfig = {
             type: 'richText',
             label: 'Text',
             required: true,
-            editor: bodyEditor,
+            editor: noteEditor,
         },
     ],
 }

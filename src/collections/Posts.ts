@@ -1,5 +1,5 @@
 import type { CollectionConfig } from 'payload'
-import { bodyEditor } from './bodyEditor'
+import { postEditor } from './editors'
 import { revalidatePostChange, revalidatePostDelete } from './revalidate'
 
 export const Posts: CollectionConfig = {
@@ -21,7 +21,7 @@ export const Posts: CollectionConfig = {
             type: 'richText',
             label: 'Text',
             required: true,
-            editor: bodyEditor,
+            editor: postEditor,
         },
         {
             name: 'entry',
