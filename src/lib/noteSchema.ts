@@ -8,11 +8,26 @@ export const NoteNode = Schema.StructWithRest(
 )
 export type NoteNode = typeof NoteNode.Type
 
+/** The blocks `noteEditor` allows at the top of a note; no uploads. */
+const NOTE_BLOCK_TYPES: ReadonlySet<string> = new Set([
+    'paragraph',
+    'heading',
+    'quote',
+    'list',
+])
+
+const onlyNoteBlocks = Schema.makeFilter(
+    (blocks: ReadonlyArray<NoteNode>) =>
+        blocks.every((block) => NOTE_BLOCK_TYPES.has(block.type)) ||
+        'a note holds paragraphs, headings, quotes and lists only',
+    { title: 'note blocks' }
+)
+
 /** A note's rich text in the format Payload stores and its converters render. */
 export const NoteBody = Schema.Struct({
     root: Schema.Struct({
         type: Schema.String,
-        children: Schema.mutable(Schema.Array(NoteNode)),
+        children: Schema.mutable(Schema.Array(NoteNode)).check(onlyNoteBlocks),
         direction: Schema.NullOr(Schema.Literals(['ltr', 'rtl'])),
         format: Schema.Literals([
             'left',

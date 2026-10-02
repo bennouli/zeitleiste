@@ -21,8 +21,7 @@ import {
     NOTE_TITLE_CLASS,
 } from './noteStyles'
 
-/** A note's title is its `h3`, so the body's headings sit one level lower. */
-const OUTLINE_TAG = {
+const DEMOTED_HEADING_TAG = {
     h1: 'h4',
     h2: 'h4',
     h3: 'h4',
@@ -52,7 +51,7 @@ const noteConverters: JSXConvertersFunction<DefaultNodeTypes> = ({
         <p>{nodesToJSX({ nodes: node.children })}</p>
     ),
     heading: ({ node, nodesToJSX }) => {
-        const Heading = OUTLINE_TAG[node.tag]
+        const Heading = DEMOTED_HEADING_TAG[node.tag]
         return (
             <Heading className={HEADING_CLASS[node.tag]}>
                 {nodesToJSX({ nodes: node.children })}

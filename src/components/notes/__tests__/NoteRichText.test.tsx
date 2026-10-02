@@ -2,7 +2,7 @@ import { render, screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 import type { NoteNode } from '../noteBody'
 import { NoteRichText } from '../NoteRichText'
-import { noteBody, paragraph, text } from './noteFixtures'
+import { heading, noteBody, paragraph, text } from './noteFixtures'
 
 function storedLink(url: string): NoteNode {
     return {
@@ -46,5 +46,21 @@ describe('NoteRichText', () => {
         expect(screen.getByText('fett').closest('em')).toHaveClass(
             'font-serif-italic'
         )
+    })
+
+    it('puts body headings below the note title’s h3', () => {
+        const body = noteBody(
+            heading('h3', text('Abschnitt')),
+            heading('h4', text('Unterabschnitt'))
+        )
+
+        render(<NoteRichText body={body} />)
+
+        expect(
+            screen.getByRole('heading', { name: 'Abschnitt' })
+        ).toHaveProperty('tagName', 'H4')
+        expect(
+            screen.getByRole('heading', { name: 'Unterabschnitt' })
+        ).toHaveProperty('tagName', 'H5')
     })
 })
