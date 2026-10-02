@@ -11,6 +11,7 @@ export function germanSlugField(source: string): Field {
     return slugField({
         useAsSlug: source,
         required: false,
+        disableUnique: true,
         slugify: ({ valueToSlugify }) => slugOf(valueToSlugify),
     })
 }

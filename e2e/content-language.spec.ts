@@ -2,6 +2,7 @@ import { expect, test } from '@playwright/test'
 import type { Payload } from 'payload'
 import { paragraphsToLexical } from '../src/lib/richText'
 import { localPayload } from './payload'
+import { readerId } from './reader'
 
 const RUN = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
 const QUIET = { disableRevalidate: true }
@@ -9,12 +10,14 @@ const QUIET = { disableRevalidate: true }
 type Created = { collection: 'entries' | 'posts'; id: number }
 
 let payload: Payload
+let owner: number
 const created: Created[] = []
 
 test.describe.configure({ mode: 'serial' })
 
 test.beforeAll(async () => {
     payload = await localPayload()
+    owner = await readerId(payload)
 })
 
 test.afterAll(async () => {
@@ -26,7 +29,7 @@ test.afterAll(async () => {
 test('a post reads the same under /de and /en', async ({ page }) => {
     const title = `Einsprachig ${RUN}`
     const bodyText = `Der einzige Text ${RUN}`
-    const postData = { body: paragraphsToLexical(bodyText) }
+    const postData = { owner, body: paragraphsToLexical(bodyText) }
     const post = await payload.create({
         collection: 'posts',
         data: postData,
@@ -34,6 +37,7 @@ test('a post reads the same under /de and /en', async ({ page }) => {
     })
     created.push({ collection: 'posts', id: post.id })
     const entryData = {
+        owner,
         title,
         summary: `Zusammenfassung ${RUN}`,
         startYear: 1995,

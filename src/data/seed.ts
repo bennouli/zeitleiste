@@ -33,6 +33,7 @@ type IdByKey = ReadonlyMap<string, number>
 
 const NOTHING_SEEDED = 'entries present, nothing seeded'
 const NO_TAGS_SEEDED = 'production: tags present, nothing seeded'
+const NO_OWNER = 'no admin account yet, nothing seeded'
 
 function payloadCall<A>(operation: string, run: () => Promise<A>) {
     return Effect.tryPromise({
@@ -43,7 +44,8 @@ function payloadCall<A>(operation: string, run: () => Promise<A>) {
 
 const seedSampleContent = Effect.fn('seedSampleContent')(function* (
     payload: Payload,
-    req: Transaction
+    req: Transaction,
+    owner: number
 ) {
     const storedEntries = yield* payloadCall('count entries', () =>
         payload.count({ collection: 'entries', req })
@@ -51,14 +53,14 @@ const seedSampleContent = Effect.fn('seedSampleContent')(function* (
     if (!acceptsSeed(storedEntries.totalDocs)) return NOTHING_SEEDED
     const seedEntries = entries.map(seedEntryOf)
     const tagNames = tagNamesOf(seedEntries)
-    const storedTagIds = yield* tagIdsByName(payload, req)
+    const storedTagIds = yield* tagIdsByName(payload, req, owner)
     const missingTagNames = missingKeys(tagNames, storedTagIds)
     const createdTagIds = yield* Effect.forEach(missingTagNames, (name) =>
-        createTag(payload, req, name)
+        createTag(payload, req, owner, name)
     )
     const tagIds = new Map([...storedTagIds, ...createdTagIds])
-    const subjectIds = yield* subjectIdsBySlug(payload, req)
-    const storedEntryIds = yield* entryIdsBySlug(payload, req)
+    const subjectIds = yield* subjectIdsBySlug(payload, req, owner)
+    const storedEntryIds = yield* entryIdsBySlug(payload, req, owner)
     const newSlugs = new Set(
         missingKeys(
             seedEntries.map((e) => e.fields.slug),
@@ -68,7 +70,7 @@ const seedSampleContent = Effect.fn('seedSampleContent')(function* (
     const newEntries = seedEntries.filter((e) => newSlugs.has(e.fields.slug))
     const createdEntryIds = new Map(
         yield* Effect.forEach(newEntries, (seedEntry) =>
-            createEntry(payload, req, seedEntry, tagIds, subjectIds)
+            createEntry(payload, req, owner, seedEntry, tagIds, subjectIds)
         )
     )
     const partOfLinks = yield* linkPartOf(
@@ -89,14 +91,17 @@ const seedSampleContent = Effect.fn('seedSampleContent')(function* (
 
 const seedTags = Effect.fn('seedTags')(function* (
     payload: Payload,
-    req: Transaction
+    req: Transaction,
+    owner: number
 ) {
     const storedTags = yield* payloadCall('count tags', () =>
         payload.count({ collection: 'tags', req })
     )
     if (!acceptsSeed(storedTags.totalDocs)) return NO_TAGS_SEEDED
     const tagNames = tagNamesOf(entries.map(seedEntryOf))
-    yield* Effect.forEach(tagNames, (name) => createTag(payload, req, name))
+    yield* Effect.forEach(tagNames, (name) =>
+        createTag(payload, req, owner, name)
+    )
     return [
         'production: tags only, entries and posts are the owner’s',
         `tags: ${tagNames.length} created`,
@@ -105,11 +110,13 @@ const seedTags = Effect.fn('seedTags')(function* (
 
 const tagIdsByName = Effect.fn('tagIdsByName')(function* (
     payload: Payload,
-    req: Transaction
+    req: Transaction,
+    owner: number
 ) {
     const storedTags = yield* payloadCall('find tags', () =>
         payload.find({
             collection: 'tags',
+            where: { owner: { equals: owner } },
             pagination: false,
             depth: 0,
             req,
@@ -118,23 +125,30 @@ const tagIdsByName = Effect.fn('tagIdsByName')(function* (
     return new Map(storedTags.docs.map((tag) => [tag.name, tag.id]))
 })
 
-function createTag(payload: Payload, req: Transaction, name: string) {
+function createTag(
+    payload: Payload,
+    req: Transaction,
+    owner: number,
+    name: string
+) {
     return payloadCall(`create tag ${name}`, () =>
         payload.create({
             collection: 'tags',
             req,
-            data: { name, kind: tagKindOf(name) },
+            data: { owner, name, kind: tagKindOf(name) },
         })
     ).pipe(Effect.map((tag) => [name, tag.id] as const))
 }
 
 const subjectIdsBySlug = Effect.fn('subjectIdsBySlug')(function* (
     payload: Payload,
-    req: Transaction
+    req: Transaction,
+    owner: number
 ) {
     const storedSubjects = yield* payloadCall('find subjects', () =>
         payload.find({
             collection: 'subjects',
+            where: { owner: { equals: owner } },
             pagination: false,
             depth: 0,
             req,
@@ -145,11 +159,13 @@ const subjectIdsBySlug = Effect.fn('subjectIdsBySlug')(function* (
 
 const entryIdsBySlug = Effect.fn('entryIdsBySlug')(function* (
     payload: Payload,
-    req: Transaction
+    req: Transaction,
+    owner: number
 ) {
     const storedEntries = yield* payloadCall('find entries', () =>
         payload.find({
             collection: 'entries',
+            where: { owner: { equals: owner } },
             pagination: false,
             depth: 0,
             req,
@@ -169,13 +185,14 @@ function idsBySlug(
 const createEntry = Effect.fn('createEntry')(function* (
     payload: Payload,
     req: Transaction,
+    owner: number,
     seedEntry: SeedEntry,
     tagIds: IdByKey,
     subjectIds: IdByKey
 ) {
     const { slug } = seedEntry.fields
     const subject = yield* idOfReference(seedEntry, 'subject', subjectIds)
-    const post = yield* createPost(payload, req, seedEntry)
+    const post = yield* createPost(payload, req, owner, seedEntry)
     const entryDocument = yield* payloadCall(`create entry ${slug}`, () =>
         payload.create({
             collection: 'entries',
@@ -183,6 +200,7 @@ const createEntry = Effect.fn('createEntry')(function* (
             context: { disableRevalidate: true },
             data: {
                 ...seedEntry.fields,
+                owner,
                 tags: seedEntry.tagNames.map((name) => tagIds.get(name)!),
                 subject,
                 post,
@@ -213,7 +231,12 @@ function idOfReference(
         : Effect.succeed(id)
 }
 
-function createPost(payload: Payload, req: Transaction, seedEntry: SeedEntry) {
+function createPost(
+    payload: Payload,
+    req: Transaction,
+    owner: number,
+    seedEntry: SeedEntry
+) {
     const body = seedEntry.postBody
     if (body === undefined) return Effect.succeed(undefined)
     return payloadCall(`create post for ${seedEntry.fields.slug}`, () =>
@@ -221,7 +244,7 @@ function createPost(payload: Payload, req: Transaction, seedEntry: SeedEntry) {
             collection: 'posts',
             req,
             context: { disableRevalidate: true },
-            data: { body },
+            data: { owner, body },
         })
     ).pipe(Effect.map((post) => post.id))
 }
@@ -252,6 +275,20 @@ const linkPartOf = Effect.fn('linkPartOf')(function* (
         )
     )
     return parts.length
+})
+
+const oldestAdminId = Effect.fn('oldestAdminId')(function* (payload: Payload) {
+    const admins = yield* payloadCall('find oldest admin', () =>
+        payload.find({
+            collection: 'users',
+            where: { role: { equals: 'admin' } },
+            sort: ['createdAt', 'id'],
+            limit: 1,
+            depth: 0,
+            pagination: false,
+        })
+    )
+    return admins.docs[0]?.id
 })
 
 function inTransaction<A, E>(
@@ -285,11 +322,15 @@ const seed = Effect.gen(function* () {
     const payload = yield* payloadCall('start payload', () =>
         getPayload({ config })
     )
-    const summary = yield* inTransaction(payload, (req) =>
-        seedScopeOf(VERCEL_ENV) === 'tags'
-            ? seedTags(payload, req)
-            : seedSampleContent(payload, req)
-    )
+    const owner = yield* oldestAdminId(payload)
+    const summary =
+        owner === undefined
+            ? NO_OWNER
+            : yield* inTransaction(payload, (req) =>
+                  seedScopeOf(VERCEL_ENV) === 'tags'
+                      ? seedTags(payload, req, owner)
+                      : seedSampleContent(payload, req, owner)
+              )
     yield* Console.log(summary)
 })
 

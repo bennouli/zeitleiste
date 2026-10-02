@@ -23,8 +23,10 @@ import {
     type EntryDateParts,
     type Side,
 } from './entryDates'
+import { ownedBy, ownerField, uniquePerOwner } from './ownership'
 import { revalidateEntryChange, revalidateEntryDelete } from './revalidate'
 import { germanSlugField } from './slugField'
+import { ownedAccess } from './userAccess'
 
 const SIDE_LABEL: Record<Side, string> = { start: 'Beginn', end: 'Ende' }
 
@@ -107,10 +109,8 @@ export const Entries: CollectionConfig = {
         useAsTitle: 'title',
         defaultColumns: ['title', 'startYear', 'type', '_status'],
     },
-    access: {
-        read: ({ req }) =>
-            req.user ? true : { _status: { equals: 'published' } },
-    },
+    access: ownedAccess({ _status: { equals: 'published' } }),
+    indexes: uniquePerOwner('slug'),
     versions: {
         drafts: true,
     },
@@ -119,6 +119,7 @@ export const Entries: CollectionConfig = {
         afterDelete: [revalidateEntryDelete],
     },
     fields: [
+        ownerField,
         {
             name: 'title',
             type: 'text',
@@ -165,6 +166,7 @@ export const Entries: CollectionConfig = {
             type: 'relationship',
             label: 'Thema',
             relationTo: 'subjects',
+            filterOptions: ({ user }) => ownedBy(user),
         },
         {
             name: 'tags',
@@ -172,14 +174,17 @@ export const Entries: CollectionConfig = {
             label: 'Schlagwörter',
             relationTo: 'tags',
             hasMany: true,
+            filterOptions: ({ user }) => ownedBy(user),
         },
         {
             name: 'partOf',
             type: 'relationship',
             label: 'Teil von',
             relationTo: 'entries',
-            filterOptions: ({ id }) =>
-                id === undefined ? true : { id: { not_equals: id } },
+            filterOptions: ({ id, user }) =>
+                id === undefined
+                    ? ownedBy(user)
+                    : { and: [ownedBy(user), { id: { not_equals: id } }] },
             validate: notPartOfItself,
         },
         {
@@ -187,6 +192,7 @@ export const Entries: CollectionConfig = {
             type: 'relationship',
             label: 'Beitrag',
             relationTo: 'posts',
+            filterOptions: ({ user }) => ownedBy(user),
         },
     ],
 }

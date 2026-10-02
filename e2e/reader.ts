@@ -41,6 +41,18 @@ export function readerAccount(): Credentials {
     return decodeCredentials(JSON.parse(readFileSync(READER_ACCOUNT, 'utf8')))
 }
 
+export async function readerId(payload: Payload): Promise<number> {
+    const { docs } = await payload.find({
+        collection: 'users',
+        where: { email: { equals: readerAccount().email } },
+        depth: 0,
+        limit: 1,
+    })
+    const [reader] = docs
+    if (!reader) throw new Error('no reader account for this run')
+    return reader.id
+}
+
 /** Fills and sends the site's login form the page shows. */
 export async function logIn(
     page: Page,
@@ -69,7 +81,7 @@ export async function expectLoginPage(page: Page, lang: Locale) {
 
 export type Account = Credentials & { id: number }
 
-/** The users one spec file creates, deleted with their notes when it is done. */
+/** The users one spec file creates, deleted with everything they own when it is done. */
 export function specAccounts(prefix: string) {
     const run = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
     const ids: number[] = []
@@ -96,14 +108,12 @@ export function specAccounts(prefix: string) {
             return { ...credentials, id: user.id }
         },
         async removeAll(payload: Payload) {
-            await payload.delete({
-                collection: 'notes',
-                where: { owner: { in: ids } },
-            })
-            await payload.delete({
+            const { errors } = await payload.delete({
                 collection: 'users',
                 where: { id: { in: ids } },
+                context: { disableRevalidate: true },
             })
+            expect(errors).toEqual([])
         },
     }
 }

@@ -15,6 +15,7 @@ import { Tags } from './collections/Tags'
 import { Users } from './collections/Users'
 import { deploymentOrigins } from './deployment'
 import { emailAdapter } from './email'
+import { requireOwnerOnDraftedTables } from './ownerRequired'
 import { blobStoragePlugin, mediaStorage } from './storage'
 
 const PayloadEnv = Schema.Struct({
@@ -55,6 +56,7 @@ export default buildConfig({
     plugins: [blobStoragePlugin(storage)],
     sharp,
     db: postgresAdapter({
+        afterSchemaInit: [requireOwnerOnDraftedTables],
         pool: {
             connectionString: payloadEnv.DATABASE_URL,
         },
