@@ -4,10 +4,9 @@ import { FOCUS_RING_CLASS } from '@/components/focusRing'
 import { useI18n } from '@/components/I18nContext'
 import type { LinkedEntry } from '@/lib/noteSchema'
 import { X } from 'lucide-react'
-import { useEffect, useId, useRef } from 'react'
-import { useNotes } from './NotesContext'
+import { useId } from 'react'
 import { ICON_BUTTON_CLASS } from './noteStyles'
-import { entrySearchStatus, useEntrySearch } from './useEntrySearch'
+import { useEntryPicker } from './useEntryPicker'
 
 type EntryPickerProps = {
     /** Names the group, e.g. "Link note to an entry: <note title>". */
@@ -19,11 +18,8 @@ type EntryPickerProps = {
 /** Search the entries by title and pick the one to link the note to. */
 export function EntryPicker({ label, onPick, onCancel }: EntryPickerProps) {
     const { t } = useI18n()
-    const { searchEntries } = useNotes()
-    const { query, setQuery, outcome } = useEntrySearch(searchEntries)
-    const inputRef = useRef<HTMLInputElement>(null)
+    const { query, setQuery, inputRef, statusText, entries } = useEntryPicker()
     const inputId = useId()
-    useEffect(() => inputRef.current?.focus(), [])
 
     return (
         <div role="group" aria-label={label} className="flex flex-col gap-2">
@@ -40,11 +36,11 @@ export function EntryPicker({ label, onPick, onCancel }: EntryPickerProps) {
                 className={`rounded-sm border border-border bg-surface px-3 py-1 text-note text-fg ${FOCUS_RING_CLASS}`}
             />
             <p role="status" className="text-label-lg text-fg-muted">
-                {entrySearchStatus(outcome, t.notes)}
+                {statusText}
             </p>
-            {outcome.status === 'found' && outcome.entries.length > 0 && (
+            {entries.length > 0 && (
                 <ul className="flex flex-col">
-                    {outcome.entries.map((entry) => (
+                    {entries.map((entry) => (
                         <li key={entry.id}>
                             <button
                                 type="button"

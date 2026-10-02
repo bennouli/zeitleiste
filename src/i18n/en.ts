@@ -84,7 +84,7 @@ export const en = {
         deleteLabel: (title) => `Delete note: ${title}`,
         link: 'Link',
         linkLabel: (title) => `Link note to an entry: ${title}`,
-        linkedEntry: 'Linked entry:',
+        linkedTo: (entryTitle) => `Linked to ${entryTitle}`,
         unlinkLabel: (entryTitle) => `Remove link to ${entryTitle}`,
         entrySearch: 'Search entries',
         entrySearchHint: 'Type part of the title.',

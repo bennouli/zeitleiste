@@ -81,7 +81,7 @@ export type Messages = {
         deleteLabel: (title: string) => string
         link: string
         linkLabel: (title: string) => string
-        linkedEntry: string
+        linkedTo: (entryTitle: string) => string
         unlinkLabel: (entryTitle: string) => string
         entrySearch: string
         entrySearchHint: string

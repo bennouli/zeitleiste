@@ -86,7 +86,7 @@ export const de = {
         deleteLabel: (title) => `Notiz löschen: ${title}`,
         link: 'Verknüpfen',
         linkLabel: (title) => `Notiz mit einem Eintrag verknüpfen: ${title}`,
-        linkedEntry: 'Verknüpfter Eintrag:',
+        linkedTo: (entryTitle) => `Verknüpft mit ${entryTitle}`,
         unlinkLabel: (entryTitle) => `Verknüpfung mit ${entryTitle} entfernen`,
         entrySearch: 'Eintrag suchen',
         entrySearchHint: 'Gib einen Teil des Titels ein.',

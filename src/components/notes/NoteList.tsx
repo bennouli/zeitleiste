@@ -12,16 +12,11 @@ import {
     type RefObject,
 } from 'react'
 import { EntryPicker } from './EntryPicker'
-import { linkedEntryOf } from './note'
 import { NoteEditor } from './NoteEditor'
 import { NoteRichText } from './NoteRichText'
-import { useNotes } from './NotesContext'
 import { BUTTON_CLASS, ICON_BUTTON_CLASS, NOTE_TITLE_CLASS } from './noteStyles'
 import { splitTitle } from './noteTitle'
-
-type CardMode = 'reading' | 'editing' | 'confirmingDelete' | 'linking'
-
-type CardButton = 'edit' | 'delete' | 'link' | 'unlink'
+import { useNoteCard } from './useNoteCard'
 
 type NoteListProps = {
     notes: NoteView[]
@@ -49,61 +44,34 @@ function NoteCard({
     onDeleted: () => void
 }) {
     const { t } = useI18n()
-    const { update, remove, link } = useNotes()
-    const [mode, setMode] = useState<CardMode>('reading')
-    const focusTarget = useRef<CardButton | null>(null)
-    const editButtonRef = useRef<HTMLButtonElement>(null)
-    const deleteButtonRef = useRef<HTMLButtonElement>(null)
-    const linkButtonRef = useRef<HTMLButtonElement>(null)
-    const unlinkButtonRef = useRef<HTMLButtonElement>(null)
+    const {
+        mode,
+        linkedEntry,
+        editButtonRef,
+        deleteButtonRef,
+        linkButtonRef,
+        unlinkButtonRef,
+        startEditing,
+        startLinking,
+        askToDelete,
+        cancelEditing,
+        cancelLinking,
+        cancelDelete,
+        save,
+        confirmDelete,
+        linkTo,
+        unlink,
+    } = useNoteCard(note, onDeleted)
     const { title, rest } = splitTitle(note.body)
     const shownTitle = title || t.notes.untitled
-    const linkedEntry = linkedEntryOf(note)
-    const linkedEntryId = linkedEntry?.id
-
-    useEffect(() => {
-        if (mode !== 'reading' || focusTarget.current === null) return
-        const buttonRefs = {
-            edit: editButtonRef,
-            delete: deleteButtonRef,
-            link: linkButtonRef,
-            unlink: unlinkButtonRef,
-        }
-        const button = buttonRefs[focusTarget.current]
-        focusTarget.current = null
-        button.current?.focus()
-    }, [mode, linkedEntryId])
-
-    const readAgain = (button: CardButton) => {
-        focusTarget.current = button
-        setMode('reading')
-    }
-
-    const confirmDelete = async () => {
-        if (await remove(note.id)) onDeleted()
-        else readAgain('delete')
-    }
-
-    const linkTo = async (entry: LinkedEntry) => {
-        if (await link(note.id, entry.id)) readAgain('unlink')
-    }
-
-    const unlink = async () => {
-        focusTarget.current = 'link'
-        if (!(await link(note.id, null))) focusTarget.current = null
-    }
 
     if (mode === 'editing')
         return (
             <NoteEditor
                 initialBody={note.body}
                 label={t.notes.editLabel(shownTitle)}
-                onSave={async (body) => {
-                    const isStored = await update(note.id, body)
-                    if (isStored) readAgain('edit')
-                    return isStored
-                }}
-                onCancel={() => readAgain('edit')}
+                onSave={save}
+                onCancel={cancelEditing}
             />
         )
 
@@ -124,13 +92,13 @@ function NoteCard({
                 <EntryPicker
                     label={t.notes.linkLabel(shownTitle)}
                     onPick={(entry) => void linkTo(entry)}
-                    onCancel={() => readAgain('link')}
+                    onCancel={cancelLinking}
                 />
             )}
             {mode === 'confirmingDelete' && (
                 <DeleteConfirmation
                     onConfirm={() => void confirmDelete()}
-                    onCancel={() => readAgain('delete')}
+                    onCancel={cancelDelete}
                 />
             )}
             {mode === 'reading' && (
@@ -138,7 +106,7 @@ function NoteCard({
                     <button
                         ref={editButtonRef}
                         type="button"
-                        onClick={() => setMode('editing')}
+                        onClick={startEditing}
                         aria-label={t.notes.editLabel(shownTitle)}
                         className={ICON_BUTTON_CLASS}
                     >
@@ -149,7 +117,7 @@ function NoteCard({
                         <button
                             ref={linkButtonRef}
                             type="button"
-                            onClick={() => setMode('linking')}
+                            onClick={startLinking}
                             aria-label={t.notes.linkLabel(shownTitle)}
                             className={ICON_BUTTON_CLASS}
                         >
@@ -160,7 +128,7 @@ function NoteCard({
                     <button
                         ref={deleteButtonRef}
                         type="button"
-                        onClick={() => setMode('confirmingDelete')}
+                        onClick={askToDelete}
                         aria-label={t.notes.deleteLabel(shownTitle)}
                         className={ICON_BUTTON_CLASS}
                     >
@@ -186,8 +154,8 @@ function EntryLink({
     return (
         <p className="flex items-center gap-1.5 text-label-lg text-fg-muted">
             <Link2 aria-hidden size={14} strokeWidth={1.5} />
-            <span className="min-w-0 break-words">
-                <span className="sr-only">{t.notes.linkedEntry} </span>
+            <span className="sr-only">{t.notes.linkedTo(entry.title)}</span>
+            <span aria-hidden className="min-w-0 break-words">
                 {entry.title}
             </span>
             <button
