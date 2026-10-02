@@ -105,8 +105,8 @@ Content typed into a local `/admin` lands on the `dev` branch and stays there. R
 The site runs on [Vercel](https://vercel.com) from the GitHub repository: a push to `main` deploys to production, every pull request gets a
 preview deployment. `staging` is the trunk (AGENTS.md § Branches); production only changes through a promotion PR from `staging` to `main`.
 
-Project settings: Framework Next.js, Install Command `pnpm install`, Node.js 24. The Build Command comes from `vercel.json` in the
-repository (`pnpm run ci`: migrations, then the one-off seed, then `next build`); it overrides whatever the dashboard says.
+Project settings: Framework Next.js, Install Command `pnpm install`, Build Command `pnpm run ci` (migrations, then the one-off seed, then
+`next build`), Node.js 24. `pnpm ci` without `run` only installs and builds nothing.
 
 | Variable                  | Production                 | Preview                | Where it is explained |
 | ------------------------- | -------------------------- | ---------------------- | --------------------- |
