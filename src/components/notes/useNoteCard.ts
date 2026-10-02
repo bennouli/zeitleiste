@@ -9,7 +9,6 @@ export type CardMode = 'reading' | 'editing' | 'confirmingDelete' | 'linking'
 
 type CardButton = 'edit' | 'delete' | 'link' | 'unlink'
 
-/** A new object per request, so asking for the same button twice focuses it twice. */
 type FocusRequest = { button: CardButton }
 
 /**
