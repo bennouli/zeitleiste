@@ -1,13 +1,23 @@
 import { inLocale } from '@/test/i18n'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
-import type { NoteBody } from '../noteBody'
+import type { NoteBody, NoteNode } from '../noteBody'
 import { NoteEditor } from '../NoteEditor'
 import { splitTitle } from '../noteTitle'
 import { noteBody, paragraph, text } from './noteFixtures'
 
 const LABEL = 'Notiz bearbeiten'
+const CTRL_ENTER = { key: 'Enter', ctrlKey: true }
+const CMD_ENTER = { key: 'Enter', metaKey: true }
+const PLAIN_ENTER = { key: 'Enter' }
 const WRITTEN = noteBody(paragraph(text('Kiew 1240')))
+
+const adminAutolink: NoteNode = {
+    type: 'autolink',
+    version: 2,
+    fields: { linkType: 'custom', newTab: false, url: 'https://example.org' },
+    children: [text('https://example.org')],
+}
 
 function renderEditor(
     onSave: (body: NoteBody) => Promise<boolean>,
@@ -27,7 +37,7 @@ describe('NoteEditor', () => {
         )
         const editable = renderEditor(onSave)
 
-        fireEvent.keyDown(editable, { key: 'Enter', ctrlKey: true })
+        fireEvent.keyDown(editable, CTRL_ENTER)
 
         await waitFor(() => expect(onSave).toHaveBeenCalledOnce())
         const savedBody = onSave.mock.lastCall?.[0]
@@ -38,7 +48,7 @@ describe('NoteEditor', () => {
         const onSave = vi.fn(async () => true)
         const editable = renderEditor(onSave)
 
-        fireEvent.keyDown(editable, { key: 'Enter', metaKey: true })
+        fireEvent.keyDown(editable, CMD_ENTER)
 
         await waitFor(() => expect(onSave).toHaveBeenCalledOnce())
     })
@@ -47,7 +57,7 @@ describe('NoteEditor', () => {
         const onSave = vi.fn(async () => true)
         const editable = renderEditor(onSave)
 
-        fireEvent.keyDown(editable, { key: 'Enter' })
+        fireEvent.keyDown(editable, PLAIN_ENTER)
 
         expect(onSave).not.toHaveBeenCalled()
     })
@@ -69,5 +79,14 @@ describe('NoteEditor', () => {
         fireEvent.click(screen.getByRole('button', { name: 'Sichern' }))
 
         expect(onSave).not.toHaveBeenCalled()
+    })
+
+    it('opens a note whose link the admin stored as an autolink', () => {
+        const onSave = vi.fn(async () => true)
+        const adminNote = noteBody(paragraph(text('Siehe '), adminAutolink))
+
+        const editable = renderEditor(onSave, adminNote)
+
+        expect(editable).toHaveTextContent('Siehe https://example.org')
     })
 })

@@ -1,7 +1,9 @@
 'use client'
 
+import { formattedText, LINK_CLASS } from '@/components/richTextFormat'
 import type {
     DefaultNodeTypes,
+    SerializedAutoLinkNode,
     SerializedHeadingNode,
     SerializedLinkNode,
     SerializedListNode,
@@ -22,9 +24,6 @@ const LIST_CLASS: Record<SerializedListNode['listType'], string> = {
     number: 'list-decimal',
     check: 'list-disc',
 }
-
-const LINK_CLASS =
-    'underline decoration-fg-muted underline-offset-2 hover:decoration-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus'
 
 const SAFE_URL = /^(https?:|mailto:|\/|#)/i
 
@@ -62,13 +61,17 @@ const noteConverters: JSXConvertersFunction<DefaultNodeTypes> = ({
     link: ({ node, nodesToJSX }) => (
         <NoteLink node={node}>{nodesToJSX({ nodes: node.children })}</NoteLink>
     ),
+    autolink: ({ node, nodesToJSX }) => (
+        <NoteLink node={node}>{nodesToJSX({ nodes: node.children })}</NoteLink>
+    ),
+    text: ({ node }) => formattedText(node.text, node.format),
 })
 
 function NoteLink({
     node,
     children,
 }: {
-    node: SerializedLinkNode
+    node: SerializedLinkNode | SerializedAutoLinkNode
     children: React.ReactNode
 }) {
     const { url, newTab } = node.fields

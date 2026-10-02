@@ -3,7 +3,7 @@ import { RichText } from '@payloadcms/richtext-lexical/react'
 import { render, screen } from '@testing-library/react'
 import { createEditor } from 'lexical'
 import { describe, expect, it } from 'vitest'
-import { toStoredBody, type NoteBody } from '../noteBody'
+import { toNoteBody, toStoredBody, type NoteBody } from '../noteBody'
 import { NOTE_NODES, NOTE_TRANSFORMERS } from '../noteMarkdown'
 
 const MARKDOWN = [
@@ -29,10 +29,7 @@ function storedBodyOf(markdown: string): NoteBody {
         () => $convertFromMarkdownString(markdown, NOTE_TRANSFORMERS),
         { discrete: true }
     )
-    const { root } = editor.getEditorState().toJSON()
-    return toStoredBody({
-        root: { ...root, children: root.children.map((node) => ({ ...node })) },
-    })
+    return toStoredBody(toNoteBody(editor.getEditorState().toJSON()))
 }
 
 describe('a note written in Markdown', () => {
@@ -63,7 +60,9 @@ describe('a note written in Markdown', () => {
     })
 
     it('stores headings only at the levels the note editor allows', () => {
-        const body = storedBodyOf('# Eins\n\n## Zwei\n\n### Drei')
+        const threeHeadings = '# Eins\n\n## Zwei\n\n### Drei'
+
+        const body = storedBodyOf(threeHeadings)
 
         const tags = body.root.children
             .filter((node) => node.type === 'heading')

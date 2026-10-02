@@ -1,4 +1,5 @@
 import type { Note } from '@/payload-types'
+import type { SerializedEditorState } from 'lexical'
 
 /** A note's rich text in the format Payload stores and its converters render. */
 export type NoteBody = Note['body']
@@ -9,16 +10,24 @@ const NEW_TAB = '_blank'
 const NEW_TAB_REL = 'noopener noreferrer'
 const EDITOR_LINK_KEYS = new Set(['url', 'target', 'rel', 'title'])
 const STORED_LINK_KEYS = new Set(['fields', 'id'])
+const LINK_TYPES = new Set(['link', 'autolink'])
 
 export function childrenOf(node: NoteNode): NoteNode[] {
     const { children } = node
     return Array.isArray(children) ? children : []
 }
 
+/** Lexical's serialized state, typed as the stored body it becomes. */
+export function toNoteBody({ root }: SerializedEditorState): NoteBody {
+    return {
+        root: { ...root, children: root.children.map((node) => ({ ...node })) },
+    }
+}
+
 /** The editor's state as Payload stores it: a link keeps its target under `fields`. */
 export function toStoredBody(editorBody: NoteBody): NoteBody {
     return mapNodes(editorBody, (node) => {
-        if (node.type !== 'link') return node
+        if (!isLink(node)) return node
         const { url, target } = node
         return {
             ...omitKeys(node, EDITOR_LINK_KEYS),
@@ -34,7 +43,7 @@ export function toStoredBody(editorBody: NoteBody): NoteBody {
 /** A stored note as the editor reads it: a link's target moves out of `fields`. */
 export function toEditorBody(storedBody: NoteBody): NoteBody {
     return mapNodes(storedBody, (node) => {
-        if (node.type !== 'link') return node
+        if (!isLink(node)) return node
         const { url, newTab } = isRecord(node.fields) ? node.fields : {}
         return {
             ...omitKeys(node, STORED_LINK_KEYS),
@@ -51,10 +60,10 @@ function mapNodes(
     mapNode: (node: NoteNode) => NoteNode
 ): NoteBody {
     const mapTree = (node: NoteNode): NoteNode => {
-        const mapped = mapNode(node)
-        return Array.isArray(mapped.children)
-            ? { ...mapped, children: childrenOf(mapped).map(mapTree) }
-            : mapped
+        const mappedNode = mapNode(node)
+        return Array.isArray(mappedNode.children)
+            ? { ...mappedNode, children: childrenOf(mappedNode).map(mapTree) }
+            : mappedNode
     }
     return {
         ...body,
@@ -62,15 +71,19 @@ function mapNodes(
     }
 }
 
+function isLink(node: NoteNode): boolean {
+    return LINK_TYPES.has(node.type)
+}
+
 function isRecord(value: unknown): value is Record<string, unknown> {
     return typeof value === 'object' && value !== null
 }
 
 function omitKeys(node: NoteNode, keys: ReadonlySet<string>): NoteNode {
-    const kept = Object.entries(node).filter(([key]) => !keys.has(key))
+    const keptEntries = Object.entries(node).filter(([key]) => !keys.has(key))
     return {
         type: node.type,
         version: node.version,
-        ...Object.fromEntries(kept),
+        ...Object.fromEntries(keptEntries),
     }
 }

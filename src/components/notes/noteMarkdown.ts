@@ -1,4 +1,4 @@
-import { LinkNode } from '@lexical/link'
+import { AutoLinkNode, LinkNode } from '@lexical/link'
 import { ListItemNode, ListNode } from '@lexical/list'
 import {
     BOLD_ITALIC_STAR,
@@ -64,4 +64,5 @@ export const NOTE_NODES = [
     ListNode,
     ListItemNode,
     LinkNode,
+    AutoLinkNode,
 ]

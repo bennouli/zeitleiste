@@ -11,8 +11,8 @@ type LineSplit = { text: string; remainder: NoteNode | null }
 
 /** Splits a note like the iPhone's Notes app: its first line with text is the title. */
 export function splitTitle(body: NoteBody): TitledNote {
-    const split = splitFrom(body.root)
-    return { title: split.title, rest: { ...body, root: split.root } }
+    const titleSplit = splitFrom(body.root)
+    return { title: titleSplit.title, rest: { ...body, root: titleSplit.root } }
 }
 
 function splitFrom(root: NoteBody['root']): {

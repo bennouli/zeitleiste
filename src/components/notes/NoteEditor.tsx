@@ -1,6 +1,11 @@
 'use client'
 
 import { useI18n } from '@/components/I18nContext'
+import {
+    BOLD_CLASS,
+    ITALIC_CLASS,
+    LINK_CLASS,
+} from '@/components/richTextFormat'
 import { ClearEditorPlugin } from '@lexical/react/LexicalClearEditorPlugin'
 import { LexicalComposer } from '@lexical/react/LexicalComposer'
 import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext'
@@ -20,7 +25,12 @@ import {
 } from 'lexical'
 import { Check, X } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
-import { type NoteBody, toEditorBody, toStoredBody } from './noteBody'
+import {
+    type NoteBody,
+    toEditorBody,
+    toNoteBody,
+    toStoredBody,
+} from './noteBody'
 import { NOTE_NODES, NOTE_TRANSFORMERS } from './noteMarkdown'
 import { buttonClass, iconButtonClass } from './noteStyles'
 
@@ -44,10 +54,10 @@ const EDITOR_THEME = {
         ul: 'list-disc pl-5 text-note',
         ol: 'list-decimal pl-5 text-note',
     },
-    link: 'underline decoration-fg-muted underline-offset-2',
+    link: LINK_CLASS,
     text: {
-        bold: 'font-medium',
-        italic: 'font-serif-italic italic',
+        bold: BOLD_CLASS,
+        italic: ITALIC_CLASS,
     },
 }
 
@@ -94,9 +104,11 @@ function NoteEditorBody({
     const save = useCallback(async () => {
         if (saving || isEditorEmpty(editor)) return
         setSaving(true)
-        const stored = await onSave(toStoredBody(editorBody(editor)))
+        const isStored = await onSave(
+            toStoredBody(toNoteBody(editor.getEditorState().toJSON()))
+        )
         setSaving(false)
-        if (stored && clearsOnSave)
+        if (isStored && clearsOnSave)
             editor.dispatchCommand(CLEAR_EDITOR_COMMAND, undefined)
     }, [editor, onSave, saving, clearsOnSave])
 
@@ -165,13 +177,6 @@ function NoteEditorBody({
             </div>
         </div>
     )
-}
-
-function editorBody(editor: LexicalEditor): NoteBody {
-    const { root } = editor.getEditorState().toJSON()
-    return {
-        root: { ...root, children: root.children.map((node) => ({ ...node })) },
-    }
 }
 
 function isEditorEmpty(editor: LexicalEditor): boolean {
