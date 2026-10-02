@@ -31,7 +31,6 @@ class ReferenceMissing extends Data.TaggedError('ReferenceMissing')<{
 type Transaction = Pick<PayloadRequest, 'transactionID'>
 type IdByKey = ReadonlyMap<string, number>
 
-const LOCALE = 'de'
 const NOTHING_SEEDED = 'entries present, nothing seeded'
 const NO_TAGS_SEEDED = 'production: tags present, nothing seeded'
 
@@ -111,7 +110,6 @@ const tagIdsByName = Effect.fn('tagIdsByName')(function* (
     const storedTags = yield* payloadCall('find tags', () =>
         payload.find({
             collection: 'tags',
-            locale: LOCALE,
             pagination: false,
             depth: 0,
             req,
@@ -124,7 +122,6 @@ function createTag(payload: Payload, req: Transaction, name: string) {
     return payloadCall(`create tag ${name}`, () =>
         payload.create({
             collection: 'tags',
-            locale: LOCALE,
             req,
             data: { name, kind: tagKindOf(name) },
         })
@@ -182,7 +179,6 @@ const createEntry = Effect.fn('createEntry')(function* (
     const entryDocument = yield* payloadCall(`create entry ${slug}`, () =>
         payload.create({
             collection: 'entries',
-            locale: LOCALE,
             req,
             context: { disableRevalidate: true },
             data: {
@@ -223,7 +219,6 @@ function createPost(payload: Payload, req: Transaction, seedEntry: SeedEntry) {
     return payloadCall(`create post for ${seedEntry.fields.slug}`, () =>
         payload.create({
             collection: 'posts',
-            locale: LOCALE,
             req,
             context: { disableRevalidate: true },
             data: { body },
@@ -248,7 +243,6 @@ const linkPartOf = Effect.fn('linkPartOf')(function* (
                         payload.update({
                             collection: 'entries',
                             id: createdEntryIds.get(part.fields.slug)!,
-                            locale: LOCALE,
                             req,
                             context: { disableRevalidate: true },
                             data: { partOf },

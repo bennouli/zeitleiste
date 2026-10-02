@@ -18,14 +18,12 @@ export const Subjects: CollectionConfig = {
             label: 'Name',
             required: true,
             unique: true,
-            localized: true,
         },
         germanSlugField('name'),
         {
             name: 'summary',
             type: 'textarea',
             label: 'Zusammenfassung',
-            localized: true,
         },
     ],
 }

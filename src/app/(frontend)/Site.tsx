@@ -22,7 +22,7 @@ export async function Site({
     locale: Locale
     children: ReactNode
 }) {
-    const entries = await Effect.runPromise(loadEntries(locale))
+    const entries = await Effect.runPromise(loadEntries())
     return (
         <Document lang={locale}>
             <I18nProvider locale={locale}>

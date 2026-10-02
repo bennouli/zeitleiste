@@ -34,20 +34,19 @@ const noPost = entries.find((e) => !e.post)!
 
 describe('post page', () => {
     it('prebuilds the published posts and renders later ones on request', async () => {
-        const localeParams = { params: { lang: 'en' } }
-        expect(await generateStaticParams(localeParams)).toEqual(
+        expect(await generateStaticParams()).toEqual(
             postSlugs(entries).map((slug) => ({ slug }))
         )
         expect(dynamicParams).toBe(true)
     })
 
-    it('renders the post in the locale of the address', async () => {
+    it('renders the same post under every locale', async () => {
         const englishParams = params('oktoberrevolution', 'en')
         render(await PostPage(englishParams))
         expect(
             screen.getByRole('heading', { level: 2, name: 'Oktoberrevolution' })
         ).toBeInTheDocument()
-        expect(loadPost).toHaveBeenLastCalledWith('oktoberrevolution', 'en')
+        expect(loadPost).toHaveBeenLastCalledWith('oktoberrevolution')
     })
 
     it('is a 404 under an address without a known locale', async () => {

@@ -38,7 +38,6 @@ async function createImage() {
     }
     const doc = await payload.create({
         collection: 'media',
-        locale: 'de',
         data: { alt: ALT, caption: CAPTION, credit: CREDIT },
         file,
     })
@@ -60,7 +59,6 @@ async function createPostWithImage(mediaId: number) {
     const body = { root: { ...root, children: [...root.children, imageNode] } }
     const doc = await payload.create({
         collection: 'posts',
-        locale: 'de',
         data: { body },
         context: QUIET,
     })
@@ -79,7 +77,6 @@ async function createEntry(post: number) {
     }
     const doc = await payload.create({
         collection: 'entries',
-        locale: 'de',
         data,
         context: QUIET,
     })

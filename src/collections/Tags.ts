@@ -18,7 +18,6 @@ export const Tags: CollectionConfig = {
             label: 'Name',
             required: true,
             unique: true,
-            localized: true,
         },
         germanSlugField('name'),
         {

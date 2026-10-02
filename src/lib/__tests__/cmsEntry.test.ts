@@ -110,7 +110,7 @@ describe('hasTexts', () => {
         expect(hasTexts(doc)).toBe(true)
     })
 
-    it('fails for an entry read in a locale it has no texts in', () => {
+    it('fails for an entry without a title or summary', () => {
         const doc = cmsDocOf(entries[0]!, 0)
         const noTitle = decodeCmsEntry({ ...doc, title: null })
         const noSummary = decodeCmsEntry({ ...doc, summary: undefined })
