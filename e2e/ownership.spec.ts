@@ -163,6 +163,32 @@ test("a user's entry, post, tag, subject and image are returned to them only, ne
     }
 })
 
+test('a visitor reads neither a published entry nor a post', async ({
+    request,
+}) => {
+    const authorHeaders = await authHeaders(request, author)
+    const publishedEntry = { ...entryTitled('visitor'), _status: 'published' }
+    const entry = await createOwned(
+        request,
+        authorHeaders,
+        'entries',
+        publishedEntry
+    )
+    const post = await createOwned(request, authorHeaders, 'posts', POST)
+
+    for (const [collection, { id }] of [
+        ['entries', entry],
+        ['posts', post],
+    ] as const) {
+        const byIdResponse = await request.get(`/api/${collection}/${id}`)
+        expect(byIdResponse.status(), collection).toBe(403)
+        const listResponse = await request.get(
+            `/api/${collection}?limit=0&depth=0`
+        )
+        expect(listResponse.status(), collection).toBe(403)
+    }
+})
+
 test("another user can neither change nor delete a user's documents", async ({
     request,
 }) => {

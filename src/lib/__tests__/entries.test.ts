@@ -1,3 +1,4 @@
+import type { User } from '@/payload-types'
 import { Effect } from 'effect'
 import { getPayload } from 'payload'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -8,8 +9,10 @@ vi.mock('@/payload.config', () => ({ default: {} }))
 vi.mock('payload', () => ({ getPayload: vi.fn() }))
 
 const find = vi.fn()
+const reader = { id: 4, email: 'leserin@example.test', role: 'editor' } as User
+const PUBLISHED = { _status: { equals: 'published' } }
 
-const entryDoc = (slug: string, post: number | null) => ({
+const entryDoc = (slug: string, post: { id: number } | null) => ({
     id: 1,
     slug,
     title: 'Krimkrieg',
@@ -24,7 +27,7 @@ const entryDoc = (slug: string, post: number | null) => ({
 const body = paragraphsToLexical('Der Text.')
 const found = (docs: object[]) => ({ docs })
 const withoutPost = found([entryDoc('krimkrieg', null)])
-const withPost = found([entryDoc('krimkrieg', 7)])
+const withPost = found([entryDoc('krimkrieg', { id: 7 })])
 const post = found([{ id: 7, body }])
 const sources = [
     {
@@ -43,9 +46,11 @@ const withUntitledEntry = found([
     entryDoc('krimkrieg', null),
     { ...entryDoc('ohne-titel', null), title: null, summary: null },
 ])
-const untitledWithPost = found([{ ...entryDoc('ohne-titel', 7), title: null }])
+const untitledWithPost = found([
+    { ...entryDoc('ohne-titel', { id: 7 }), title: null },
+])
 const mixed = found([
-    entryDoc('krimkrieg', 7),
+    entryDoc('krimkrieg', { id: 7 }),
     entryDoc('wiener-kongress', null),
 ])
 
@@ -55,12 +60,14 @@ beforeEach(() => {
 })
 
 describe('loadEntries', () => {
-    it('asks for published entries only, as a visitor, in start order', async () => {
+    it('asks for the published entries the reader may read, in start order', async () => {
         find.mockResolvedValueOnce(withoutPost)
-        await Effect.runPromise(loadEntries())
+        await Effect.runPromise(loadEntries(reader))
         expect(find).toHaveBeenCalledWith(
             expect.objectContaining({
                 collection: 'entries',
+                where: { and: [PUBLISHED] },
+                user: reader,
                 overrideAccess: false,
                 draft: false,
                 sort: 'startAt',
@@ -69,9 +76,17 @@ describe('loadEntries', () => {
         )
     })
 
+    it('populates no more of a linked post than its id', async () => {
+        find.mockResolvedValueOnce(withoutPost)
+        await Effect.runPromise(loadEntries(reader))
+        expect(find).toHaveBeenCalledWith(
+            expect.objectContaining({ populate: { posts: {} } })
+        )
+    })
+
     it('marks entries with a post without loading its body', async () => {
         find.mockResolvedValueOnce(mixed)
-        const entries = await Effect.runPromise(loadEntries())
+        const entries = await Effect.runPromise(loadEntries(reader))
         expect(entries.map((e) => [e.id, e.post !== undefined])).toEqual([
             ['krimkrieg', true],
             ['wiener-kongress', false],
@@ -81,34 +96,35 @@ describe('loadEntries', () => {
 
     it('leaves out an entry without texts', async () => {
         find.mockResolvedValueOnce(withUntitledEntry)
-        const entries = await Effect.runPromise(loadEntries())
+        const entries = await Effect.runPromise(loadEntries(reader))
         expect(entries.map((e) => e.id)).toEqual(['krimkrieg'])
     })
 
     it('fails with a LoadError when the content management fails', async () => {
         find.mockRejectedValueOnce(unreachable)
-        const error = await Effect.runPromise(Effect.flip(loadEntries()))
+        const error = await Effect.runPromise(Effect.flip(loadEntries(reader)))
         expect(error._tag).toBe('LoadError')
     })
 
     it('fails with a LoadError on a document it cannot read', async () => {
         find.mockResolvedValueOnce(withoutSlug)
-        const error = await Effect.runPromise(Effect.flip(loadEntries()))
+        const error = await Effect.runPromise(Effect.flip(loadEntries(reader)))
         expect(error._tag).toBe('LoadError')
     })
 })
 
 describe('loadPost', () => {
-    it('loads the post of the published entry at the slug, with its images', async () => {
+    it("loads the post of the reader's published entry at the slug, with its images", async () => {
         find.mockResolvedValueOnce(withPost)
         find.mockResolvedValueOnce(post)
-        const entry = await Effect.runPromise(loadPost('krimkrieg'))
+        const entry = await Effect.runPromise(loadPost(reader, 'krimkrieg'))
         expect(entry?.post?.body).toEqual(body)
         expect(find).toHaveBeenNthCalledWith(
             1,
             expect.objectContaining({
                 collection: 'entries',
-                where: { slug: { equals: 'krimkrieg' } },
+                where: { and: [PUBLISHED, { slug: { equals: 'krimkrieg' } }] },
+                user: reader,
                 overrideAccess: false,
                 draft: false,
             })
@@ -118,6 +134,8 @@ describe('loadPost', () => {
             expect.objectContaining({
                 collection: 'posts',
                 where: { id: { equals: 7 } },
+                user: reader,
+                overrideAccess: false,
                 select: { body: true, sources: true },
                 depth: 1,
             })
@@ -127,7 +145,7 @@ describe('loadPost', () => {
     it('hands over the sources of the post, in their order', async () => {
         find.mockResolvedValueOnce(withPost)
         find.mockResolvedValueOnce(postWithSources)
-        const entry = await Effect.runPromise(loadPost('krimkrieg'))
+        const entry = await Effect.runPromise(loadPost(reader, 'krimkrieg'))
         expect(entry?.post?.sources).toEqual([
             { title: 'Tarle: Der Krimkrieg', url: 'https://example.org/tarle' },
             { title: 'Figes: Crimea', url: 'http://example.org/figes' },
@@ -140,25 +158,31 @@ describe('loadPost', () => {
     ])('loads a post whose sources are %s with none', async (_, postDoc) => {
         find.mockResolvedValueOnce(withPost)
         find.mockResolvedValueOnce(postDoc)
-        const entry = await Effect.runPromise(loadPost('krimkrieg'))
+        const entry = await Effect.runPromise(loadPost(reader, 'krimkrieg'))
         expect(entry?.post).toEqual({ body, sources: [] })
     })
 
     it('finds nothing for an unpublished or unknown slug', async () => {
         find.mockResolvedValueOnce(nothing)
-        expect(await Effect.runPromise(loadPost('entwurf'))).toBeUndefined()
+        expect(
+            await Effect.runPromise(loadPost(reader, 'entwurf'))
+        ).toBeUndefined()
         expect(find).toHaveBeenCalledTimes(1)
     })
 
     it('finds nothing for an entry without texts', async () => {
         find.mockResolvedValueOnce(untitledWithPost)
-        expect(await Effect.runPromise(loadPost('ohne-titel'))).toBeUndefined()
+        expect(
+            await Effect.runPromise(loadPost(reader, 'ohne-titel'))
+        ).toBeUndefined()
         expect(find).toHaveBeenCalledTimes(1)
     })
 
     it('finds nothing for an entry without a post', async () => {
         find.mockResolvedValueOnce(withoutPost)
-        expect(await Effect.runPromise(loadPost('krimkrieg'))).toBeUndefined()
+        expect(
+            await Effect.runPromise(loadPost(reader, 'krimkrieg'))
+        ).toBeUndefined()
         expect(find).toHaveBeenCalledTimes(1)
     })
 })

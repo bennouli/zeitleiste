@@ -3,6 +3,7 @@ import { Post } from '@/components/post/Post'
 import { messages } from '@/i18n/messages'
 import { routeLocale } from '@/i18n/routeLocale'
 import { loadPost } from '@/lib/entries'
+import type { User } from '@/payload-types'
 import { Effect } from 'effect'
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
@@ -12,13 +13,15 @@ type Props = {
     params: Promise<{ lang: string; slug: string }>
 }
 
-const publishedPost = cache((slug: string) => Effect.runPromise(loadPost(slug)))
+const readerPost = cache((reader: User, slug: string) =>
+    Effect.runPromise(loadPost(reader, slug))
+)
 
 async function postOfRoute({ params }: Props) {
     const { lang, slug } = await params
-    await requireReader(lang)
+    const reader = await requireReader(lang)
     routeLocale(lang)
-    return publishedPost(slug)
+    return readerPost(reader, slug)
 }
 
 export async function generateMetadata(props: Props): Promise<Metadata> {
