@@ -163,7 +163,7 @@ test("a user's entry, post, tag, subject and image are returned to them only, ne
     }
 })
 
-test('a visitor reads no entry and no post, published or not', async ({
+test('a visitor reads neither a published entry nor a post', async ({
     request,
 }) => {
     const authorHeaders = await authHeaders(request, author)
@@ -180,10 +180,12 @@ test('a visitor reads no entry and no post, published or not', async ({
         ['entries', entry],
         ['posts', post],
     ] as const) {
-        const byId = await request.get(`/api/${collection}/${id}`)
-        expect(byId.status(), collection).toBe(403)
-        const list = await request.get(`/api/${collection}?limit=0&depth=0`)
-        expect(list.status(), collection).toBe(403)
+        const byIdResponse = await request.get(`/api/${collection}/${id}`)
+        expect(byIdResponse.status(), collection).toBe(403)
+        const listResponse = await request.get(
+            `/api/${collection}?limit=0&depth=0`
+        )
+        expect(listResponse.status(), collection).toBe(403)
     }
 })
 

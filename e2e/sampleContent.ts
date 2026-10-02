@@ -8,7 +8,7 @@ import {
 } from '../src/data/seedMapping'
 import { QUIET } from './payload'
 
-/** The sample entries with their tags and posts, published and owned by `owner`: the timeline every site spec reads. */
+/** The sample entries with their tags and posts, all published. */
 export async function createSampleContent(payload: Payload, owner: number) {
     const seedEntries = entries.map(seedEntryOf)
     const tagIds = new Map(
