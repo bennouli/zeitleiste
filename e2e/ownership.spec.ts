@@ -291,15 +291,17 @@ test('deleting a user deletes everything they own', async ({ request }) => {
     const adminHeaders = await authHeaders(request, admin)
     const leaverDocs = await createOneOfEach(request, leaverHeaders, 'leave')
     const moreEntryIds = await Promise.all(
-        ['leave 2', 'leave 3'].map(async (label) => {
-            const entry = await createOwned(
-                request,
-                leaverHeaders,
-                'entries',
-                entryTitled(label)
-            )
-            return entry.id
-        })
+        Array.from({ length: 12 }, (_, i) => `leave ${i + 2}`).map(
+            async (label) => {
+                const entry = await createOwned(
+                    request,
+                    leaverHeaders,
+                    'entries',
+                    entryTitled(label)
+                )
+                return entry.id
+            }
+        )
     )
 
     const removalResponse = await request.delete(`/api/users/${leaver.id}`, {
