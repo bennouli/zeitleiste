@@ -53,16 +53,26 @@ export const stampInvitation: CollectionBeforeChangeHook = async ({
     return isAccepted(data) ? data : { ...data, invitedAt: now }
 }
 
-export const deleteOwnedNotes: CollectionBeforeDeleteHook = async ({
+const OWNED_COLLECTIONS = [
+    'notes',
+    'entries',
+    'posts',
+    'tags',
+    'subjects',
+    'media',
+] as const
+
+export const deleteOwnedContent: CollectionBeforeDeleteHook = async ({
     id,
     req,
 }) => {
-    await req.payload.delete({
-        collection: 'notes',
-        where: { owner: { equals: id } },
-        overrideAccess: true,
-        req,
-    })
+    for (const collection of OWNED_COLLECTIONS)
+        await req.payload.delete({
+            collection,
+            where: { owner: { equals: id } },
+            overrideAccess: true,
+            req,
+        })
 }
 
 export const inviteNewUser: CollectionAfterChangeHook = async ({

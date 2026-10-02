@@ -1,7 +1,7 @@
 import { AuthenticationError, type PayloadRequest } from 'payload'
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 import {
-    deleteOwnedNotes,
+    deleteOwnedContent,
     inviteNewUser,
     requireAcceptedInvitation,
     resendInvitationEndpoint,
@@ -24,7 +24,7 @@ const fakeRequest = (fields: object) =>
 type LoginArgs = Parameters<typeof requireAcceptedInvitation>[0]
 type ChangeArgs = Parameters<typeof stampInvitation>[0]
 type AfterChangeArgs = Parameters<typeof inviteNewUser>[0]
-type DeleteArgs = Parameters<typeof deleteOwnedNotes>[0]
+type DeleteArgs = Parameters<typeof deleteOwnedContent>[0]
 
 describe('requireAcceptedInvitation', () => {
     it('lets an accepted user log in', () => {
@@ -118,15 +118,26 @@ describe('stampInvitation', () => {
     })
 })
 
-describe('deleteOwnedNotes', () => {
-    it("deletes the user's notes inside the delete's transaction", async () => {
-        const deleteNotes = vi.fn().mockResolvedValue({ docs: [] })
+describe('deleteOwnedContent', () => {
+    it("deletes everything the user owns, entries before what they link, inside the delete's transaction", async () => {
+        const deleteOwned = vi.fn().mockResolvedValue({ docs: [] })
         const req = fakeRequest({})
-        req.payload.delete = deleteNotes
+        req.payload.delete = deleteOwned
         const args = { id: editor.id, req } as unknown as DeleteArgs
-        await deleteOwnedNotes(args)
-        expect(deleteNotes).toHaveBeenCalledWith({
-            collection: 'notes',
+        await deleteOwnedContent(args)
+        const deletedCollections = deleteOwned.mock.calls.map(
+            ([options]) => options.collection
+        )
+        expect(deletedCollections).toEqual([
+            'notes',
+            'entries',
+            'posts',
+            'tags',
+            'subjects',
+            'media',
+        ])
+        expect(deleteOwned).toHaveBeenCalledWith({
+            collection: 'entries',
             where: { owner: { equals: editor.id } },
             overrideAccess: true,
             req,

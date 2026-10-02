@@ -284,3 +284,23 @@ test('a user cannot attach another user’s tag, subject, entry or post to their
     expect(unlinkedEntry.partOf ?? null).toBeNull()
     expect(unlinkedEntry.post ?? null).toBeNull()
 })
+
+test('deleting a user deletes everything they own', async ({ request }) => {
+    const leaver = await accounts.create(payload, 'leaver')
+    const leaverHeaders = await authHeaders(request, leaver)
+    const adminHeaders = await authHeaders(request, admin)
+    const leaverDocs = await createOneOfEach(request, leaverHeaders, 'leave')
+
+    const removalResponse = await request.delete(`/api/users/${leaver.id}`, {
+        headers: adminHeaders,
+    })
+    expect(removalResponse.status()).toBe(200)
+
+    for (const collection of OWNED) {
+        const { totalDocs } = await payload.count({
+            collection,
+            where: { id: { equals: leaverDocs[collection].id } },
+        })
+        expect(totalDocs, collection).toBe(0)
+    }
+})

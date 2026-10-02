@@ -53,15 +53,6 @@ export async function readerId(payload: Payload): Promise<number> {
     return reader.id
 }
 
-const OWNED_COLLECTIONS = [
-    'notes',
-    'entries',
-    'posts',
-    'tags',
-    'subjects',
-    'media',
-] as const
-
 /** Fills and sends the site's login form the page shows. */
 export async function logIn(
     page: Page,
@@ -117,13 +108,6 @@ export function specAccounts(prefix: string) {
             return { ...credentials, id: user.id }
         },
         async removeAll(payload: Payload) {
-            for (const collection of OWNED_COLLECTIONS) {
-                await payload.delete({
-                    collection,
-                    where: { owner: { in: ids } },
-                    context: { disableRevalidate: true },
-                })
-            }
             await payload.delete({
                 collection: 'users',
                 where: { id: { in: ids } },
