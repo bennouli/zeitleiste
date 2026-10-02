@@ -16,6 +16,7 @@ import {
     type ReactNode,
 } from 'react'
 import { withNote, withoutNote } from './note'
+import { NotesOverlayProvider } from './NotesOverlayContext'
 
 /** The server actions behind the notes; plain data in, plain data out. */
 export type NotesActions = {
@@ -110,7 +111,11 @@ export function NotesProvider({
         [notes, failure, actions, applyChange, remove]
     )
 
-    return <NotesContext value={notesState}>{children}</NotesContext>
+    return (
+        <NotesContext value={notesState}>
+            <NotesOverlayProvider>{children}</NotesOverlayProvider>
+        </NotesContext>
+    )
 }
 
 function failureOf(

@@ -85,6 +85,8 @@ export type Messages = {
         untitled: string
         collapse: string
         expand: string
+        open: string
+        close: string
         failed: Record<'save' | 'delete' | 'load' | 'signedOut', string>
     }
 }

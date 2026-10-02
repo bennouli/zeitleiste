@@ -13,3 +13,5 @@ export const NOTE_QUOTE_CLASS = 'border-l-2 border-border pl-3'
 export const NOTE_BULLET_LIST_CLASS = 'list-disc pl-5'
 
 export const NOTE_NUMBER_LIST_CLASS = 'list-decimal pl-5'
+
+export const LARGE_ICON_BUTTON_CLASS = `inline-flex size-7 cursor-pointer items-center justify-center rounded-sm text-fg-muted hover:text-fg ${FOCUS_RING_CLASS}`

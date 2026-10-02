@@ -2,6 +2,7 @@
 
 import { useI18n } from '@/components/I18nContext'
 import { LanguageSwitch } from '@/components/LanguageSwitch'
+import { NotesButton } from '@/components/notes/NotesButton'
 import { PostContext } from '@/components/PostContext'
 import { findFocusTarget } from '@/components/timeline/entryFocus'
 import { Timeline } from '@/components/timeline/Timeline'
@@ -185,7 +186,12 @@ export function TimelineShell({
                     collapsed={pageKey !== null}
                     focusEntryId={openSlug}
                     onOpenEntry={openEntry}
-                    besideWordmark={<LanguageSwitch />}
+                    besideWordmark={
+                        <>
+                            <LanguageSwitch />
+                            <NotesButton />
+                        </>
+                    }
                 />
                 <div id="post" ref={postRef}>
                     {children}
