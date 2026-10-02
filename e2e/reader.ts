@@ -41,7 +41,6 @@ export function readerAccount(): Credentials {
     return decodeCredentials(JSON.parse(readFileSync(READER_ACCOUNT, 'utf8')))
 }
 
-/** The id of the reader the login setup created; content a site spec shows the reader must belong to them. */
 export async function readerId(payload: Payload): Promise<number> {
     const { docs } = await payload.find({
         collection: 'users',

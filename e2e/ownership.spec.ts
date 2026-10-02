@@ -1,13 +1,28 @@
 import { expect, test, type APIRequestContext } from '@playwright/test'
+import { Schema } from 'effect'
 import { readFile } from 'node:fs/promises'
 import type { Payload } from 'payload'
 import { paragraphsToLexical } from '../src/lib/richText'
 import { localPayload } from './payload'
 import { authHeaders, specAccounts, VISITOR, type Account } from './reader'
 
-type Owned = 'entries' | 'posts' | 'tags' | 'subjects' | 'media'
-type Headers = Record<string, string>
-type Stored = { id: number; slug?: string }
+const OWNED = ['entries', 'posts', 'tags', 'subjects', 'media'] as const
+
+const CreatedResponse = Schema.Struct({
+    doc: Schema.Struct({
+        id: Schema.Number,
+        slug: Schema.optional(Schema.NullOr(Schema.String)),
+    }),
+})
+const ListResponse = Schema.Struct({
+    docs: Schema.Array(Schema.Struct({ id: Schema.Number })),
+})
+const decodeCreated = Schema.decodeUnknownSync(CreatedResponse)
+const decodeList = Schema.decodeUnknownSync(ListResponse)
+
+type Owned = (typeof OWNED)[number]
+type AuthHeaders = Record<string, string>
+type CreatedDoc = typeof CreatedResponse.Type.doc
 
 const accounts = specAccounts('ownership')
 const RUN = accounts.run
@@ -15,7 +30,6 @@ const FIXTURE = 'e2e/fixtures/image.png'
 const POST = { body: paragraphsToLexical('Nur meine Sicht.') }
 const ENTRY_TITLE = `Oktoberrevolution ${RUN}`
 
-/** Names and titles are unique per owner, so every document a test makes carries its own label. */
 const tagNamed = (label: string) => ({
     name: `Russland ${label} ${RUN}`,
     kind: 'place',
@@ -51,19 +65,19 @@ test.afterAll(() => accounts.removeAll(payload))
 
 async function createOwned(
     request: APIRequestContext,
-    headers: Headers,
+    headers: AuthHeaders,
     collection: Exclude<Owned, 'media'>,
     data: object
-): Promise<Stored> {
+): Promise<CreatedDoc> {
     const res = await request.post(`/api/${collection}`, { headers, data })
     expect(res.status()).toBe(201)
-    return (await res.json()).doc
+    return decodeCreated(await res.json()).doc
 }
 
 async function uploadImage(
     request: APIRequestContext,
-    headers: Headers
-): Promise<Stored> {
+    headers: AuthHeaders
+): Promise<CreatedDoc> {
     const buffer = await readFile(FIXTURE)
     const file = { name: `e2e-${RUN}.png`, mimeType: 'image/png', buffer }
     const fields = JSON.stringify({ alt: IMAGE_ALT })
@@ -72,13 +86,12 @@ async function uploadImage(
         multipart: { file, _payload: fields },
     })
     expect(res.status()).toBe(201)
-    return (await res.json()).doc
+    return decodeCreated(await res.json()).doc
 }
 
-/** One document of each owned collection, created by `headers`' user through the REST API. */
 async function createOneOfEach(
     request: APIRequestContext,
-    headers: Headers,
+    headers: AuthHeaders,
     label: string
 ) {
     return {
@@ -97,20 +110,20 @@ async function createOneOfEach(
             subjectNamed(label)
         ),
         media: await uploadImage(request, headers),
-    } satisfies Record<Owned, Stored>
+    } satisfies Record<Owned, CreatedDoc>
 }
 
 async function foundIds(
     request: APIRequestContext,
-    headers: Headers,
+    headers: AuthHeaders,
     collection: Owned
 ) {
     const res = await request.get(`/api/${collection}?limit=0&depth=0`, {
         headers,
     })
     expect(res.status()).toBe(200)
-    const { docs } = await res.json()
-    return docs.map((doc: { id: number }) => doc.id)
+    const { docs } = decodeList(await res.json())
+    return docs.map((doc) => doc.id)
 }
 
 async function storedEntry(id: number) {
@@ -130,18 +143,22 @@ test("a user's entry, post, tag, subject and image are returned to them only, ne
     const adminHeaders = await authHeaders(request, admin)
     const authorDocs = await createOneOfEach(request, authorHeaders, 'read')
 
-    for (const [collection, { id }] of Object.entries(authorDocs)) {
-        const owned = collection as Owned
-        const authorRead = await request.get(`/api/${owned}/${id}`, {
+    for (const collection of OWNED) {
+        const { id } = authorDocs[collection]
+        const authorRead = await request.get(`/api/${collection}/${id}`, {
             headers: authorHeaders,
         })
-        expect(authorRead.status(), owned).toBe(200)
-        expect(await foundIds(request, authorHeaders, owned)).toContain(id)
+        expect(authorRead.status(), collection).toBe(200)
+        expect(await foundIds(request, authorHeaders, collection)).toContain(id)
 
         for (const headers of [strangerHeaders, adminHeaders]) {
-            const byId = await request.get(`/api/${owned}/${id}`, { headers })
-            expect(byId.status(), owned).toBe(404)
-            expect(await foundIds(request, headers, owned)).not.toContain(id)
+            const byId = await request.get(`/api/${collection}/${id}`, {
+                headers,
+            })
+            expect(byId.status(), collection).toBe(404)
+            expect(await foundIds(request, headers, collection)).not.toContain(
+                id
+            )
         }
     }
 })
@@ -154,21 +171,24 @@ test("another user can neither change nor delete a user's documents", async ({
     const authorDocs = await createOneOfEach(request, authorHeaders, 'change')
     const rename = { title: 'Überschrieben', name: 'Überschrieben' }
 
-    for (const [collection, { id }] of Object.entries(authorDocs)) {
-        const owned = collection as Owned
-        const changeResponse = await request.patch(`/api/${owned}/${id}`, {
+    for (const collection of OWNED) {
+        const { id } = authorDocs[collection]
+        const changeResponse = await request.patch(`/api/${collection}/${id}`, {
             headers: strangerHeaders,
             data: rename,
         })
-        expect(changeResponse.status(), owned).toBe(403)
-        const removalResponse = await request.delete(`/api/${owned}/${id}`, {
-            headers: strangerHeaders,
-        })
-        expect(removalResponse.status(), owned).toBe(403)
-        const authorRead = await request.get(`/api/${owned}/${id}`, {
+        expect(changeResponse.status(), collection).toBe(403)
+        const removalResponse = await request.delete(
+            `/api/${collection}/${id}`,
+            {
+                headers: strangerHeaders,
+            }
+        )
+        expect(removalResponse.status(), collection).toBe(403)
+        const authorRead = await request.get(`/api/${collection}/${id}`, {
             headers: authorHeaders,
         })
-        expect(authorRead.status(), owned).toBe(200)
+        expect(authorRead.status(), collection).toBe(200)
     }
     expect((await storedEntry(authorDocs.entries.id)).title).toBe(
         `${ENTRY_TITLE} change`
@@ -258,9 +278,9 @@ test('a user cannot attach another user’s tag, subject, entry or post to their
         })
         expect(res.status(), field).toBe(400)
     }
-    const stored = await storedEntry(authorEntry.id)
-    expect(stored.tags ?? []).toEqual([])
-    expect(stored.subject ?? null).toBeNull()
-    expect(stored.partOf ?? null).toBeNull()
-    expect(stored.post ?? null).toBeNull()
+    const unlinkedEntry = await storedEntry(authorEntry.id)
+    expect(unlinkedEntry.tags ?? []).toEqual([])
+    expect(unlinkedEntry.subject ?? null).toBeNull()
+    expect(unlinkedEntry.partOf ?? null).toBeNull()
+    expect(unlinkedEntry.post ?? null).toBeNull()
 })

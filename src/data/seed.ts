@@ -53,14 +53,14 @@ const seedSampleContent = Effect.fn('seedSampleContent')(function* (
     if (!acceptsSeed(storedEntries.totalDocs)) return NOTHING_SEEDED
     const seedEntries = entries.map(seedEntryOf)
     const tagNames = tagNamesOf(seedEntries)
-    const storedTagIds = yield* tagIdsByName(payload, req)
+    const storedTagIds = yield* tagIdsByName(payload, req, owner)
     const missingTagNames = missingKeys(tagNames, storedTagIds)
     const createdTagIds = yield* Effect.forEach(missingTagNames, (name) =>
         createTag(payload, req, owner, name)
     )
     const tagIds = new Map([...storedTagIds, ...createdTagIds])
-    const subjectIds = yield* subjectIdsBySlug(payload, req)
-    const storedEntryIds = yield* entryIdsBySlug(payload, req)
+    const subjectIds = yield* subjectIdsBySlug(payload, req, owner)
+    const storedEntryIds = yield* entryIdsBySlug(payload, req, owner)
     const newSlugs = new Set(
         missingKeys(
             seedEntries.map((e) => e.fields.slug),
@@ -110,11 +110,13 @@ const seedTags = Effect.fn('seedTags')(function* (
 
 const tagIdsByName = Effect.fn('tagIdsByName')(function* (
     payload: Payload,
-    req: Transaction
+    req: Transaction,
+    owner: number
 ) {
     const storedTags = yield* payloadCall('find tags', () =>
         payload.find({
             collection: 'tags',
+            where: { owner: { equals: owner } },
             pagination: false,
             depth: 0,
             req,
@@ -140,11 +142,13 @@ function createTag(
 
 const subjectIdsBySlug = Effect.fn('subjectIdsBySlug')(function* (
     payload: Payload,
-    req: Transaction
+    req: Transaction,
+    owner: number
 ) {
     const storedSubjects = yield* payloadCall('find subjects', () =>
         payload.find({
             collection: 'subjects',
+            where: { owner: { equals: owner } },
             pagination: false,
             depth: 0,
             req,
@@ -155,11 +159,13 @@ const subjectIdsBySlug = Effect.fn('subjectIdsBySlug')(function* (
 
 const entryIdsBySlug = Effect.fn('entryIdsBySlug')(function* (
     payload: Payload,
-    req: Transaction
+    req: Transaction,
+    owner: number
 ) {
     const storedEntries = yield* payloadCall('find entries', () =>
         payload.find({
             collection: 'entries',
+            where: { owner: { equals: owner } },
             pagination: false,
             depth: 0,
             req,
