@@ -15,7 +15,6 @@ const TARLE = {
 }
 const FIGES = { title: 'Figes: Crimea', url: 'http://example.org/figes' }
 const FTP_URL = 'ftp://example.org/tarle.pdf'
-const URL_PROBLEM = 'Nur Links mit http:// oder https:// sind erlaubt.'
 
 type Created = { collection: 'entries' | 'posts'; id: number }
 
@@ -111,7 +110,7 @@ test.describe('a source is refused', () => {
     }
 })
 
-test('the admin refuses a source without a title or an http link, and says why', async ({
+test('the admin refuses a source without a title or an http link, and names the fields', async ({
     page,
 }) => {
     const post = await createPost()
@@ -121,14 +120,11 @@ test('the admin refuses a source without a title or an http link, and says why',
 
     await page.getByRole('button', { name: 'Add Quelle' }).click()
     await page.locator('#field-sources__0__url').fill(FTP_URL)
-    const save = page.getByRole('button', { name: 'Save', exact: true })
-    const sources = page.locator('#field-sources')
-    await expect(async () => {
-        await save.click()
-        await expect(sources).toContainText(URL_PROBLEM, { timeout: 2_000 })
-    }).toPass()
+    await page.getByRole('button', { name: 'Save', exact: true }).click()
 
-    await expect(sources).toContainText('This field is required.')
+    const errors = page.locator('.payload-toast-container')
+    await expect(errors).toContainText('Quellen 1 → Titel')
+    await expect(errors).toContainText('Quellen 1 → Link')
     const stored = await payload.findByID({ collection: 'posts', id: post.id })
     expect(stored.sources).toEqual([])
 })
