@@ -77,5 +77,12 @@ Every PR that closes an issue answers these, each **in prose**, one line, for wh
 
 ## After opening
 
-Run `pr-self-review` through a fresh subagent with `isolation: "worktree"`, given only the PR number. Post the report as a PR comment, then
-hand the PR link and the verdict to the owner. The owner's review is the next step; merging is the `merge` skill's, on the owner's word.
+The owner never reviews a PR before its self-review is clean or blocks only on the owner's input. Loop until it is:
+
+1. Run `pr-self-review` through a fresh subagent with `isolation: "worktree"`, given only the PR number. Post the report as a PR comment.
+2. Apply every finding that needs no owner input — immediately, without asking. Gates, `commit` skill, push.
+3. Back to 1 with a fresh reviewer.
+
+Stop when the verdict is `ready for owner review`, or every remaining finding sits under `❓ Needs a human decision`. Then hand the owner
+the PR link, the final verdict and those open decisions. The owner's review is the next step; merging is the `merge` skill's, on the owner's
+word.

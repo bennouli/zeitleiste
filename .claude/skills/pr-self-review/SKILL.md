@@ -10,7 +10,7 @@ description:
 A cold review of a pull request against this project's own rules, performed as if you had no idea why the change was made. If you wrote the
 PR, **discard your reasoning before you start** — self-review fails exactly where you still remember why something was fine.
 
-**You review. You do not fix.** Fixing is a separate, explicitly requested step.
+**You review. You do not fix.** The PR's author applies the findings afterwards (`pr` skill § After opening); the reviewer stays cold.
 
 ---
 
