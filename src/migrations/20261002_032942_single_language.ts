@@ -13,24 +13,22 @@ export async function up({ db }: MigrateUpArgs): Promise<void> {
   ALTER TABLE "media" ADD COLUMN "alt" varchar;
   ALTER TABLE "media" ADD COLUMN "caption" varchar;
 
-  UPDATE "entries" SET "title" = l."title", "summary" = l."summary"
-  FROM (SELECT DISTINCT ON ("_parent_id") * FROM "entries_locales" ORDER BY "_parent_id", "_locale" = 'de' DESC) AS l
-  WHERE l."_parent_id" = "entries"."id";
-  UPDATE "_entries_v" SET "version_title" = l."version_title", "version_summary" = l."version_summary"
-  FROM (SELECT DISTINCT ON ("_parent_id") * FROM "_entries_v_locales" ORDER BY "_parent_id", "_locale" = 'de' DESC) AS l
-  WHERE l."_parent_id" = "_entries_v"."id";
-  UPDATE "posts" SET "body" = l."body"
-  FROM (SELECT DISTINCT ON ("_parent_id") * FROM "posts_locales" ORDER BY "_parent_id", "_locale" = 'de' DESC) AS l
-  WHERE l."_parent_id" = "posts"."id";
-  UPDATE "subjects" SET "name" = l."name", "summary" = l."summary"
-  FROM (SELECT DISTINCT ON ("_parent_id") * FROM "subjects_locales" ORDER BY "_parent_id", "_locale" = 'de' DESC) AS l
-  WHERE l."_parent_id" = "subjects"."id";
-  UPDATE "tags" SET "name" = l."name"
-  FROM (SELECT DISTINCT ON ("_parent_id") * FROM "tags_locales" ORDER BY "_parent_id", "_locale" = 'de' DESC) AS l
-  WHERE l."_parent_id" = "tags"."id";
-  UPDATE "media" SET "alt" = l."alt", "caption" = l."caption"
-  FROM (SELECT DISTINCT ON ("_parent_id") * FROM "media_locales" ORDER BY "_parent_id", "_locale" = 'de' DESC) AS l
-  WHERE l."_parent_id" = "media"."id";
+  UPDATE "entries" SET
+    "title" = COALESCE((SELECT "title" FROM "entries_locales" WHERE "_parent_id" = "entries"."id" AND "_locale" = 'de'), (SELECT "title" FROM "entries_locales" WHERE "_parent_id" = "entries"."id" AND "_locale" = 'en')),
+    "summary" = COALESCE((SELECT "summary" FROM "entries_locales" WHERE "_parent_id" = "entries"."id" AND "_locale" = 'de'), (SELECT "summary" FROM "entries_locales" WHERE "_parent_id" = "entries"."id" AND "_locale" = 'en'));
+  UPDATE "_entries_v" SET
+    "version_title" = COALESCE((SELECT "version_title" FROM "_entries_v_locales" WHERE "_parent_id" = "_entries_v"."id" AND "_locale" = 'de'), (SELECT "version_title" FROM "_entries_v_locales" WHERE "_parent_id" = "_entries_v"."id" AND "_locale" = 'en')),
+    "version_summary" = COALESCE((SELECT "version_summary" FROM "_entries_v_locales" WHERE "_parent_id" = "_entries_v"."id" AND "_locale" = 'de'), (SELECT "version_summary" FROM "_entries_v_locales" WHERE "_parent_id" = "_entries_v"."id" AND "_locale" = 'en'));
+  UPDATE "posts" SET
+    "body" = COALESCE((SELECT "body" FROM "posts_locales" WHERE "_parent_id" = "posts"."id" AND "_locale" = 'de'), (SELECT "body" FROM "posts_locales" WHERE "_parent_id" = "posts"."id" AND "_locale" = 'en'));
+  UPDATE "subjects" SET
+    "name" = COALESCE((SELECT "name" FROM "subjects_locales" WHERE "_parent_id" = "subjects"."id" AND "_locale" = 'de'), (SELECT "name" FROM "subjects_locales" WHERE "_parent_id" = "subjects"."id" AND "_locale" = 'en')),
+    "summary" = COALESCE((SELECT "summary" FROM "subjects_locales" WHERE "_parent_id" = "subjects"."id" AND "_locale" = 'de'), (SELECT "summary" FROM "subjects_locales" WHERE "_parent_id" = "subjects"."id" AND "_locale" = 'en'));
+  UPDATE "tags" SET
+    "name" = COALESCE((SELECT "name" FROM "tags_locales" WHERE "_parent_id" = "tags"."id" AND "_locale" = 'de'), (SELECT "name" FROM "tags_locales" WHERE "_parent_id" = "tags"."id" AND "_locale" = 'en'));
+  UPDATE "media" SET
+    "alt" = COALESCE((SELECT "alt" FROM "media_locales" WHERE "_parent_id" = "media"."id" AND "_locale" = 'de'), (SELECT "alt" FROM "media_locales" WHERE "_parent_id" = "media"."id" AND "_locale" = 'en')),
+    "caption" = COALESCE((SELECT "caption" FROM "media_locales" WHERE "_parent_id" = "media"."id" AND "_locale" = 'de'), (SELECT "caption" FROM "media_locales" WHERE "_parent_id" = "media"."id" AND "_locale" = 'en'));
 
   ALTER TABLE "posts" ALTER COLUMN "body" SET NOT NULL;
   ALTER TABLE "subjects" ALTER COLUMN "name" SET NOT NULL;

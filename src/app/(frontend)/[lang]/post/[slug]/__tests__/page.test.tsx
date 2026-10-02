@@ -40,7 +40,7 @@ describe('post page', () => {
         expect(dynamicParams).toBe(true)
     })
 
-    it('renders the same post under every locale', async () => {
+    it('renders the post loaded by its slug alone', async () => {
         const englishParams = params('oktoberrevolution', 'en')
         render(await PostPage(englishParams))
         expect(
