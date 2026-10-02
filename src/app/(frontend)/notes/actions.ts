@@ -6,72 +6,17 @@ import {
     NoteView,
     type NoteChange,
     type NoteDeletion,
-    type NotesLoad,
 } from '@/lib/noteSchema'
 import config from '@/payload.config'
-import { Array as Arr, Cause, Data, Effect, Schema } from 'effect'
-import { headers } from 'next/headers'
+import { Cause, Data, Effect } from 'effect'
 import { getPayload } from 'payload'
-
-class NotesFailed extends Data.TaggedError('NotesFailed')<{
-    readonly operation: string
-    readonly cause: unknown
-}> {}
+import { currentReader } from '../reader'
+import { attempt, decode, type NotesFailed } from './notesPayload'
 
 class NotSignedIn extends Data.TaggedError('NotSignedIn') {}
 
 const NOT_STORED: NoteChange = { stored: false, signedOut: false }
 const SIGNED_OUT_CHANGE: NoteChange = { stored: false, signedOut: true }
-
-/** The signed-in user's notes, most recently changed first; a visitor gets none. */
-export async function listNotes(): Promise<NotesLoad> {
-    const program = Effect.gen(function* () {
-        const { payload, user } = yield* session
-        if (user === null) return { signedIn: false } satisfies NotesLoad
-        const userNotes = attempt('find notes', () =>
-            payload.find({
-                collection: 'notes',
-                user,
-                overrideAccess: false,
-                sort: '-updatedAt',
-                depth: 0,
-                pagination: false,
-                select: { body: true, updatedAt: true },
-            })
-        ).pipe(
-            Effect.flatMap(({ docs }) =>
-                Effect.forEach(docs, (doc) =>
-                    decode(NoteView, doc).pipe(
-                        Effect.tapError(({ cause }) =>
-                            Effect.logError(
-                                'Notes: a stored note is unreadable',
-                                cause
-                            )
-                        ),
-                        Effect.option
-                    )
-                )
-            ),
-            Effect.map(Arr.getSomes)
-        )
-        return yield* userNotes.pipe(
-            Effect.map((notes): NotesLoad => ({
-                signedIn: true,
-                notes: [...notes],
-                loadFailed: false,
-            })),
-            Effect.tapError(({ operation, cause }) =>
-                Effect.logError(`Notes: ${operation} failed`, cause)
-            ),
-            Effect.orElseSucceed((): NotesLoad => ({
-                signedIn: true,
-                notes: [],
-                loadFailed: true,
-            }))
-        )
-    })
-    return runAtEdge(program, { signedIn: false }, { signedIn: false })
-}
 
 export async function createNote(body: unknown): Promise<NoteChange> {
     const program = Effect.gen(function* () {
@@ -135,22 +80,12 @@ export async function deleteNote(id: unknown): Promise<NoteDeletion> {
     )
 }
 
-const session = Effect.gen(function* () {
+const signedInSession = Effect.gen(function* () {
+    const reader = yield* attempt('authenticate', () => currentReader())
+    if (reader === null) return yield* new NotSignedIn()
     const payload = yield* attempt('load payload', () => getPayload({ config }))
-    const requestHeaders = yield* attempt('read headers', () => headers())
-    const { user } = yield* attempt('authenticate', () =>
-        payload.auth({ headers: requestHeaders })
-    )
-    return { payload, user }
+    return { payload, user: reader }
 })
-
-const signedInSession = session.pipe(
-    Effect.flatMap(({ payload, user }) =>
-        user === null
-            ? Effect.fail(new NotSignedIn())
-            : Effect.succeed({ payload, user })
-    )
-)
 
 function storedChange(note: unknown) {
     return decode(NoteView, note).pipe(
@@ -158,21 +93,6 @@ function storedChange(note: unknown) {
             stored: true,
             note: storedNote,
         }))
-    )
-}
-
-function attempt<A>(operation: string, run: () => Promise<A>) {
-    return Effect.tryPromise({
-        try: run,
-        catch: (cause) => new NotesFailed({ operation, cause }),
-    })
-}
-
-function decode<S extends Schema.Top>(schema: S, input: unknown) {
-    return Schema.decodeUnknownEffect(schema)(input).pipe(
-        Effect.mapError(
-            (cause) => new NotesFailed({ operation: 'decode', cause })
-        )
     )
 }
 

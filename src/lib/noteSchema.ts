@@ -137,15 +137,11 @@ export const NoteView = Schema.Struct({
 })
 export type NoteView = typeof NoteView.Type
 
-/** What the server hands a page: a visitor gets no notes. */
-export const NotesLoad = Schema.Union([
-    Schema.Struct({ signedIn: Schema.Literal(false) }),
-    Schema.Struct({
-        signedIn: Schema.Literal(true),
-        notes: Schema.mutable(Schema.Array(NoteView)),
-        loadFailed: Schema.Boolean,
-    }),
-])
+/** The reader's notes as the page is rendered with them. */
+export const NotesLoad = Schema.Struct({
+    notes: Schema.mutable(Schema.Array(NoteView)),
+    loadFailed: Schema.Boolean,
+})
 export type NotesLoad = typeof NotesLoad.Type
 
 export const NoteChange = Schema.Union([

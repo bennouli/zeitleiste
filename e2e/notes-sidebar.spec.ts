@@ -1,8 +1,9 @@
 import AxeBuilder from '@axe-core/playwright'
-import { expect, test, type Page, type Response } from '@playwright/test'
+import { expect, test, type Page } from '@playwright/test'
 import type { Payload } from 'payload'
 import { paragraphsToLexical } from '../src/lib/richText'
 import { localPayload } from './payload'
+import { expectLoginPage, VISITOR } from './reader'
 
 const RUN = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
 
@@ -194,23 +195,20 @@ test('the sidebar passes an accessibility check', async ({ page }) => {
     expect(results.violations).toEqual([])
 })
 
-test('a visitor sees no sidebar and gets no notes from the server', async ({
-    page,
-}) => {
-    const author = await newAuthor('private')
-    const secret = `Geheim ${RUN}`
-    await storeNote(author.id, secret)
-    const isServerAction = (response: Response) =>
-        response.request().method() === 'POST' &&
-        response.request().headers()['next-action'] !== undefined
-    const notesLoad = page.waitForResponse(isServerAction)
+test.describe('a visitor', () => {
+    test.use({ storageState: VISITOR })
 
-    await page.goto('/de')
-    const notesResponse = await notesLoad
+    test('is sent to the login page and gets no notes', async ({ page }) => {
+        const author = await newAuthor('private')
+        const secret = `Geheim ${RUN}`
+        await storeNote(author.id, secret)
 
-    await expect(sidebarOf(page)).toHaveCount(0)
-    expect(await page.content()).not.toContain(secret)
-    expect(await notesResponse.text()).not.toContain(secret)
+        await page.goto('/de')
+
+        await expectLoginPage(page, 'de')
+        await expect(sidebarOf(page)).toHaveCount(0)
+        expect(await page.content()).not.toContain(secret)
+    })
 })
 
 test('a note is written, saved and deleted with the keyboard alone', async ({

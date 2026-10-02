@@ -7,7 +7,6 @@ import type {
 import { expectNoAxeViolations } from '@/test/axe'
 import { inLocale } from '@/test/i18n'
 import {
-    act,
     fireEvent,
     render,
     screen,
@@ -34,11 +33,6 @@ const NOWGOROD: NoteView = {
 
 function fakeActions(overrides: Partial<NotesActions> = {}): NotesActions {
     return {
-        listNotes: async () => ({
-            signedIn: true,
-            notes: [NOWGOROD, KIEW],
-            loadFailed: false,
-        }),
         createNote: async () => ({ stored: false, signedOut: false }),
         updateNote: async () => ({ stored: false, signedOut: false }),
         deleteNote: async () => ({ deleted: true, signedOut: false }),
@@ -46,9 +40,11 @@ function fakeActions(overrides: Partial<NotesActions> = {}): NotesActions {
     }
 }
 
-function renderSidebar(actions: NotesActions) {
+const LOADED: NotesLoad = { notes: [NOWGOROD, KIEW], loadFailed: false }
+
+function renderSidebar(actions: NotesActions, initialLoad = LOADED) {
     return render(
-        <NotesProvider actions={actions}>
+        <NotesProvider initialLoad={initialLoad} actions={actions}>
             <NotesSidebar />
         </NotesProvider>,
         { wrapper: inLocale('de') }
@@ -60,12 +56,10 @@ afterEach(() => {
 })
 
 describe('NotesSidebar', () => {
-    it('renders nothing for a visitor', async () => {
-        const visitorLoad = Promise.resolve<NotesLoad>({ signedIn: false })
-        const visitorActions = fakeActions({ listNotes: () => visitorLoad })
-
-        const { container } = renderSidebar(visitorActions)
-        await act(() => visitorLoad)
+    it('renders nothing outside a reader’s notes provider', () => {
+        const { container } = render(<NotesSidebar />, {
+            wrapper: inLocale('de'),
+        })
 
         expect(container).toBeEmptyDOMElement()
     })
@@ -218,14 +212,10 @@ describe('NotesSidebar', () => {
     })
 
     it('tells a signed-in user when the notes could not be loaded', async () => {
-        const listNotes = async (): Promise<NotesLoad> => ({
-            signedIn: true,
-            notes: [],
-            loadFailed: true,
-        })
-        const failingActions = fakeActions({ listNotes })
+        const failedLoad: NotesLoad = { notes: [], loadFailed: true }
+        const quietActions = fakeActions()
 
-        renderSidebar(failingActions)
+        renderSidebar(quietActions, failedLoad)
 
         expect(await screen.findByRole('alert')).toHaveTextContent(
             'Deine Notizen konnten nicht geladen werden.'

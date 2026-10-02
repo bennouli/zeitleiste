@@ -1,6 +1,6 @@
 import { paragraphsToLexical } from '@/lib/richText'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { createNote, deleteNote, listNotes, updateNote } from '../actions'
+import { createNote, deleteNote, updateNote } from '../actions'
 
 const payloadStub = vi.hoisted(() => ({
     auth: vi.fn(),
@@ -29,13 +29,6 @@ beforeEach(() => {
 describe('a visitor', () => {
     beforeEach(() => signedInAs(null))
 
-    it('gets no notes and no query runs', async () => {
-        const notesLoad = await listNotes()
-
-        expect(notesLoad).toEqual({ signedIn: false })
-        expect(payloadStub.find).not.toHaveBeenCalled()
-    })
-
     it('cannot write, change or delete a note', async () => {
         const noteId = STORED.id
 
@@ -56,40 +49,6 @@ describe('a visitor', () => {
 
 describe('a signed-in user', () => {
     beforeEach(() => signedInAs(AUTHOR))
-
-    it('reads only through access control, newest change first', async () => {
-        const foundNotes = { docs: [STORED] }
-        payloadStub.find.mockResolvedValue(foundNotes)
-
-        const notesLoad = await listNotes()
-
-        expect(notesLoad).toEqual({
-            signedIn: true,
-            notes: [STORED],
-            loadFailed: false,
-        })
-        expect(payloadStub.find).toHaveBeenCalledWith(
-            expect.objectContaining({
-                collection: 'notes',
-                user: AUTHOR,
-                overrideAccess: false,
-                sort: '-updatedAt',
-            })
-        )
-    })
-
-    it('hears about a failed load instead of looking like a visitor', async () => {
-        const databaseDown = new Error('database down')
-        payloadStub.find.mockRejectedValue(databaseDown)
-
-        const notesLoad = await listNotes()
-
-        expect(notesLoad).toEqual({
-            signedIn: true,
-            notes: [],
-            loadFailed: true,
-        })
-    })
 
     it('creates a note as itself through access control', async () => {
         payloadStub.create.mockResolvedValue(STORED)
@@ -156,19 +115,5 @@ describe('a signed-in user', () => {
         const change = await updateNote(noteId, BODY)
 
         expect(change).toEqual({ stored: false, signedOut: false })
-    })
-
-    it('skips a stored note it cannot read and keeps the others', async () => {
-        const unreadable = { ...STORED, id: 8, body: { root: 'kaputt' } }
-        const foundNotes = { docs: [unreadable, STORED] }
-        payloadStub.find.mockResolvedValue(foundNotes)
-
-        const notesLoad = await listNotes()
-
-        expect(notesLoad).toEqual({
-            signedIn: true,
-            notes: [STORED],
-            loadFailed: false,
-        })
     })
 })
