@@ -62,7 +62,7 @@ describe('a note written in Markdown', () => {
         )
     })
 
-    it('stores headings only at the levels a post allows', () => {
+    it('stores headings only at the levels the note editor allows', () => {
         const body = storedBodyOf('# Eins\n\n## Zwei\n\n### Drei')
 
         const tags = body.root.children

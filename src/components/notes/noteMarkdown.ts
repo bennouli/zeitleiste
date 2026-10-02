@@ -21,7 +21,7 @@ import {
     QuoteNode,
 } from '@lexical/rich-text'
 
-/** A post's body allows `h3` and `h4` only; notes share its editor config. */
+/** `noteEditor` validates `h3` and `h4` only. */
 const HEADING_TAG_BY_MARK = { '#': 'h3', '##': 'h4' } as const
 
 const HEADING_MARK_BY_TAG: Record<string, string> = { h3: '#', h4: '##' }
@@ -43,7 +43,7 @@ const NOTE_HEADING: ElementTransformer = {
     type: 'element',
 }
 
-/** The Markdown a note understands: what a post's editor can store. */
+/** The Markdown a note understands: what `noteEditor` can store, so no images. */
 export const NOTE_TRANSFORMERS: Transformer[] = [
     NOTE_HEADING,
     QUOTE,
