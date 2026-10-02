@@ -11,7 +11,7 @@ import {
     VISITOR,
     type Account,
 } from './reader'
-import { entrySlugsOnTimeline, timelineRegion } from './timeline'
+import { timelineRegion } from './timeline'
 
 type OwnEntry = {
     slug: string
@@ -113,6 +113,26 @@ async function storeEntry(
         draft: status === 'draft',
         context: QUIET,
     })
+}
+
+/** The slugs of every entry the timeline draws: cards, stacks and span bars. */
+function entrySlugsOnTimeline(page: Page) {
+    return timelineRegion(page)
+        .locator('[data-entry-id], [data-span-id], [data-entry-ids]')
+        .evaluateAll((els) =>
+            [
+                ...new Set(
+                    els.flatMap((el) => {
+                        const { entryId, spanId, entryIds } = (
+                            el as HTMLElement
+                        ).dataset
+                        return (entryId ?? spanId ?? entryIds ?? '').split(' ')
+                    })
+                ),
+            ]
+                .filter(Boolean)
+                .sort()
+        )
 }
 
 async function expectOnlyEntriesOf(page: Page, slugs: string[]) {
