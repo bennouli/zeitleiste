@@ -75,8 +75,14 @@ const CmsPostBody = Schema.StructWithRest(
     [Schema.Record(Schema.String, Schema.Unknown)]
 )
 
+const CmsSource = Schema.Struct({ title: Schema.String, url: Schema.String })
+
 /** A post as the Local API returns it. */
-export const CmsPost = Schema.Struct({ body: CmsPostBody })
+export const CmsPost = Schema.Struct({
+    body: CmsPostBody,
+    sources: Schema.optional(Schema.NullOr(Schema.Array(CmsSource))),
+})
+export type CmsPost = typeof CmsPost.Type
 
 const Slugged = Schema.Struct({
     slug: Schema.optional(Schema.NullOr(Schema.String)),
@@ -152,6 +158,11 @@ export function entryOf(doc: TextedCmsEntry, post?: Post): Entry {
         ...(partOf !== undefined && { partOf }),
         ...(post !== undefined && { post }),
     }
+}
+
+/** The post of a CMS post; a post without sources has an empty list. */
+export function postOf(doc: CmsPost): Post {
+    return { body: doc.body, sources: doc.sources ?? [] }
 }
 
 /** The id of the post an entry links to, if any. */

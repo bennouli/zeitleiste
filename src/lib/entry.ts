@@ -15,8 +15,16 @@ export type Precision = 'year' | 'month' | 'day'
 export const ENTRY_TYPES = ['war', 'revolution', 'power', 'event'] as const
 export type EntryType = (typeof ENTRY_TYPES)[number]
 
+/** A work a post draws on, linked by its http or https address. */
+export type Source = {
+    title: string
+    url: string
+}
+
 export type Post = {
     body: PostBody
+    /** In the editor's order; absent where the post is not loaded. */
+    sources?: readonly Source[]
 }
 
 export type Entry = {
