@@ -1,9 +1,11 @@
+import { NoteBody } from '@/lib/noteSchema'
 import { $convertFromMarkdownString } from '@lexical/markdown'
 import { RichText } from '@payloadcms/richtext-lexical/react'
 import { render, screen } from '@testing-library/react'
+import { Result, Schema } from 'effect'
 import { createEditor } from 'lexical'
 import { describe, expect, it } from 'vitest'
-import { toNoteBody, toStoredBody, type NoteBody } from '../noteBody'
+import { toNoteBody, toStoredBody } from '../noteBody'
 import { NOTE_NODES, NOTE_TRANSFORMERS } from '../noteMarkdown'
 
 const MARKDOWN = [
@@ -69,5 +71,13 @@ describe('a note written in Markdown', () => {
             .map((node) => node.tag)
 
         expect(tags).toEqual(['h3', 'h4'])
+    })
+
+    it('passes the schema the server actions decode with', () => {
+        const body = storedBodyOf(MARKDOWN)
+
+        const decoded = Schema.decodeUnknownResult(NoteBody)(body)
+
+        expect(Result.isSuccess(decoded)).toBe(true)
     })
 })

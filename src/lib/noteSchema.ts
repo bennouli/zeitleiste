@@ -8,24 +8,40 @@ export const NoteNode = Schema.StructWithRest(
 )
 export type NoteNode = typeof NoteNode.Type
 
-const NOTE_EDITOR_NODE_TYPES: ReadonlySet<string> = new Set([
-    'paragraph',
-    'heading',
-    'quote',
-    'list',
-    'listitem',
-    'text',
-    'linebreak',
-    'tab',
-    'link',
-    'autolink',
-])
+const isAnyNode = () => true
+
+const NOTE_EDITOR_NODE_CHECKS: Readonly<
+    Record<string, (node: NoteNode) => boolean>
+> = {
+    paragraph: isAnyNode,
+    quote: isAnyNode,
+    listitem: isAnyNode,
+    linebreak: isAnyNode,
+    tab: isAnyNode,
+    text: (node) => typeof node.text === 'string',
+    heading: (node) => node.tag === 'h3' || node.tag === 'h4',
+    list: (node) =>
+        (node.tag === 'ul' && node.listType === 'bullet') ||
+        (node.tag === 'ol' && node.listType === 'number'),
+    link: hasLinkFields,
+    autolink: hasLinkFields,
+}
+
+function hasLinkFields(node: NoteNode): boolean {
+    const { fields } = node
+    return (
+        typeof fields === 'object' &&
+        fields !== null &&
+        'url' in fields &&
+        typeof fields.url === 'string'
+    )
+}
 
 function holdsOnlyNoteEditorNodes(nodes: ReadonlyArray<unknown>): boolean {
     return nodes.every(
         (node) =>
             Schema.is(NoteNode)(node) &&
-            NOTE_EDITOR_NODE_TYPES.has(node.type) &&
+            (NOTE_EDITOR_NODE_CHECKS[node.type]?.(node) ?? false) &&
             holdsOnlyNoteEditorNodes(
                 Array.isArray(node.children) ? node.children : []
             )
@@ -42,7 +58,9 @@ const onlyNoteEditorNodes = Schema.makeFilter(
 /** A note's rich text in the format Payload stores and its converters render. */
 export const NoteBody = Schema.Struct({
     root: Schema.Struct({
-        type: Schema.String,
+        type: Schema.String.check(
+            Schema.makeFilter((type) => type === 'root' || 'expected root')
+        ),
         children: Schema.mutable(Schema.Array(NoteNode)).check(
             onlyNoteEditorNodes
         ),
@@ -84,9 +102,17 @@ export type NotesLoad = typeof NotesLoad.Type
 
 export const NoteChange = Schema.Union([
     Schema.Struct({ stored: Schema.Literal(true), note: NoteView }),
-    Schema.Struct({ stored: Schema.Literal(false) }),
+    Schema.Struct({
+        stored: Schema.Literal(false),
+        /** The session has ended; retrying will not help. */
+        signedOut: Schema.Boolean,
+    }),
 ])
 export type NoteChange = typeof NoteChange.Type
 
-export const NoteDeletion = Schema.Struct({ deleted: Schema.Boolean })
+export const NoteDeletion = Schema.Struct({
+    deleted: Schema.Boolean,
+    /** The session has ended; retrying will not help. */
+    signedOut: Schema.Boolean,
+})
 export type NoteDeletion = typeof NoteDeletion.Type

@@ -21,9 +21,13 @@ describe('NoteBody', () => {
     })
 
     it('accepts the blocks noteEditor writes', () => {
-        const blocks = ['heading', 'quote', 'list'].map((type) =>
-            bodyWith({ type, version: 1, children: [] })
-        )
+        const blocks = [
+            { type: 'heading', tag: 'h3' },
+            { type: 'heading', tag: 'h4' },
+            { type: 'quote' },
+            { type: 'list', tag: 'ul', listType: 'bullet' },
+            { type: 'list', tag: 'ol', listType: 'number' },
+        ].map((block) => bodyWith({ ...block, version: 1, children: [] }))
 
         const decoded = blocks.map((block) => decodeBody(block))
 
@@ -54,6 +58,8 @@ describe('NoteBody', () => {
     it('accepts formatted text, links and line breaks inside a list', () => {
         const linkedList = bodyWith({
             type: 'list',
+            tag: 'ul',
+            listType: 'bullet',
             version: 1,
             children: [
                 {
@@ -74,6 +80,31 @@ describe('NoteBody', () => {
         })
 
         expect(Result.isSuccess(decodeBody(linkedList))).toBe(true)
+    })
+
+    it('rejects nodes the renderer cannot draw', () => {
+        const unreadable = [
+            { type: 'heading', tag: 'h1', version: 1, children: [] },
+            { type: 'list', tag: 'script', listType: 'bullet', version: 1 },
+            {
+                type: 'paragraph',
+                version: 1,
+                children: [{ type: 'link', version: 3, children: [] }],
+            },
+        ].map((block) => bodyWith(block))
+
+        const accepted = unreadable.map((body) =>
+            Result.isSuccess(decodeBody(body))
+        )
+
+        expect(accepted).toEqual([false, false, false])
+    })
+
+    it('rejects a root of another type', () => {
+        const { root } = paragraphsToLexical('Kiew')
+        const notRoot = { root: { ...root, type: 'paragraph' } }
+
+        expect(Result.isFailure(decodeBody(notRoot))).toBe(true)
     })
 
     it('rejects a value that is not rich text', () => {
