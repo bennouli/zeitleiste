@@ -196,3 +196,31 @@ test('a user creates a note in the admin and only they see it listed', async ({
     })
     await expect(listed(strangerPage)).toHaveCount(0)
 })
+
+test("deleting a user deletes that user's notes", async ({ request }) => {
+    const leaver = { email: emailFor('leaver'), password: 'leaver-pass-1' }
+    const user = await payload.create({
+        collection: 'users',
+        data: {
+            ...leaver,
+            role: 'editor',
+            invitationAcceptedAt: new Date().toISOString(),
+        },
+    })
+    userIds.set(leaver.email, user.id)
+    const leaverHeaders = await authHeaders(request, leaver)
+    const noteId = await createNote(request, leaverHeaders, { body: BODY })
+    const adminHeaders = await authHeaders(request, ADMIN)
+
+    const removal = await request.delete(`/api/users/${user.id}`, {
+        headers: adminHeaders,
+    })
+    expect(removal.status()).toBe(200)
+    userIds.delete(leaver.email)
+
+    const { totalDocs } = await payload.count({
+        collection: 'notes',
+        where: { id: { equals: noteId } },
+    })
+    expect(totalDocs).toBe(0)
+})

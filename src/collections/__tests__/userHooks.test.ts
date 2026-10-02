@@ -1,6 +1,7 @@
 import { AuthenticationError, type PayloadRequest } from 'payload'
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 import {
+    deleteOwnedNotes,
     inviteNewUser,
     requireAcceptedInvitation,
     resendInvitationEndpoint,
@@ -23,6 +24,7 @@ const fakeRequest = (fields: object) =>
 type LoginArgs = Parameters<typeof requireAcceptedInvitation>[0]
 type ChangeArgs = Parameters<typeof stampInvitation>[0]
 type AfterChangeArgs = Parameters<typeof inviteNewUser>[0]
+type DeleteArgs = Parameters<typeof deleteOwnedNotes>[0]
 
 describe('requireAcceptedInvitation', () => {
     it('lets an accepted user log in', () => {
@@ -113,6 +115,22 @@ describe('stampInvitation', () => {
             req: fakeRequest({}),
         } as unknown as ChangeArgs
         expect(await stampInvitation(args)).toBe(data)
+    })
+})
+
+describe('deleteOwnedNotes', () => {
+    it("deletes the user's notes inside the delete's transaction", async () => {
+        const deleteNotes = vi.fn().mockResolvedValue({ docs: [] })
+        const req = fakeRequest({})
+        req.payload.delete = deleteNotes
+        const args = { id: editor.id, req } as unknown as DeleteArgs
+        await deleteOwnedNotes(args)
+        expect(deleteNotes).toHaveBeenCalledWith({
+            collection: 'notes',
+            where: { owner: { equals: editor.id } },
+            overrideAccess: true,
+            req,
+        })
     })
 })
 
