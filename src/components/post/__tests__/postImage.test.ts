@@ -9,6 +9,7 @@ const W1600 = { url: '/zar-1600.png', width: 1600, height: 1000 }
 
 const mediaWith = (sizes: Media['sizes']): Media => ({
     id: 1,
+    alt: 'Der Zar',
     ...ORIGINAL,
     sizes,
     updatedAt: '',

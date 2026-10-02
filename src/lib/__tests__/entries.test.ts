@@ -29,13 +29,11 @@ const post = found([{ id: 7, body }])
 const nothing = found([])
 const unreachable = new Error('connection refused')
 const withoutSlug = found([{ ...entryDoc('krimkrieg', null), slug: null }])
-const withEnglishOnlyEntry = found([
+const withUntitledEntry = found([
     entryDoc('krimkrieg', null),
-    { ...entryDoc('crimean-war', null), title: null, summary: null },
+    { ...entryDoc('ohne-titel', null), title: null, summary: null },
 ])
-const englishOnlyWithPost = found([
-    { ...entryDoc('crimean-war', 7), title: null },
-])
+const untitledWithPost = found([{ ...entryDoc('ohne-titel', 7), title: null }])
 const mixed = found([
     entryDoc('krimkrieg', 7),
     entryDoc('wiener-kongress', null),
@@ -49,14 +47,12 @@ beforeEach(() => {
 describe('loadEntries', () => {
     it('asks for published entries only, as a visitor, in start order', async () => {
         find.mockResolvedValueOnce(withoutPost)
-        await Effect.runPromise(loadEntries('en'))
+        await Effect.runPromise(loadEntries())
         expect(find).toHaveBeenCalledWith(
             expect.objectContaining({
                 collection: 'entries',
                 overrideAccess: false,
                 draft: false,
-                locale: 'en',
-                fallbackLocale: 'de',
                 sort: 'startAt',
                 pagination: false,
             })
@@ -65,7 +61,7 @@ describe('loadEntries', () => {
 
     it('marks entries with a post without loading its body', async () => {
         find.mockResolvedValueOnce(mixed)
-        const entries = await Effect.runPromise(loadEntries('de'))
+        const entries = await Effect.runPromise(loadEntries())
         expect(entries.map((e) => [e.id, e.post !== undefined])).toEqual([
             ['krimkrieg', true],
             ['wiener-kongress', false],
@@ -73,21 +69,21 @@ describe('loadEntries', () => {
         expect(find).toHaveBeenCalledTimes(1)
     })
 
-    it('leaves out an entry without texts in the locale', async () => {
-        find.mockResolvedValueOnce(withEnglishOnlyEntry)
-        const entries = await Effect.runPromise(loadEntries('de'))
+    it('leaves out an entry without texts', async () => {
+        find.mockResolvedValueOnce(withUntitledEntry)
+        const entries = await Effect.runPromise(loadEntries())
         expect(entries.map((e) => e.id)).toEqual(['krimkrieg'])
     })
 
     it('fails with a LoadError when the content management fails', async () => {
         find.mockRejectedValueOnce(unreachable)
-        const error = await Effect.runPromise(Effect.flip(loadEntries('de')))
+        const error = await Effect.runPromise(Effect.flip(loadEntries()))
         expect(error._tag).toBe('LoadError')
     })
 
     it('fails with a LoadError on a document it cannot read', async () => {
         find.mockResolvedValueOnce(withoutSlug)
-        const error = await Effect.runPromise(Effect.flip(loadEntries('de')))
+        const error = await Effect.runPromise(Effect.flip(loadEntries()))
         expect(error._tag).toBe('LoadError')
     })
 })
@@ -96,7 +92,7 @@ describe('loadPost', () => {
     it('loads the post of the published entry at the slug, with its images', async () => {
         find.mockResolvedValueOnce(withPost)
         find.mockResolvedValueOnce(post)
-        const entry = await Effect.runPromise(loadPost('krimkrieg', 'de'))
+        const entry = await Effect.runPromise(loadPost('krimkrieg'))
         expect(entry?.post?.body).toEqual(body)
         expect(find).toHaveBeenNthCalledWith(
             1,
@@ -112,7 +108,6 @@ describe('loadPost', () => {
             expect.objectContaining({
                 collection: 'posts',
                 where: { id: { equals: 7 } },
-                locale: 'de',
                 select: { body: true },
                 depth: 1,
             })
@@ -121,25 +116,19 @@ describe('loadPost', () => {
 
     it('finds nothing for an unpublished or unknown slug', async () => {
         find.mockResolvedValueOnce(nothing)
-        expect(
-            await Effect.runPromise(loadPost('entwurf', 'de'))
-        ).toBeUndefined()
+        expect(await Effect.runPromise(loadPost('entwurf'))).toBeUndefined()
         expect(find).toHaveBeenCalledTimes(1)
     })
 
-    it('finds nothing for an entry without texts in the locale', async () => {
-        find.mockResolvedValueOnce(englishOnlyWithPost)
-        expect(
-            await Effect.runPromise(loadPost('crimean-war', 'de'))
-        ).toBeUndefined()
+    it('finds nothing for an entry without texts', async () => {
+        find.mockResolvedValueOnce(untitledWithPost)
+        expect(await Effect.runPromise(loadPost('ohne-titel'))).toBeUndefined()
         expect(find).toHaveBeenCalledTimes(1)
     })
 
     it('finds nothing for an entry without a post', async () => {
         find.mockResolvedValueOnce(withoutPost)
-        expect(
-            await Effect.runPromise(loadPost('krimkrieg', 'de'))
-        ).toBeUndefined()
+        expect(await Effect.runPromise(loadPost('krimkrieg'))).toBeUndefined()
         expect(find).toHaveBeenCalledTimes(1)
     })
 })

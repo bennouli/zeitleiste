@@ -14,7 +14,6 @@ import { Tags } from './collections/Tags'
 import { Users } from './collections/Users'
 import { deploymentOrigins } from './deployment'
 import { emailAdapter } from './email'
-import { DEFAULT_LOCALE } from './i18n/locales'
 import { blobStoragePlugin, mediaStorage } from './storage'
 
 const PayloadEnv = Schema.Struct({
@@ -45,14 +44,6 @@ export default buildConfig({
         Tags,
         mediaCollection(storage),
     ],
-    localization: {
-        locales: [
-            { code: 'de', label: 'Deutsch' },
-            { code: 'en', label: 'English' },
-        ],
-        defaultLocale: DEFAULT_LOCALE,
-        fallback: true,
-    },
     editor: lexicalEditor(),
     email: emailAdapter(process.env),
     secret: payloadEnv.PAYLOAD_SECRET,

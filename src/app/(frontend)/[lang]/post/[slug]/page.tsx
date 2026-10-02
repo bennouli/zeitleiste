@@ -1,5 +1,4 @@
 import { Post } from '@/components/post/Post'
-import type { Locale } from '@/i18n/locales'
 import { messages } from '@/i18n/messages'
 import { routeLocale } from '@/i18n/routeLocale'
 import { loadEntries, loadPost } from '@/lib/entries'
@@ -15,23 +14,16 @@ type Props = {
 
 export const dynamicParams = true
 
-const publishedPost = cache((slug: string, locale: Locale) =>
-    Effect.runPromise(loadPost(slug, locale))
-)
+const publishedPost = cache((slug: string) => Effect.runPromise(loadPost(slug)))
 
 async function postOfRoute({ params }: Props) {
     const { lang, slug } = await params
-    return publishedPost(slug, routeLocale(lang))
+    routeLocale(lang)
+    return publishedPost(slug)
 }
 
-export async function generateStaticParams({
-    params,
-}: {
-    params: { lang: string }
-}) {
-    const entries = await Effect.runPromise(
-        loadEntries(routeLocale(params.lang))
-    )
+export async function generateStaticParams() {
+    const entries = await Effect.runPromise(loadEntries())
     return postSlugs(entries).map((slug) => ({ slug }))
 }
 

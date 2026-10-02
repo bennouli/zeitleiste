@@ -1,7 +1,5 @@
 import { MEDIA_WIDTHS } from '@/lib/media'
 import type { CollectionConfig } from 'payload'
-import { text } from 'payload/shared'
-import { requiredInGerman } from './requiredInGerman'
 import { loggedIn } from './userAccess'
 
 export const mediaCollection = ({
@@ -35,18 +33,16 @@ export const mediaCollection = ({
             name: 'alt',
             type: 'text',
             label: 'Alternativtext',
-            localized: true,
-            validate: requiredInGerman(text),
+            required: true,
             admin: {
                 description:
-                    'Beschreibt das Bild für alle, die es nicht sehen. Pflicht auf Deutsch.',
+                    'Beschreibt das Bild für alle, die es nicht sehen.',
             },
         },
         {
             name: 'caption',
             type: 'text',
             label: 'Bildunterschrift',
-            localized: true,
         },
         {
             name: 'credit',

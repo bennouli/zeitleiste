@@ -98,10 +98,10 @@ export interface Config {
   db: {
     defaultIDType: number;
   };
-  fallbackLocale: ('false' | 'none' | 'null') | false | null | ('de' | 'en') | ('de' | 'en')[];
+  fallbackLocale: null;
   globals: {};
   globalsSelect: {};
-  locale: 'de' | 'en';
+  locale: null;
   widgets: {
     collections: CollectionsWidget;
   };
@@ -167,7 +167,7 @@ export interface User {
  */
 export interface Entry {
   id: number;
-  title?: string | null;
+  title: string;
   /**
    * When enabled, the slug will auto-generate from the title field on save and autosave.
    */
@@ -176,7 +176,7 @@ export interface Entry {
   /**
    * Hinweis beim Überfahren und Vorspann des Beitrags.
    */
-  summary?: string | null;
+  summary: string;
   startYear: number;
   startMonth?: number | null;
   startDay?: number | null;
@@ -236,7 +236,7 @@ export interface Tag {
  */
 export interface Post {
   id: number;
-  body?: {
+  body: {
     root: {
       type: string;
       children: {
@@ -250,7 +250,7 @@ export interface Post {
       version: number;
     };
     [k: string]: unknown;
-  } | null;
+  };
   entry?: {
     docs?: (number | Entry)[];
     hasNextPage?: boolean;
@@ -266,9 +266,9 @@ export interface Post {
 export interface Media {
   id: number;
   /**
-   * Beschreibt das Bild für alle, die es nicht sehen. Pflicht auf Deutsch.
+   * Beschreibt das Bild für alle, die es nicht sehen.
    */
-  alt?: string | null;
+  alt: string;
   caption?: string | null;
   /**
    * Urheber oder Herkunft, z. B. „Wikimedia Commons“.

@@ -125,7 +125,6 @@ async function storedSummary(id: number) {
         collection: 'entries',
         id,
         draft: true,
-        locale: 'de',
     })
     return entry.summary
 }

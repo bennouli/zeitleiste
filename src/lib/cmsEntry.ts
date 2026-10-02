@@ -16,7 +16,7 @@ const CmsImageSize = Schema.Struct({
     height: OptionalNumber,
 })
 
-/** An image as the Local API populates it into a post's upload node, texts in the locale read. */
+/** An image as the Local API populates it into a post's upload node. */
 const CmsMedia = Schema.StructWithRest(
     Schema.Struct({
         id: Id,
@@ -87,7 +87,7 @@ const SluggedRelation = Schema.optional(
     Schema.NullOr(Schema.Union([Id, Slugged]))
 )
 
-/** A published entry as the Local API returns it at depth 1; its texts may be missing in the locale read. */
+/** A published entry as the Local API returns it at depth 1; its texts may be missing. */
 export const CmsEntry = Schema.Struct({
     slug: Schema.NonEmptyString,
     title: OptionalString,
@@ -115,7 +115,7 @@ export const CmsEntry = Schema.Struct({
 })
 export type CmsEntry = typeof CmsEntry.Type
 
-/** A CMS entry with its title and summary in the locale it was read in. */
+/** A CMS entry with its title and summary. */
 export type TextedCmsEntry = CmsEntry & { title: string; summary: string }
 
 type DateParts = {
@@ -124,7 +124,7 @@ type DateParts = {
     day?: number | null
 }
 
-/** Whether a CMS entry has its title and summary in the locale it was read in. */
+/** Whether a CMS entry has its title and summary. */
 export function hasTexts(doc: CmsEntry): doc is TextedCmsEntry {
     return Boolean(doc.title) && Boolean(doc.summary)
 }

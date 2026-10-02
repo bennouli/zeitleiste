@@ -1,4 +1,3 @@
-import { DEFAULT_LOCALE, type Locale } from '@/i18n/locales'
 import config from '@/payload.config'
 import { Data, Effect, Schema } from 'effect'
 import { getPayload, type Payload, type Where } from 'payload'
@@ -17,36 +16,29 @@ const POST_NOT_LOADED: Post = { body: paragraphsToLexical('') }
  * Every published entry, sorted by start. An entry's post is only marked as
  * present; `loadPost` loads its body.
  */
-export const loadEntries = Effect.fn('loadEntries')(function* (locale: Locale) {
-    const docs = yield* findPublishedEntries(locale, {})
+export const loadEntries = Effect.fn('loadEntries')(function* () {
+    const docs = yield* findPublishedEntries({})
     return docs.map((doc) =>
         entryOf(doc, postIdOf(doc) === undefined ? undefined : POST_NOT_LOADED)
     )
 })
 
 /** The published entry at `slug` with its post; undefined if there is none or it has no post. */
-export const loadPost = Effect.fn('loadPost')(function* (
-    slug: string,
-    locale: Locale
-) {
-    const [doc] = yield* findPublishedEntries(locale, {
-        slug: { equals: slug },
-    })
+export const loadPost = Effect.fn('loadPost')(function* (slug: string) {
+    const [doc] = yield* findPublishedEntries({ slug: { equals: slug } })
     const postId = doc && postIdOf(doc)
     if (doc === undefined || postId === undefined) return undefined
-    const post = yield* findPost(postId, locale)
+    const post = yield* findPost(postId)
     return post && entryOf(doc, post)
 })
 
-function findPublishedEntries(locale: Locale, where: Where) {
+function findPublishedEntries(where: Where) {
     return payloadCall('find entries', (payload) =>
         payload.find({
             collection: 'entries',
             where,
             overrideAccess: false,
             draft: false,
-            locale,
-            fallbackLocale: DEFAULT_LOCALE,
             depth: 1,
             sort: 'startAt',
             pagination: false,
@@ -61,14 +53,12 @@ function findPublishedEntries(locale: Locale, where: Where) {
  * Posts are readable by editors only, so the Local API leaves an anonymous
  * entry's `post` as an id. Only ids taken from a published entry reach here.
  */
-function findPost(id: number, locale: Locale) {
+function findPost(id: number) {
     return payloadCall('find post', (payload) =>
         payload.find({
             collection: 'posts',
             where: { id: { equals: id } },
             overrideAccess: true,
-            locale,
-            fallbackLocale: DEFAULT_LOCALE,
             select: { body: true },
             depth: 1,
             limit: 1,
