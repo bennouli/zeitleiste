@@ -1,6 +1,6 @@
 import type { NoteView } from '@/lib/noteSchema'
 import { describe, expect, it } from 'vitest'
-import { withNote, withoutNote } from '../note'
+import { linkedEntryOf, withNote, withoutNote } from '../note'
 import { noteBody, paragraph, text } from './noteFixtures'
 
 function noteAt(
@@ -8,7 +8,12 @@ function noteAt(
     updatedAt: string,
     words = `Notiz ${id}`
 ): NoteView {
-    return { id, updatedAt, body: noteBody(paragraph(text(words))) }
+    return {
+        id,
+        updatedAt,
+        body: noteBody(paragraph(text(words))),
+        entry: null,
+    }
 }
 
 describe('withNote', () => {
@@ -40,5 +45,24 @@ describe('withoutNote', () => {
         const notes = [deleted, kept]
 
         expect(withoutNote(notes, deleted.id)).toEqual([kept])
+    })
+})
+
+describe('linkedEntryOf', () => {
+    it('gives the linked entry the reader may read', () => {
+        const entry = { id: 32, title: 'Mongolen erobern Kiew' }
+        const linkedNote = { ...noteAt(1, '2026-10-01T10:00:00.000Z'), entry }
+
+        expect(linkedEntryOf(linkedNote)).toEqual(entry)
+    })
+
+    it('treats an entry hidden from the reader, given by id only, as no link', () => {
+        const hiddenEntryId = 32
+        const linkedNote = {
+            ...noteAt(1, '2026-10-01T10:00:00.000Z'),
+            entry: hiddenEntryId,
+        }
+
+        expect(linkedEntryOf(linkedNote)).toBeNull()
     })
 })

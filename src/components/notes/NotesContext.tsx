@@ -1,6 +1,7 @@
 'use client'
 
 import type {
+    EntrySearch,
     NoteBodyInput,
     NoteChange,
     NoteDeletion,
@@ -23,9 +24,13 @@ export type NotesActions = {
     createNote: (body: NoteBodyInput) => Promise<NoteChange>
     updateNote: (id: number, body: NoteBodyInput) => Promise<NoteChange>
     deleteNote: (id: number) => Promise<NoteDeletion>
+    linkNote: (id: number, entryId: number | null) => Promise<NoteChange>
+    searchEntries: (query: string) => Promise<EntrySearch>
 }
 
-export type NotesFailure = 'load' | 'save' | 'delete' | 'signedOut' | null
+type NoteChangeKind = 'save' | 'link' | 'delete'
+
+export type NotesFailure = NoteChangeKind | 'load' | 'signedOut' | null
 
 export type NotesState = {
     signedIn: boolean
@@ -37,6 +42,9 @@ export type NotesState = {
     create: (body: NoteBodyInput) => Promise<boolean>
     update: (id: number, body: NoteBodyInput) => Promise<boolean>
     remove: (id: number) => Promise<boolean>
+    /** Links the note to the entry; null removes its link. */
+    link: (id: number, entryId: number | null) => Promise<boolean>
+    searchEntries: (query: string) => Promise<EntrySearch>
 }
 
 const NOT_SIGNED_IN: NotesState = {
@@ -46,6 +54,8 @@ const NOT_SIGNED_IN: NotesState = {
     create: async () => false,
     update: async () => false,
     remove: async () => false,
+    link: async () => false,
+    searchEntries: async () => ({ searched: false, signedOut: true }),
 }
 
 const NotesContext = createContext<NotesState>(NOT_SIGNED_IN)
@@ -65,22 +75,27 @@ export function NotesProvider({
         initialLoad.loadFailed ? 'load' : null
     )
 
-    const applyChange = useCallback(async (change: Promise<NoteChange>) => {
-        const noteChange = await change.catch((): NoteChange => ({
-            stored: false,
-            signedOut: false,
-        }))
-        setFailure(
-            failureOf(
-                noteChange.stored,
-                !noteChange.stored && noteChange.signedOut,
-                'save'
+    const applyChange = useCallback(
+        async (change: Promise<NoteChange>, attempted: 'save' | 'link') => {
+            const noteChange = await change.catch((): NoteChange => ({
+                stored: false,
+                signedOut: false,
+            }))
+            setFailure(
+                failureOf(
+                    noteChange.stored,
+                    !noteChange.stored && noteChange.signedOut,
+                    attempted
+                )
             )
-        )
-        if (noteChange.stored)
-            setNotes((currentNotes) => withNote(currentNotes, noteChange.note))
-        return noteChange.stored
-    }, [])
+            if (noteChange.stored)
+                setNotes((currentNotes) =>
+                    withNote(currentNotes, noteChange.note)
+                )
+            return noteChange.stored
+        },
+        []
+    )
 
     const remove = useCallback(
         async (id: number) => {
@@ -104,9 +119,13 @@ export function NotesProvider({
             signedIn: true,
             notes,
             failure,
-            create: (body) => applyChange(actions.createNote(body)),
-            update: (id, body) => applyChange(actions.updateNote(id, body)),
+            create: (body) => applyChange(actions.createNote(body), 'save'),
+            update: (id, body) =>
+                applyChange(actions.updateNote(id, body), 'save'),
             remove,
+            link: (id, entryId) =>
+                applyChange(actions.linkNote(id, entryId), 'link'),
+            searchEntries: actions.searchEntries,
         }),
         [notes, failure, actions, applyChange, remove]
     )
@@ -121,7 +140,7 @@ export function NotesProvider({
 function failureOf(
     succeeded: boolean,
     signedOut: boolean,
-    attempted: 'save' | 'delete'
+    attempted: NoteChangeKind
 ): NotesFailure {
     if (succeeded) return null
     return signedOut ? 'signedOut' : attempted

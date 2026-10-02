@@ -1,18 +1,22 @@
 'use client'
 
 import { useI18n } from '@/components/I18nContext'
-import type { NoteView } from '@/lib/noteSchema'
-import { ChevronDown, ChevronUp, Pencil, Trash2 } from 'lucide-react'
-import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react'
+import type { LinkedEntry, NoteView } from '@/lib/noteSchema'
+import { ChevronDown, ChevronUp, Link2, Pencil, Trash2, X } from 'lucide-react'
+import {
+    useEffect,
+    useId,
+    useLayoutEffect,
+    useRef,
+    useState,
+    type RefObject,
+} from 'react'
+import { EntryPicker } from './EntryPicker'
 import { NoteEditor } from './NoteEditor'
 import { NoteRichText } from './NoteRichText'
-import { useNotes } from './NotesContext'
 import { BUTTON_CLASS, ICON_BUTTON_CLASS, NOTE_TITLE_CLASS } from './noteStyles'
 import { splitTitle } from './noteTitle'
-
-type CardMode = 'reading' | 'editing' | 'confirmingDelete'
-
-type CardButton = 'edit' | 'delete'
+import { useNoteCard } from './useNoteCard'
 
 type NoteListProps = {
     notes: NoteView[]
@@ -40,73 +44,91 @@ function NoteCard({
     onDeleted: () => void
 }) {
     const { t } = useI18n()
-    const { update, remove } = useNotes()
-    const [mode, setMode] = useState<CardMode>('reading')
-    const focusTarget = useRef<CardButton | null>(null)
-    const editButtonRef = useRef<HTMLButtonElement>(null)
-    const deleteButtonRef = useRef<HTMLButtonElement>(null)
+    const {
+        mode,
+        linkedEntry,
+        editButtonRef,
+        deleteButtonRef,
+        linkButtonRef,
+        unlinkButtonRef,
+        startEditing,
+        startLinking,
+        askToDelete,
+        cancelEditing,
+        cancelLinking,
+        cancelDelete,
+        save,
+        confirmDelete,
+        linkTo,
+        unlink,
+    } = useNoteCard(note, onDeleted)
     const { title, rest } = splitTitle(note.body)
     const shownTitle = title || t.notes.untitled
-
-    useEffect(() => {
-        if (mode !== 'reading' || focusTarget.current === null) return
-        const button =
-            focusTarget.current === 'edit' ? editButtonRef : deleteButtonRef
-        focusTarget.current = null
-        button.current?.focus()
-    }, [mode])
-
-    const readAgain = (button: CardButton) => {
-        focusTarget.current = button
-        setMode('reading')
-    }
-
-    const confirmDelete = async () => {
-        if (await remove(note.id)) onDeleted()
-        else readAgain('delete')
-    }
 
     if (mode === 'editing')
         return (
             <NoteEditor
                 initialBody={note.body}
                 label={t.notes.editLabel(shownTitle)}
-                onSave={async (body) => {
-                    const isStored = await update(note.id, body)
-                    if (isStored) readAgain('edit')
-                    return isStored
-                }}
-                onCancel={() => readAgain('edit')}
+                onSave={save}
+                onCancel={cancelEditing}
             />
         )
 
     return (
         <article className="flex flex-col gap-1">
             <h3 className={`${NOTE_TITLE_CLASS} break-words`}>{shownTitle}</h3>
+            {linkedEntry && (
+                <EntryLink
+                    entry={linkedEntry}
+                    onUnlink={() => void unlink()}
+                    unlinkButtonRef={unlinkButtonRef}
+                />
+            )}
             <ClampedBody>
                 <NoteRichText body={rest} />
             </ClampedBody>
-            {mode === 'confirmingDelete' ? (
+            {mode === 'linking' && (
+                <EntryPicker
+                    label={t.notes.linkLabel(shownTitle)}
+                    onPick={(entry) => void linkTo(entry)}
+                    onCancel={cancelLinking}
+                />
+            )}
+            {mode === 'confirmingDelete' && (
                 <DeleteConfirmation
                     onConfirm={() => void confirmDelete()}
-                    onCancel={() => readAgain('delete')}
+                    onCancel={cancelDelete}
                 />
-            ) : (
-                <div className="flex justify-end gap-1">
+            )}
+            {mode === 'reading' && (
+                <div className="flex flex-wrap justify-end gap-1">
                     <button
                         ref={editButtonRef}
                         type="button"
-                        onClick={() => setMode('editing')}
+                        onClick={startEditing}
                         aria-label={t.notes.editLabel(shownTitle)}
                         className={ICON_BUTTON_CLASS}
                     >
                         <Pencil aria-hidden size={14} strokeWidth={1.5} />
                         {t.notes.edit}
                     </button>
+                    {!linkedEntry && (
+                        <button
+                            ref={linkButtonRef}
+                            type="button"
+                            onClick={startLinking}
+                            aria-label={t.notes.linkLabel(shownTitle)}
+                            className={ICON_BUTTON_CLASS}
+                        >
+                            <Link2 aria-hidden size={14} strokeWidth={1.5} />
+                            {t.notes.link}
+                        </button>
+                    )}
                     <button
                         ref={deleteButtonRef}
                         type="button"
-                        onClick={() => setMode('confirmingDelete')}
+                        onClick={askToDelete}
                         aria-label={t.notes.deleteLabel(shownTitle)}
                         className={ICON_BUTTON_CLASS}
                     >
@@ -116,6 +138,36 @@ function NoteCard({
                 </div>
             )}
         </article>
+    )
+}
+
+function EntryLink({
+    entry,
+    onUnlink,
+    unlinkButtonRef,
+}: {
+    entry: LinkedEntry
+    onUnlink: () => void
+    unlinkButtonRef: RefObject<HTMLButtonElement | null>
+}) {
+    const { t } = useI18n()
+    return (
+        <p className="flex items-center gap-1.5 text-label-lg text-fg-muted">
+            <Link2 aria-hidden size={14} strokeWidth={1.5} />
+            <span className="sr-only">{t.notes.linkedTo(entry.title)}</span>
+            <span aria-hidden className="min-w-0 break-words">
+                {entry.title}
+            </span>
+            <button
+                ref={unlinkButtonRef}
+                type="button"
+                onClick={onUnlink}
+                aria-label={t.notes.unlinkLabel(entry.title)}
+                className={ICON_BUTTON_CLASS}
+            >
+                <X aria-hidden size={14} strokeWidth={1.5} />
+            </button>
+        </p>
     )
 }
 

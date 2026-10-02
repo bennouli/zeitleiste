@@ -1,6 +1,10 @@
 import { Schema } from 'effect'
 
-export const NoteId = Schema.Int.check(Schema.isGreaterThan(0))
+const DocumentId = Schema.Int.check(Schema.isGreaterThan(0))
+
+export const NoteId = DocumentId
+
+export const EntryId = DocumentId
 
 export const NoteNode = Schema.StructWithRest(
     Schema.Struct({ type: Schema.String, version: Schema.Number }),
@@ -128,12 +132,18 @@ export type NoteBody = typeof NoteBody.Type
 /** A body as a caller hands it to an action, before decoding. */
 export type NoteBodyInput = typeof NoteBody.Encoded
 
+/** An entry as a note links to it and the entry search offers it. */
+export const LinkedEntry = Schema.Struct({ id: EntryId, title: Schema.String })
+export type LinkedEntry = typeof LinkedEntry.Type
+
 /** A stored note as the client holds it. */
 export const NoteView = Schema.Struct({
     id: NoteId,
     body: NoteBody,
     /** ISO timestamp of the last change. */
     updatedAt: Schema.String,
+    /** The linked entry; only its id when the reader may not read it. */
+    entry: Schema.NullOr(Schema.Union([LinkedEntry, EntryId])),
 })
 export type NoteView = typeof NoteView.Type
 
@@ -153,6 +163,26 @@ export const NoteChange = Schema.Union([
     }),
 ])
 export type NoteChange = typeof NoteChange.Type
+
+/** What a search for an entry to link a note to yields. */
+export const EntrySearch = Schema.Union([
+    Schema.Struct({
+        searched: Schema.Literal(true),
+        entries: Schema.Array(LinkedEntry),
+    }),
+    Schema.Struct({
+        searched: Schema.Literal(false),
+        /** The session has ended; retrying will not help. */
+        signedOut: Schema.Boolean,
+    }),
+])
+export type EntrySearch = typeof EntrySearch.Type
+
+/** Text typed into the entry search, trimmed. */
+export const EntryQuery = Schema.Trim.check(
+    Schema.isMinLength(1),
+    Schema.isMaxLength(200)
+)
 
 export const NoteDeletion = Schema.Struct({
     deleted: Schema.Boolean,

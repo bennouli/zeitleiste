@@ -15,7 +15,12 @@ const READER = {
     email: 'reader@example.test',
 } as User
 const BODY = paragraphsToLexical('Kiew 1240')
-const STORED = { id: 7, body: BODY, updatedAt: '2026-10-02T10:00:00.000Z' }
+const STORED = {
+    id: 7,
+    body: BODY,
+    updatedAt: '2026-10-02T10:00:00.000Z',
+    entry: null,
+}
 
 beforeEach(() => {
     vi.resetAllMocks()
@@ -35,6 +40,23 @@ describe('loadReaderNotes', () => {
                 user: READER,
                 overrideAccess: false,
                 sort: '-updatedAt',
+                where: {},
+            })
+        )
+    })
+
+    it('brings the title of each linked entry along', async () => {
+        const entry = { id: 31, title: 'Mongolen erobern Kiew' }
+        const foundNotes = { docs: [{ ...STORED, entry }] }
+        payloadStub.find.mockResolvedValue(foundNotes)
+
+        const notesLoad = await Effect.runPromise(loadReaderNotes(READER))
+
+        expect(notesLoad.notes).toEqual([{ ...STORED, entry }])
+        expect(payloadStub.find).toHaveBeenCalledWith(
+            expect.objectContaining({
+                select: expect.objectContaining({ entry: true }),
+                populate: { entries: { title: true } },
             })
         )
     })

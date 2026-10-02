@@ -7,11 +7,23 @@ import { loadEntries } from '@/lib/entries'
 import { Effect } from 'effect'
 import type { Metadata } from 'next'
 import type { ReactNode } from 'react'
-import { createNote, deleteNote, updateNote } from './notes/actions'
+import {
+    createNote,
+    deleteNote,
+    linkNote,
+    searchEntries,
+    updateNote,
+} from './notes/actions'
 import { loadReaderNotes } from './notes/readerNotes'
 import { requireReader } from './reader'
 
-const NOTES_ACTIONS = { createNote, updateNote, deleteNote }
+const NOTES_ACTIONS = {
+    createNote,
+    updateNote,
+    deleteNote,
+    linkNote,
+    searchEntries,
+}
 
 /** Title and description of the site in one locale. */
 export function siteMetadata(locale: Locale): Metadata {

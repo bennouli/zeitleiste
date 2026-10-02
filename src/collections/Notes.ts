@@ -19,5 +19,12 @@ export const Notes: CollectionConfig = {
             required: true,
             editor: noteEditor,
         },
+        {
+            name: 'entry',
+            type: 'relationship',
+            label: 'Eintrag',
+            relationTo: 'entries',
+            admin: { position: 'sidebar' },
+        },
     ],
 }

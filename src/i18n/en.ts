@@ -82,6 +82,18 @@ export const en = {
         editLabel: (title) => `Edit note: ${title}`,
         delete: 'Delete',
         deleteLabel: (title) => `Delete note: ${title}`,
+        link: 'Link',
+        linkLabel: (title) => `Link note to an entry: ${title}`,
+        linkedTo: (entryTitle) => `Linked to ${entryTitle}`,
+        unlinkLabel: (entryTitle) => `Remove link to ${entryTitle}`,
+        entrySearch: 'Search entries',
+        entrySearchHint: 'Type part of the title.',
+        entrySearching: 'Searching …',
+        entriesFound: (count) =>
+            count === 1 ? 'One entry found.' : `${count} entries found.`,
+        noEntryFound: 'No entry found.',
+        entrySearchFailed:
+            'Searching is not possible right now. Please try again.',
         confirmDelete: 'Delete this note?',
         showAll: 'Show all',
         showLess: 'Show less',
@@ -92,6 +104,7 @@ export const en = {
         close: 'Close notes',
         failed: {
             save: 'The note could not be saved. Please try again.',
+            link: 'The link could not be saved. Please try again.',
             delete: 'The note could not be deleted. Please try again.',
             load: 'Your notes could not be loaded. Please reload the page.',
             signedOut:
