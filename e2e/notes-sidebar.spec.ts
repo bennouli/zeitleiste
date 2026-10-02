@@ -3,54 +3,18 @@ import { expect, test, type Page } from '@playwright/test'
 import type { Payload } from 'payload'
 import { paragraphsToLexical } from '../src/lib/richText'
 import { localPayload } from './payload'
-import { expectLoginPage, VISITOR } from './reader'
+import { expectLoginPage, signIn, specAccounts, VISITOR } from './reader'
 
-const RUN = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
+const accounts = specAccounts('sidebar')
+const RUN = accounts.run
 
 let payload: Payload
-const userIds: number[] = []
 
 test.beforeAll(async () => {
     payload = await localPayload()
 })
 
-test.afterAll(async () => {
-    await payload.delete({
-        collection: 'notes',
-        where: { owner: { in: userIds } },
-    })
-    await payload.delete({
-        collection: 'users',
-        where: { id: { in: userIds } },
-    })
-})
-
-async function newAuthor(name: string) {
-    const credentials = {
-        email: `e2e-sidebar-${name}-${RUN}@example.test`,
-        password: `${name}-pass-1`,
-    }
-    const user = await payload.create({
-        collection: 'users',
-        data: {
-            ...credentials,
-            role: 'editor',
-            invitationAcceptedAt: new Date().toISOString(),
-        },
-    })
-    userIds.push(user.id)
-    return { ...credentials, id: user.id }
-}
-
-async function signIn(
-    page: Page,
-    credentials: { email: string; password: string }
-) {
-    const res = await page.request.post('/api/users/login', {
-        data: credentials,
-    })
-    expect(res.status()).toBe(200)
-}
+test.afterAll(() => accounts.removeAll(payload))
 
 async function storeNote(ownerId: number, text: string) {
     return payload.create({
@@ -73,7 +37,7 @@ function newNoteEditor(page: Page) {
 test('a note written with Markdown shortcuts keeps its formatting after a reload', async ({
     page,
 }) => {
-    const author = await newAuthor('markdown')
+    const author = await accounts.create(payload, 'markdown')
     await signIn(page, author)
     await page.goto('/de')
 
@@ -108,7 +72,7 @@ test('a note written with Markdown shortcuts keeps its formatting after a reload
 test('a note longer than twelve lines is cut off and can be expanded', async ({
     page,
 }) => {
-    const author = await newAuthor('long')
+    const author = await accounts.create(payload, 'long')
     const lines = Array.from({ length: 20 }, (_, i) => `Zeile ${i + 1}`)
     const longNote = ['Lange Notiz', ...lines].join('\n\n')
     await storeNote(author.id, longNote)
@@ -132,7 +96,7 @@ test('a note longer than twelve lines is cut off and can be expanded', async ({
 })
 
 test('a note is edited and deleted from the sidebar', async ({ page }) => {
-    const author = await newAuthor('edit')
+    const author = await accounts.create(payload, 'edit')
     await storeNote(author.id, 'Pskow')
     await signIn(page, author)
     await page.goto('/de')
@@ -168,7 +132,7 @@ test('a note is edited and deleted from the sidebar', async ({ page }) => {
 })
 
 test('collapsing the sidebar survives a reload', async ({ page }) => {
-    const author = await newAuthor('collapse')
+    const author = await accounts.create(payload, 'collapse')
     await signIn(page, author)
     await page.goto('/de')
 
@@ -184,7 +148,7 @@ test('collapsing the sidebar survives a reload', async ({ page }) => {
 })
 
 test('the sidebar passes an accessibility check', async ({ page }) => {
-    const author = await newAuthor('a11y')
+    const author = await accounts.create(payload, 'a11y')
     await storeNote(author.id, 'Barrierefrei\n\nZweite Zeile')
     await signIn(page, author)
     await page.goto('/de')
@@ -199,7 +163,7 @@ test.describe('a visitor', () => {
     test.use({ storageState: VISITOR })
 
     test('is sent to the login page and gets no notes', async ({ page }) => {
-        const author = await newAuthor('private')
+        const author = await accounts.create(payload, 'private')
         const secret = `Geheim ${RUN}`
         await storeNote(author.id, secret)
 
@@ -214,7 +178,7 @@ test.describe('a visitor', () => {
 test('a note is written, saved and deleted with the keyboard alone', async ({
     page,
 }) => {
-    const author = await newAuthor('keyboard')
+    const author = await accounts.create(payload, 'keyboard')
     await signIn(page, author)
     await page.goto('/de')
     const sidebar = sidebarOf(page)

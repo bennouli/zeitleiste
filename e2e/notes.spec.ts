@@ -7,67 +7,35 @@ import {
 import type { Payload } from 'payload'
 import { paragraphsToLexical } from '../src/lib/richText'
 import { localPayload } from './payload'
-import { VISITOR } from './reader'
+import {
+    authHeaders,
+    specAccounts,
+    VISITOR,
+    type Account,
+    type Credentials,
+} from './reader'
 
-const RUN = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
-const emailFor = (name: string) => `e2e-notes-${name}-${RUN}@example.test`
-
-const AUTHOR = { email: emailFor('author'), password: 'author-pass-1' }
-const STRANGER = { email: emailFor('stranger'), password: 'stranger-pass-1' }
-const ADMIN = { email: emailFor('admin'), password: 'admin-pass-1' }
+const accounts = specAccounts('notes')
+const RUN = accounts.run
 const BODY = paragraphsToLexical('Nur für mich.')
 const NOTE = { body: BODY }
 
 let payload: Payload
-const userIds = new Map<string, number>()
+let author: Account
+let stranger: Account
+let admin: Account
 
 test.describe.configure({ mode: 'serial' })
 test.use({ storageState: VISITOR })
 
 test.beforeAll(async () => {
     payload = await localPayload()
-    const acceptedAt = new Date().toISOString()
-    const accounts = [
-        { ...AUTHOR, role: 'editor' as const },
-        { ...STRANGER, role: 'editor' as const },
-        { ...ADMIN, role: 'admin' as const },
-    ]
-    for (const account of accounts) {
-        const user = await payload.create({
-            collection: 'users',
-            data: { ...account, invitationAcceptedAt: acceptedAt },
-        })
-        userIds.set(account.email, user.id)
-    }
+    author = await accounts.create(payload, 'author')
+    stranger = await accounts.create(payload, 'stranger')
+    admin = await accounts.create(payload, 'admin', 'admin')
 })
 
-test.afterAll(async () => {
-    const ownerIds = [...userIds.values()]
-    await payload.delete({
-        collection: 'notes',
-        where: { owner: { in: ownerIds } },
-    })
-    await payload.delete({
-        collection: 'users',
-        where: { id: { in: ownerIds } },
-    })
-})
-
-function idOf(email: string): number {
-    const id = userIds.get(email)
-    if (id === undefined) throw new Error(`no user ${email}`)
-    return id
-}
-
-async function authHeaders(
-    request: APIRequestContext,
-    credentials: { email: string; password: string }
-) {
-    const res = await request.post('/api/users/login', { data: credentials })
-    expect(res.status()).toBe(200)
-    const { token } = await res.json()
-    return { Authorization: `JWT ${token}` }
-}
+test.afterAll(() => accounts.removeAll(payload))
 
 async function createNote(
     request: APIRequestContext,
@@ -93,7 +61,7 @@ async function foundNoteIds(
     return docs.map((doc: { id: number }) => doc.id)
 }
 
-async function adminLogin(page: Page, credentials: typeof AUTHOR) {
+async function adminLogin(page: Page, credentials: Credentials) {
     await page.goto('/admin/login', { waitUntil: 'networkidle' })
     await page.getByLabel('Email').fill(credentials.email)
     await page.getByLabel('Password').fill(credentials.password)
@@ -104,9 +72,9 @@ async function adminLogin(page: Page, credentials: typeof AUTHOR) {
 test('a note is returned to its author only, never to another user, an admin or a visitor', async ({
     request,
 }) => {
-    const authorHeaders = await authHeaders(request, AUTHOR)
-    const strangerHeaders = await authHeaders(request, STRANGER)
-    const adminHeaders = await authHeaders(request, ADMIN)
+    const authorHeaders = await authHeaders(request, author)
+    const strangerHeaders = await authHeaders(request, stranger)
+    const adminHeaders = await authHeaders(request, admin)
     const noteId = await createNote(request, authorHeaders, NOTE)
 
     const authorRead = await request.get(`/api/notes/${noteId}`, {
@@ -128,8 +96,8 @@ test('a note is returned to its author only, never to another user, an admin or 
 test('another user can neither change nor delete a note', async ({
     request,
 }) => {
-    const authorHeaders = await authHeaders(request, AUTHOR)
-    const strangerHeaders = await authHeaders(request, STRANGER)
+    const authorHeaders = await authHeaders(request, author)
+    const strangerHeaders = await authHeaders(request, stranger)
     const noteId = await createNote(request, authorHeaders, NOTE)
     const overwrite = { body: paragraphsToLexical('Überschrieben.') }
 
@@ -154,22 +122,20 @@ test('a visitor cannot create a note', async ({ request }) => {
 test('the owner is always the logged-in user, whatever the request sends', async ({
     request,
 }) => {
-    const authorHeaders = await authHeaders(request, AUTHOR)
-    const strangerId = idOf(STRANGER.email)
-    const authorId = idOf(AUTHOR.email)
+    const authorHeaders = await authHeaders(request, author)
 
-    const spoofedNote = { body: BODY, owner: strangerId }
-    const reassignment = { owner: strangerId }
+    const spoofedNote = { body: BODY, owner: stranger.id }
+    const reassignment = { owner: stranger.id }
 
     const noteId = await createNote(request, authorHeaders, spoofedNote)
-    expect((await storedNote(noteId)).owner).toBe(authorId)
+    expect((await storedNote(noteId)).owner).toBe(author.id)
 
     const reassignResponse = await request.patch(`/api/notes/${noteId}`, {
         headers: authorHeaders,
         data: reassignment,
     })
     expect(reassignResponse.status()).toBe(200)
-    expect((await storedNote(noteId)).owner).toBe(authorId)
+    expect((await storedNote(noteId)).owner).toBe(author.id)
 })
 
 test('a user creates a note in the admin and only they see it listed', async ({
@@ -177,7 +143,7 @@ test('a user creates a note in the admin and only they see it listed', async ({
     browser,
 }) => {
     const text = `Notiz aus dem Admin ${RUN}`
-    await adminLogin(page, AUTHOR)
+    await adminLogin(page, author)
     await page.goto('/admin/collections/notes/create', {
         waitUntil: 'networkidle',
     })
@@ -186,14 +152,14 @@ test('a user creates a note in the admin and only they see it listed', async ({
     await page.waitForURL(/\/admin\/collections\/notes\/\d+$/)
     const noteId = Number(page.url().split('/').pop())
 
-    expect((await storedNote(noteId)).owner).toBe(idOf(AUTHOR.email))
+    expect((await storedNote(noteId)).owner).toBe(author.id)
     const noteLinkIn = (viewer: Page) =>
         viewer.locator(`a[href$="/admin/collections/notes/${noteId}"]`)
     await page.goto('/admin/collections/notes', { waitUntil: 'networkidle' })
     await expect(noteLinkIn(page)).not.toHaveCount(0)
 
     const strangerPage = await (await browser.newContext()).newPage()
-    await adminLogin(strangerPage, STRANGER)
+    await adminLogin(strangerPage, stranger)
     await strangerPage.goto('/admin/collections/notes', {
         waitUntil: 'networkidle',
     })
@@ -201,25 +167,15 @@ test('a user creates a note in the admin and only they see it listed', async ({
 })
 
 test("deleting a user deletes that user's notes", async ({ request }) => {
-    const leaver = { email: emailFor('leaver'), password: 'leaver-pass-1' }
-    const user = await payload.create({
-        collection: 'users',
-        data: {
-            ...leaver,
-            role: 'editor',
-            invitationAcceptedAt: new Date().toISOString(),
-        },
-    })
-    userIds.set(leaver.email, user.id)
+    const leaver = await accounts.create(payload, 'leaver')
     const leaverHeaders = await authHeaders(request, leaver)
     const noteId = await createNote(request, leaverHeaders, NOTE)
-    const adminHeaders = await authHeaders(request, ADMIN)
+    const adminHeaders = await authHeaders(request, admin)
 
-    const removalResponse = await request.delete(`/api/users/${user.id}`, {
+    const removalResponse = await request.delete(`/api/users/${leaver.id}`, {
         headers: adminHeaders,
     })
     expect(removalResponse.status()).toBe(200)
-    userIds.delete(leaver.email)
 
     const { totalDocs } = await payload.count({
         collection: 'notes',

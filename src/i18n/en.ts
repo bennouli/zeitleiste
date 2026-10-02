@@ -88,6 +88,8 @@ export const en = {
         untitled: 'Untitled note',
         collapse: 'Hide notes',
         expand: 'Show notes',
+        open: 'Open notes',
+        close: 'Close notes',
         failed: {
             save: 'The note could not be saved. Please try again.',
             delete: 'The note could not be deleted. Please try again.',

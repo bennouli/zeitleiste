@@ -90,6 +90,8 @@ export const de = {
         untitled: 'Notiz ohne Titel',
         collapse: 'Notizen ausblenden',
         expand: 'Notizen einblenden',
+        open: 'Notizen öffnen',
+        close: 'Notizen schließen',
         failed: {
             save: 'Die Notiz konnte nicht gesichert werden. Bitte versuche es noch einmal.',
             delete: 'Die Notiz konnte nicht gelöscht werden. Bitte versuche es noch einmal.',
