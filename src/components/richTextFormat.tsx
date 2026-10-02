@@ -1,7 +1,7 @@
+import { FOCUS_RING_CLASS } from '@/components/focusRing'
 import { IS_BOLD, IS_ITALIC } from '@payloadcms/richtext-lexical/lexical'
 
-export const LINK_CLASS =
-    'underline decoration-fg-muted underline-offset-2 hover:decoration-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus'
+export const LINK_CLASS = `underline decoration-fg-muted underline-offset-2 hover:decoration-fg ${FOCUS_RING_CLASS}`
 
 export const BOLD_CLASS = 'font-medium'
 

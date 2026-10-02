@@ -1,5 +1,11 @@
 import { inLocale } from '@/test/i18n'
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import {
+    fireEvent,
+    render,
+    screen,
+    waitFor,
+    within,
+} from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import type { NoteBody, NoteNode } from '../noteBody'
 import { NoteEditor } from '../NoteEditor'
@@ -27,7 +33,10 @@ function renderEditor(
         <NoteEditor initialBody={initialBody} label={LABEL} onSave={onSave} />,
         { wrapper: inLocale('de') }
     )
-    return screen.getByRole('textbox', { name: LABEL })
+    return within(screen.getByRole('group', { name: LABEL })).getByRole(
+        'textbox',
+        { name: 'Text' }
+    )
 }
 
 describe('NoteEditor', () => {

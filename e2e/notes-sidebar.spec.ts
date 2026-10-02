@@ -64,7 +64,9 @@ function sidebarOf(page: Page) {
 }
 
 function newNoteEditor(page: Page) {
-    return sidebarOf(page).getByRole('textbox', { name: 'Neue Notiz' })
+    return sidebarOf(page)
+        .getByRole('group', { name: 'Neue Notiz' })
+        .getByRole('textbox', { name: 'Text' })
 }
 
 test('a note written with Markdown shortcuts keeps its formatting after a reload', async ({
@@ -138,10 +140,10 @@ test('a note is edited and deleted from the sidebar', async ({ page }) => {
     await sidebar
         .getByRole('button', { name: 'Notiz bearbeiten: Pskow' })
         .click()
-    const editor = sidebar.getByRole('textbox', {
-        name: 'Notiz bearbeiten: Pskow',
-    })
-    await editor.click()
+    const editor = sidebar
+        .getByRole('group', { name: 'Notiz bearbeiten: Pskow' })
+        .getByRole('textbox', { name: 'Text' })
+    await expect(editor).toBeFocused()
     await page.keyboard.press('End')
     await page.keyboard.type(' 1240')
     await page.keyboard.press('ControlOrMeta+Enter')

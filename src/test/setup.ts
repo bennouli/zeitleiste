@@ -17,3 +17,8 @@ declare module 'vitest' {
 afterEach(() => {
     cleanup()
 })
+
+// jsdom has no layout, so Range lacks the geometry Lexical reads when it scrolls a focused selection into view.
+Range.prototype.getBoundingClientRect ??= () => new DOMRect()
+Range.prototype.getClientRects ??= () =>
+    document.createElement('div').getClientRects()

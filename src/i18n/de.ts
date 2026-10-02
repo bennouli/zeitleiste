@@ -74,6 +74,7 @@ export const de = {
     notes: {
         heading: 'Notizen',
         editorLabel: 'Neue Notiz',
+        textLabel: 'Text',
         placeholder: 'Notiz schreiben …',
         save: 'Sichern',
         saving: 'Wird gesichert …',

@@ -1,11 +1,13 @@
 'use client'
 
+import { FOCUS_RING_CLASS } from '@/components/focusRing'
 import { useI18n } from '@/components/I18nContext'
 import {
     BOLD_CLASS,
     ITALIC_CLASS,
     LINK_CLASS,
 } from '@/components/richTextFormat'
+import { AutoFocusPlugin } from '@lexical/react/LexicalAutoFocusPlugin'
 import { ClearEditorPlugin } from '@lexical/react/LexicalClearEditorPlugin'
 import { LexicalComposer } from '@lexical/react/LexicalComposer'
 import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext'
@@ -94,6 +96,7 @@ export function NoteEditor({
     return (
         <LexicalComposer initialConfig={initialConfig}>
             {editorRef && <EditorRefPlugin editorRef={editorRef} />}
+            {initialBody && <AutoFocusPlugin defaultSelection="rootEnd" />}
             <NoteEditorBody
                 label={label}
                 onSave={onSave}
@@ -149,14 +152,14 @@ function NoteEditorBody({
                 <RichTextPlugin
                     contentEditable={
                         <ContentEditable
-                            aria-label={label}
+                            aria-label={t.notes.textLabel}
                             aria-placeholder={t.notes.placeholder}
                             placeholder={
                                 <div className="pointer-events-none absolute top-2 left-3 text-note text-fg-muted">
                                     {t.notes.placeholder}
                                 </div>
                             }
-                            className="flex min-h-24 flex-col gap-2 rounded-sm border border-border bg-surface px-3 py-2 text-note text-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
+                            className={`flex min-h-24 flex-col gap-2 rounded-sm border border-border bg-surface px-3 py-2 text-note text-fg ${FOCUS_RING_CLASS}`}
                         />
                     }
                     ErrorBoundary={LexicalErrorBoundary}

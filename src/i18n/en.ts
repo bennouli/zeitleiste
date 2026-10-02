@@ -72,6 +72,7 @@ export const en = {
     notes: {
         heading: 'Notes',
         editorLabel: 'New note',
+        textLabel: 'Text',
         placeholder: 'Write a note …',
         save: 'Save',
         saving: 'Saving …',
