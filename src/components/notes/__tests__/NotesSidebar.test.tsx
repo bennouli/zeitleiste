@@ -22,12 +22,14 @@ import { noteBody, paragraph, text } from './noteFixtures'
 const KIEW: NoteView = {
     id: 7,
     updatedAt: '2026-10-01T10:00:00.000Z',
+    entry: null,
     body: noteBody(paragraph(text('Kiew 1240')), paragraph(text('Mongolen'))),
 }
 
 const NOWGOROD: NoteView = {
     id: 8,
     updatedAt: '2026-10-02T10:00:00.000Z',
+    entry: null,
     body: noteBody(paragraph(text('Nowgorod'))),
 }
 
@@ -36,6 +38,8 @@ function fakeActions(overrides: Partial<NotesActions> = {}): NotesActions {
         createNote: async () => ({ stored: false, signedOut: false }),
         updateNote: async () => ({ stored: false, signedOut: false }),
         deleteNote: async () => ({ deleted: true, signedOut: false }),
+        linkNote: async () => ({ stored: false, signedOut: false }),
+        searchEntries: async () => ({ searched: true, entries: [] }),
         ...overrides,
     }
 }
@@ -287,5 +291,155 @@ describe('NotesSidebar', () => {
             'Du bist nicht mehr angemeldet.'
         )
         expect(screen.getByText('Kiew 1240')).toBeInTheDocument()
+    })
+})
+
+describe('linking a note to an entry', () => {
+    const NOWGOROD_ENTRY = { id: 31, title: 'Nowgorod wird Republik' }
+    const KIEW_ENTRY = { id: 32, title: 'Mongolen erobern Kiew' }
+
+    function pickerOf(noteTitle: string) {
+        return screen.getByRole('group', {
+            name: `Notiz mit einem Eintrag verknüpfen: ${noteTitle}`,
+        })
+    }
+
+    it('searches the entries by title and links the picked one', async () => {
+        const searchEntries = vi.fn(async () => ({
+            searched: true as const,
+            entries: [KIEW_ENTRY, NOWGOROD_ENTRY],
+        }))
+        const linked: NoteView = {
+            ...KIEW,
+            updatedAt: '2026-10-03T10:00:00.000Z',
+            entry: KIEW_ENTRY,
+        }
+        const linkNote = vi.fn(async () => ({
+            stored: true as const,
+            note: linked,
+        }))
+        const linkingActions = fakeActions({ searchEntries, linkNote })
+        renderSidebar(linkingActions)
+
+        fireEvent.click(
+            await screen.findByRole('button', {
+                name: 'Notiz mit einem Eintrag verknüpfen: Kiew 1240',
+            })
+        )
+        const search = within(pickerOf('Kiew 1240')).getByRole('searchbox', {
+            name: 'Eintrag suchen',
+        })
+        expect(search).toHaveFocus()
+        const typedKiew = { target: { value: '  Kiew ' } }
+        fireEvent.change(search, typedKiew)
+        fireEvent.click(
+            await within(pickerOf('Kiew 1240')).findByRole('button', {
+                name: KIEW_ENTRY.title,
+            })
+        )
+
+        const unlink = await screen.findByRole('button', {
+            name: `Verknüpfung mit ${KIEW_ENTRY.title} entfernen`,
+        })
+        expect(searchEntries).toHaveBeenCalledWith('Kiew')
+        expect(linkNote).toHaveBeenCalledWith(KIEW.id, KIEW_ENTRY.id)
+        expect(
+            screen
+                .getAllByRole('article')
+                .map((note) => within(note).queryByText(KIEW_ENTRY.title))
+        ).toEqual([expect.anything(), null])
+        await waitFor(() => expect(unlink).toHaveFocus())
+    })
+
+    it('says when no entry matches', async () => {
+        const searchEntries = async () => ({
+            searched: true as const,
+            entries: [],
+        })
+        const emptyActions = fakeActions({ searchEntries })
+        renderSidebar(emptyActions)
+
+        fireEvent.click(
+            await screen.findByRole('button', {
+                name: 'Notiz mit einem Eintrag verknüpfen: Kiew 1240',
+            })
+        )
+        const typedByzanz = { target: { value: 'Byzanz' } }
+        fireEvent.change(
+            within(pickerOf('Kiew 1240')).getByRole('searchbox'),
+            typedByzanz
+        )
+
+        await waitFor(() =>
+            expect(
+                within(pickerOf('Kiew 1240')).getByRole('status')
+            ).toHaveTextContent('Kein Eintrag gefunden.')
+        )
+        await expectNoAxeViolations(pickerOf('Kiew 1240'))
+    })
+
+    it('removes the link and offers linking again', async () => {
+        const linkedKiew: NoteView = { ...KIEW, entry: KIEW_ENTRY }
+        const unlinked: NoteView = {
+            ...KIEW,
+            updatedAt: '2026-10-03T10:00:00.000Z',
+        }
+        const linkNote = vi.fn(async () => ({
+            stored: true as const,
+            note: unlinked,
+        }))
+        const unlinkingActions = fakeActions({ linkNote })
+        const linkedLoad: NotesLoad = {
+            notes: [NOWGOROD, linkedKiew],
+            loadFailed: false,
+        }
+        renderSidebar(unlinkingActions, linkedLoad)
+
+        fireEvent.click(
+            await screen.findByRole('button', {
+                name: `Verknüpfung mit ${KIEW_ENTRY.title} entfernen`,
+            })
+        )
+
+        const linkAgain = await screen.findByRole('button', {
+            name: 'Notiz mit einem Eintrag verknüpfen: Kiew 1240',
+        })
+        expect(linkNote).toHaveBeenCalledWith(KIEW.id, null)
+        expect(screen.queryByText(KIEW_ENTRY.title)).not.toBeInTheDocument()
+        await waitFor(() => expect(linkAgain).toHaveFocus())
+    })
+
+    it('says so when the link could not be saved', async () => {
+        const searchEntries = async () => ({
+            searched: true as const,
+            entries: [KIEW_ENTRY],
+        })
+        const linkNote = async (): Promise<NoteChange> => ({
+            stored: false,
+            signedOut: false,
+        })
+        const failingActions = fakeActions({ searchEntries, linkNote })
+        renderSidebar(failingActions)
+
+        fireEvent.click(
+            await screen.findByRole('button', {
+                name: 'Notiz mit einem Eintrag verknüpfen: Kiew 1240',
+            })
+        )
+        const typedKiew = { target: { value: 'Kiew' } }
+        fireEvent.change(
+            within(pickerOf('Kiew 1240')).getByRole('searchbox'),
+            typedKiew
+        )
+        fireEvent.click(
+            await within(pickerOf('Kiew 1240')).findByRole('button', {
+                name: KIEW_ENTRY.title,
+            })
+        )
+
+        expect(await screen.findByRole('alert')).toHaveTextContent(
+            'Die Verknüpfung konnte nicht gesichert werden.'
+        )
+        expect(pickerOf('Kiew 1240')).toBeInTheDocument()
     })
 })

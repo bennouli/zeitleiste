@@ -198,6 +198,12 @@ test('a note is written, saved and deleted with the keyboard alone', async ({
     ).toBeFocused()
     await page.keyboard.press('Tab')
     await expect(
+        sidebar.getByRole('button', {
+            name: 'Notiz mit einem Eintrag verknüpfen: Tastatur',
+        })
+    ).toBeFocused()
+    await page.keyboard.press('Tab')
+    await expect(
         sidebar.getByRole('button', { name: 'Notiz löschen: Tastatur' })
     ).toBeFocused()
     await page.keyboard.press('Enter')

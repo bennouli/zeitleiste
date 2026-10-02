@@ -1,18 +1,27 @@
 'use client'
 
 import { useI18n } from '@/components/I18nContext'
-import type { NoteView } from '@/lib/noteSchema'
-import { ChevronDown, ChevronUp, Pencil, Trash2 } from 'lucide-react'
-import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react'
+import type { LinkedEntry, NoteView } from '@/lib/noteSchema'
+import { ChevronDown, ChevronUp, Link2, Pencil, Trash2, X } from 'lucide-react'
+import {
+    useEffect,
+    useId,
+    useLayoutEffect,
+    useRef,
+    useState,
+    type RefObject,
+} from 'react'
+import { EntryPicker } from './EntryPicker'
+import { linkedEntryOf } from './note'
 import { NoteEditor } from './NoteEditor'
 import { NoteRichText } from './NoteRichText'
 import { useNotes } from './NotesContext'
 import { BUTTON_CLASS, ICON_BUTTON_CLASS, NOTE_TITLE_CLASS } from './noteStyles'
 import { splitTitle } from './noteTitle'
 
-type CardMode = 'reading' | 'editing' | 'confirmingDelete'
+type CardMode = 'reading' | 'editing' | 'confirmingDelete' | 'linking'
 
-type CardButton = 'edit' | 'delete'
+type CardButton = 'edit' | 'delete' | 'link' | 'unlink'
 
 type NoteListProps = {
     notes: NoteView[]
@@ -40,21 +49,29 @@ function NoteCard({
     onDeleted: () => void
 }) {
     const { t } = useI18n()
-    const { update, remove } = useNotes()
+    const { update, remove, link } = useNotes()
     const [mode, setMode] = useState<CardMode>('reading')
     const focusTarget = useRef<CardButton | null>(null)
     const editButtonRef = useRef<HTMLButtonElement>(null)
     const deleteButtonRef = useRef<HTMLButtonElement>(null)
+    const linkButtonRef = useRef<HTMLButtonElement>(null)
+    const unlinkButtonRef = useRef<HTMLButtonElement>(null)
     const { title, rest } = splitTitle(note.body)
     const shownTitle = title || t.notes.untitled
+    const linkedEntry = linkedEntryOf(note)
 
     useEffect(() => {
         if (mode !== 'reading' || focusTarget.current === null) return
-        const button =
-            focusTarget.current === 'edit' ? editButtonRef : deleteButtonRef
+        const buttonRefs = {
+            edit: editButtonRef,
+            delete: deleteButtonRef,
+            link: linkButtonRef,
+            unlink: unlinkButtonRef,
+        }
+        const button = buttonRefs[focusTarget.current]
         focusTarget.current = null
         button.current?.focus()
-    }, [mode])
+    })
 
     const readAgain = (button: CardButton) => {
         focusTarget.current = button
@@ -64,6 +81,14 @@ function NoteCard({
     const confirmDelete = async () => {
         if (await remove(note.id)) onDeleted()
         else readAgain('delete')
+    }
+
+    const linkTo = async (entry: LinkedEntry) => {
+        if (await link(note.id, entry.id)) readAgain('unlink')
+    }
+
+    const unlink = async () => {
+        if (await link(note.id, null)) readAgain('link')
     }
 
     if (mode === 'editing')
@@ -83,16 +108,31 @@ function NoteCard({
     return (
         <article className="flex flex-col gap-1">
             <h3 className={`${NOTE_TITLE_CLASS} break-words`}>{shownTitle}</h3>
+            {linkedEntry && (
+                <EntryLink
+                    entry={linkedEntry}
+                    onUnlink={() => void unlink()}
+                    unlinkButtonRef={unlinkButtonRef}
+                />
+            )}
             <ClampedBody>
                 <NoteRichText body={rest} />
             </ClampedBody>
-            {mode === 'confirmingDelete' ? (
+            {mode === 'linking' && (
+                <EntryPicker
+                    label={t.notes.linkLabel(shownTitle)}
+                    onPick={(entry) => void linkTo(entry)}
+                    onCancel={() => readAgain('link')}
+                />
+            )}
+            {mode === 'confirmingDelete' && (
                 <DeleteConfirmation
                     onConfirm={() => void confirmDelete()}
                     onCancel={() => readAgain('delete')}
                 />
-            ) : (
-                <div className="flex justify-end gap-1">
+            )}
+            {mode === 'reading' && (
+                <div className="flex flex-wrap justify-end gap-1">
                     <button
                         ref={editButtonRef}
                         type="button"
@@ -103,6 +143,18 @@ function NoteCard({
                         <Pencil aria-hidden size={14} strokeWidth={1.5} />
                         {t.notes.edit}
                     </button>
+                    {!linkedEntry && (
+                        <button
+                            ref={linkButtonRef}
+                            type="button"
+                            onClick={() => setMode('linking')}
+                            aria-label={t.notes.linkLabel(shownTitle)}
+                            className={ICON_BUTTON_CLASS}
+                        >
+                            <Link2 aria-hidden size={14} strokeWidth={1.5} />
+                            {t.notes.link}
+                        </button>
+                    )}
                     <button
                         ref={deleteButtonRef}
                         type="button"
@@ -116,6 +168,36 @@ function NoteCard({
                 </div>
             )}
         </article>
+    )
+}
+
+function EntryLink({
+    entry,
+    onUnlink,
+    unlinkButtonRef,
+}: {
+    entry: LinkedEntry
+    onUnlink: () => void
+    unlinkButtonRef: RefObject<HTMLButtonElement | null>
+}) {
+    const { t } = useI18n()
+    return (
+        <p className="flex items-center gap-1.5 text-label-lg text-fg-muted">
+            <Link2 aria-hidden size={14} strokeWidth={1.5} />
+            <span className="min-w-0 break-words">
+                <span className="sr-only">{t.notes.linkedEntry} </span>
+                {entry.title}
+            </span>
+            <button
+                ref={unlinkButtonRef}
+                type="button"
+                onClick={onUnlink}
+                aria-label={t.notes.unlinkLabel(entry.title)}
+                className={ICON_BUTTON_CLASS}
+            >
+                <X aria-hidden size={14} strokeWidth={1.5} />
+            </button>
+        </p>
     )
 }
 

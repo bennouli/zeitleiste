@@ -13,6 +13,8 @@ vi.mock('../notes/actions', () => ({
     createNote: vi.fn(),
     updateNote: vi.fn(),
     deleteNote: vi.fn(),
+    linkNote: vi.fn(),
+    searchEntries: vi.fn(),
 }))
 
 const VISITOR_REDIRECT = new Error('NEXT_REDIRECT')

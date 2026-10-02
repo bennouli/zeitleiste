@@ -14,6 +14,13 @@ export function attempt<A>(operation: string, run: () => Promise<A>) {
     })
 }
 
+/** How every note leaves the server: its body, last change and the linked entry's title. */
+export const NOTE_VIEW_QUERY = {
+    select: { body: true, updatedAt: true, entry: true },
+    depth: 1,
+    populate: { entries: { title: true } },
+} as const
+
 export function decode<S extends Schema.Top>(schema: S, input: unknown) {
     return Schema.decodeUnknownEffect(schema)(input).pipe(
         Effect.mapError(

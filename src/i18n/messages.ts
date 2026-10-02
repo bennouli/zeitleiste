@@ -79,6 +79,16 @@ export type Messages = {
         editLabel: (title: string) => string
         delete: string
         deleteLabel: (title: string) => string
+        link: string
+        linkLabel: (title: string) => string
+        linkedEntry: string
+        unlinkLabel: (entryTitle: string) => string
+        entrySearch: string
+        entrySearchHint: string
+        entrySearching: string
+        entriesFound: (count: number) => string
+        noEntryFound: string
+        entrySearchFailed: string
         confirmDelete: string
         showAll: string
         showLess: string
@@ -87,7 +97,10 @@ export type Messages = {
         expand: string
         open: string
         close: string
-        failed: Record<'save' | 'delete' | 'load' | 'signedOut', string>
+        failed: Record<
+            'save' | 'link' | 'delete' | 'load' | 'signedOut',
+            string
+        >
     }
 }
 

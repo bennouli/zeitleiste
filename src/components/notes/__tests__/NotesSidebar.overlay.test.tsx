@@ -27,6 +27,8 @@ const ACTIONS: NotesActions = {
     createNote: async () => ({ stored: false, signedOut: false }),
     updateNote: async () => ({ stored: false, signedOut: false }),
     deleteNote: async () => ({ deleted: false, signedOut: false }),
+    linkNote: async () => ({ stored: false, signedOut: false }),
+    searchEntries: async () => ({ searched: true, entries: [] }),
 }
 
 afterEach(() => {

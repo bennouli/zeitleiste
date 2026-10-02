@@ -336,6 +336,7 @@ export interface Note {
     };
     [k: string]: unknown;
   };
+  entry?: (number | null) | Entry;
   updatedAt: string;
   createdAt: string;
 }
@@ -581,6 +582,7 @@ export interface MediaSelect<T extends boolean = true> {
 export interface NotesSelect<T extends boolean = true> {
   owner?: T;
   body?: T;
+  entry?: T;
   updatedAt?: T;
   createdAt?: T;
 }

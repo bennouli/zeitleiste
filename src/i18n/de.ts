@@ -84,6 +84,20 @@ export const de = {
         editLabel: (title) => `Notiz bearbeiten: ${title}`,
         delete: 'Löschen',
         deleteLabel: (title) => `Notiz löschen: ${title}`,
+        link: 'Verknüpfen',
+        linkLabel: (title) => `Notiz mit einem Eintrag verknüpfen: ${title}`,
+        linkedEntry: 'Verknüpfter Eintrag:',
+        unlinkLabel: (entryTitle) => `Verknüpfung mit ${entryTitle} entfernen`,
+        entrySearch: 'Eintrag suchen',
+        entrySearchHint: 'Gib einen Teil des Titels ein.',
+        entrySearching: 'Wird gesucht …',
+        entriesFound: (count) =>
+            count === 1
+                ? 'Ein Eintrag gefunden.'
+                : `${count} Einträge gefunden.`,
+        noEntryFound: 'Kein Eintrag gefunden.',
+        entrySearchFailed:
+            'Die Suche ist gerade nicht möglich. Bitte versuche es noch einmal.',
         confirmDelete: 'Diese Notiz löschen?',
         showAll: 'Ganz anzeigen',
         showLess: 'Weniger anzeigen',
@@ -94,6 +108,7 @@ export const de = {
         close: 'Notizen schließen',
         failed: {
             save: 'Die Notiz konnte nicht gesichert werden. Bitte versuche es noch einmal.',
+            link: 'Die Verknüpfung konnte nicht gesichert werden. Bitte versuche es noch einmal.',
             delete: 'Die Notiz konnte nicht gelöscht werden. Bitte versuche es noch einmal.',
             load: 'Deine Notizen konnten nicht geladen werden. Bitte lade die Seite neu.',
             signedOut:
