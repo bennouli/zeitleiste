@@ -7,6 +7,7 @@ import type {
 import { expectNoAxeViolations } from '@/test/axe'
 import { inLocale } from '@/test/i18n'
 import {
+    act,
     fireEvent,
     render,
     screen,
@@ -60,12 +61,12 @@ afterEach(() => {
 
 describe('NotesSidebar', () => {
     it('renders nothing for a visitor', async () => {
-        const listNotes = vi.fn(async () => ({ signedIn: false }) as const)
-        const visitorActions = fakeActions({ listNotes })
+        const visitorLoad = Promise.resolve<NotesLoad>({ signedIn: false })
+        const visitorActions = fakeActions({ listNotes: () => visitorLoad })
 
         const { container } = renderSidebar(visitorActions)
+        await act(() => visitorLoad)
 
-        await waitFor(() => expect(listNotes).toHaveBeenCalled())
         expect(container).toBeEmptyDOMElement()
     })
 

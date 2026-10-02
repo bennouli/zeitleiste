@@ -8,23 +8,58 @@ export const NoteNode = Schema.StructWithRest(
 )
 export type NoteNode = typeof NoteNode.Type
 
-const isAnyNode = () => true
+type NodeRule = {
+    hasValidFields: (node: NoteNode) => boolean
+    /** The node types it may hold; null for a leaf. */
+    childTypes: ReadonlySet<string> | null
+}
 
-const NOTE_EDITOR_NODE_CHECKS: Readonly<
-    Record<string, (node: NoteNode) => boolean>
-> = {
-    paragraph: isAnyNode,
-    quote: isAnyNode,
-    listitem: isAnyNode,
-    linebreak: isAnyNode,
-    tab: isAnyNode,
-    text: (node) => typeof node.text === 'string',
-    heading: (node) => node.tag === 'h3' || node.tag === 'h4',
-    list: (node) =>
-        (node.tag === 'ul' && node.listType === 'bullet') ||
-        (node.tag === 'ol' && node.listType === 'number'),
-    link: hasLinkFields,
-    autolink: hasLinkFields,
+const BLOCK_TYPES: ReadonlySet<string> = new Set([
+    'paragraph',
+    'heading',
+    'quote',
+    'list',
+])
+
+const LINK_CONTENT_TYPES: ReadonlySet<string> = new Set([
+    'text',
+    'linebreak',
+    'tab',
+])
+
+const INLINE_TYPES: ReadonlySet<string> = new Set([
+    ...LINK_CONTENT_TYPES,
+    'link',
+    'autolink',
+])
+
+const anyFields = () => true
+
+const NOTE_EDITOR_NODE_RULES: Readonly<Record<string, NodeRule>> = {
+    paragraph: { hasValidFields: anyFields, childTypes: INLINE_TYPES },
+    quote: { hasValidFields: anyFields, childTypes: INLINE_TYPES },
+    heading: {
+        hasValidFields: (node) => node.tag === 'h3' || node.tag === 'h4',
+        childTypes: INLINE_TYPES,
+    },
+    list: {
+        hasValidFields: (node) =>
+            (node.tag === 'ul' && node.listType === 'bullet') ||
+            (node.tag === 'ol' && node.listType === 'number'),
+        childTypes: new Set(['listitem']),
+    },
+    listitem: {
+        hasValidFields: anyFields,
+        childTypes: new Set([...INLINE_TYPES, 'list']),
+    },
+    link: { hasValidFields: hasLinkFields, childTypes: LINK_CONTENT_TYPES },
+    autolink: { hasValidFields: hasLinkFields, childTypes: LINK_CONTENT_TYPES },
+    text: {
+        hasValidFields: (node) => typeof node.text === 'string',
+        childTypes: null,
+    },
+    linebreak: { hasValidFields: anyFields, childTypes: null },
+    tab: { hasValidFields: anyFields, childTypes: null },
 }
 
 function hasLinkFields(node: NoteNode): boolean {
@@ -37,20 +72,24 @@ function hasLinkFields(node: NoteNode): boolean {
     )
 }
 
-function holdsOnlyNoteEditorNodes(nodes: ReadonlyArray<unknown>): boolean {
-    return nodes.every(
-        (node) =>
-            Schema.is(NoteNode)(node) &&
-            (NOTE_EDITOR_NODE_CHECKS[node.type]?.(node) ?? false) &&
-            holdsOnlyNoteEditorNodes(
-                Array.isArray(node.children) ? node.children : []
-            )
+function isNoteEditorNode(
+    node: unknown,
+    allowedTypes: ReadonlySet<string>
+): boolean {
+    if (!Schema.is(NoteNode)(node) || !allowedTypes.has(node.type)) return false
+    const rule = NOTE_EDITOR_NODE_RULES[node.type]
+    if (rule === undefined || !rule.hasValidFields(node)) return false
+    const { childTypes } = rule
+    if (childTypes === null) return true
+    return (
+        Array.isArray(node.children) &&
+        node.children.every((child) => isNoteEditorNode(child, childTypes))
     )
 }
 
 const onlyNoteEditorNodes = Schema.makeFilter(
     (nodes: ReadonlyArray<NoteNode>) =>
-        holdsOnlyNoteEditorNodes(nodes) ||
+        nodes.every((node) => isNoteEditorNode(node, BLOCK_TYPES)) ||
         'a note holds only the nodes noteEditor writes',
     { title: 'noteEditor nodes' }
 )

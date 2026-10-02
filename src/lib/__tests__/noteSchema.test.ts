@@ -100,6 +100,32 @@ describe('NoteBody', () => {
         expect(accepted).toEqual([false, false, false])
     })
 
+    it('rejects nodes without their children or in the wrong place', () => {
+        const misplaced = [
+            { type: 'paragraph', version: 1 },
+            { type: 'paragraph', version: 1, children: 'Kiew' },
+            { type: 'text', version: 1, text: 'Kiew' },
+            {
+                type: 'paragraph',
+                version: 1,
+                children: [{ type: 'quote', version: 1, children: [] }],
+            },
+            {
+                type: 'list',
+                tag: 'ul',
+                listType: 'bullet',
+                version: 1,
+                children: [{ type: 'text', version: 1, text: 'Kiew' }],
+            },
+        ].map((block) => bodyWith(block))
+
+        const accepted = misplaced.map((body) =>
+            Result.isSuccess(decodeBody(body))
+        )
+
+        expect(accepted).toEqual([false, false, false, false, false])
+    })
+
     it('rejects a root of another type', () => {
         const { root } = paragraphsToLexical('Kiew')
         const notRoot = { root: { ...root, type: 'paragraph' } }
