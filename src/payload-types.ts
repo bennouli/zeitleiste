@@ -257,6 +257,13 @@ export interface Post {
     };
     [k: string]: unknown;
   };
+  sources?:
+    | {
+        title: string;
+        url: string;
+        id?: string | null;
+      }[]
+    | null;
   entry?: {
     docs?: (number | Entry)[];
     hasNextPage?: boolean;
@@ -499,6 +506,13 @@ export interface EntriesSelect<T extends boolean = true> {
 export interface PostsSelect<T extends boolean = true> {
   owner?: T;
   body?: T;
+  sources?:
+    | T
+    | {
+        title?: T;
+        url?: T;
+        id?: T;
+      };
   entry?: T;
   updatedAt?: T;
   createdAt?: T;

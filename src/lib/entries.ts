@@ -1,7 +1,14 @@
 import config from '@/payload.config'
 import { Data, Effect, Schema } from 'effect'
 import { getPayload, type Payload, type Where } from 'payload'
-import { CmsEntry, CmsPost, entryOf, hasTexts, postIdOf } from './cmsEntry'
+import {
+    CmsEntry,
+    CmsPost,
+    entryOf,
+    hasTexts,
+    postIdOf,
+    postOf,
+} from './cmsEntry'
 import type { Post } from './entry'
 import { paragraphsToLexical } from './richText'
 
@@ -29,7 +36,7 @@ export const loadPost = Effect.fn('loadPost')(function* (slug: string) {
     const postId = doc && postIdOf(doc)
     if (doc === undefined || postId === undefined) return undefined
     const post = yield* findPost(postId)
-    return post && entryOf(doc, post)
+    return post && entryOf(doc, postOf(post))
 })
 
 function findPublishedEntries(where: Where) {
@@ -59,7 +66,7 @@ function findPost(id: number) {
             collection: 'posts',
             where: { id: { equals: id } },
             overrideAccess: true,
-            select: { body: true },
+            select: { body: true, sources: true },
             depth: 1,
             limit: 1,
             pagination: false,

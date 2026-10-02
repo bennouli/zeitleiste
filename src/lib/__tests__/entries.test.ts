@@ -26,6 +26,16 @@ const found = (docs: object[]) => ({ docs })
 const withoutPost = found([entryDoc('krimkrieg', null)])
 const withPost = found([entryDoc('krimkrieg', 7)])
 const post = found([{ id: 7, body }])
+const sources = [
+    {
+        id: 'a1',
+        title: 'Tarle: Der Krimkrieg',
+        url: 'https://example.org/tarle',
+    },
+    { id: 'b2', title: 'Figes: Crimea', url: 'http://example.org/figes' },
+]
+const postWithSources = found([{ id: 7, body, sources }])
+const postWithNullSources = found([{ id: 7, body, sources: null }])
 const nothing = found([])
 const unreachable = new Error('connection refused')
 const withoutSlug = found([{ ...entryDoc('krimkrieg', null), slug: null }])
@@ -108,10 +118,30 @@ describe('loadPost', () => {
             expect.objectContaining({
                 collection: 'posts',
                 where: { id: { equals: 7 } },
-                select: { body: true },
+                select: { body: true, sources: true },
                 depth: 1,
             })
         )
+    })
+
+    it('hands over the sources of the post, in their order', async () => {
+        find.mockResolvedValueOnce(withPost)
+        find.mockResolvedValueOnce(postWithSources)
+        const entry = await Effect.runPromise(loadPost('krimkrieg'))
+        expect(entry?.post?.sources).toEqual([
+            { title: 'Tarle: Der Krimkrieg', url: 'https://example.org/tarle' },
+            { title: 'Figes: Crimea', url: 'http://example.org/figes' },
+        ])
+    })
+
+    it.each([
+        ['absent', post],
+        ['null', postWithNullSources],
+    ])('loads a post whose sources are %s with none', async (_, postDoc) => {
+        find.mockResolvedValueOnce(withPost)
+        find.mockResolvedValueOnce(postDoc)
+        const entry = await Effect.runPromise(loadPost('krimkrieg'))
+        expect(entry?.post).toEqual({ body, sources: [] })
     })
 
     it('finds nothing for an unpublished or unknown slug', async () => {

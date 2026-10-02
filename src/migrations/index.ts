@@ -8,6 +8,7 @@ import * as migration_20261002_032942_single_language from './20261002_032942_si
 import * as migration_20261002_044852_notes from './20261002_044852_notes'
 import * as migration_20261002_110109_content_owner from './20261002_110109_content_owner'
 import * as migration_20261002_154114_entry_owner_required from './20261002_154114_entry_owner_required'
+import * as migration_20261002_173309_post_sources from './20261002_173309_post_sources'
 
 export const migrations = [
     {
@@ -59,5 +60,10 @@ export const migrations = [
         up: migration_20261002_154114_entry_owner_required.up,
         down: migration_20261002_154114_entry_owner_required.down,
         name: '20261002_154114_entry_owner_required',
+    },
+    {
+        up: migration_20261002_173309_post_sources.up,
+        down: migration_20261002_173309_post_sources.down,
+        name: '20261002_173309_post_sources',
     },
 ]
