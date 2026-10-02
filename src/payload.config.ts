@@ -8,6 +8,7 @@ import sharp from 'sharp'
 import { fileURLToPath } from 'url'
 import { Entries } from './collections/Entries'
 import { mediaCollection } from './collections/Media'
+import { Notes } from './collections/Notes'
 import { Posts } from './collections/Posts'
 import { Subjects } from './collections/Subjects'
 import { Tags } from './collections/Tags'
@@ -43,6 +44,7 @@ export default buildConfig({
         Subjects,
         Tags,
         mediaCollection(storage),
+        Notes,
     ],
     editor: lexicalEditor(),
     email: emailAdapter(process.env),

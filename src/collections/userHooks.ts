@@ -4,6 +4,7 @@ import {
     AuthenticationError,
     type CollectionAfterChangeHook,
     type CollectionBeforeChangeHook,
+    type CollectionBeforeDeleteHook,
     type CollectionBeforeLoginHook,
     type PayloadHandler,
 } from 'payload'
@@ -50,6 +51,18 @@ export const stampInvitation: CollectionBeforeChangeHook = async ({
     if (await hasNoUsers(req))
         return { ...data, role: 'admin', invitationAcceptedAt: now }
     return isAccepted(data) ? data : { ...data, invitedAt: now }
+}
+
+export const deleteOwnedNotes: CollectionBeforeDeleteHook = async ({
+    id,
+    req,
+}) => {
+    await req.payload.delete({
+        collection: 'notes',
+        where: { owner: { equals: id } },
+        overrideAccess: true,
+        req,
+    })
 }
 
 export const inviteNewUser: CollectionAfterChangeHook = async ({
