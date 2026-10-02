@@ -1,5 +1,6 @@
 'use client'
 
+import { formattedText, LINK_CLASS } from '@/components/richTextFormat'
 import type { PostBody } from '@/lib/richText'
 import type { Media } from '@/payload-types'
 import type {
@@ -8,7 +9,6 @@ import type {
     SerializedLinkNode,
     SerializedListNode,
 } from '@payloadcms/richtext-lexical'
-import { IS_BOLD, IS_ITALIC } from '@payloadcms/richtext-lexical/lexical'
 import {
     type JSXConverterArgs,
     type JSXConvertersFunction,
@@ -18,9 +18,6 @@ import Image, { type ImageLoader } from 'next/image'
 import { postImageSource } from './postImage'
 
 const READING_CLASS = 'text-body text-pretty'
-
-const LINK_CLASS =
-    'underline decoration-fg-muted underline-offset-2 hover:decoration-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus'
 
 const HEADING_CLASS: Partial<Record<SerializedHeadingNode['tag'], string>> = {
     h3: 'pt-3 text-lead font-medium',
@@ -132,20 +129,6 @@ function PostImage({ media }: { media: Media }) {
                 </figcaption>
             )}
         </figure>
-    )
-}
-
-function formattedText(text: string, format: number) {
-    const slantedText =
-        format & IS_ITALIC ? (
-            <em className="font-serif-italic italic">{text}</em>
-        ) : (
-            text
-        )
-    return format & IS_BOLD ? (
-        <strong className="font-medium">{slantedText}</strong>
-    ) : (
-        slantedText
     )
 }
 

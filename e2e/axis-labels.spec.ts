@@ -26,7 +26,9 @@ test('tick labels and "Heute" paint over the connectors that cross them', async 
                 const right = Math.min(l.right, c.right)
                 const top = Math.max(l.top, c.top)
                 const bottom = Math.min(l.bottom, c.bottom)
-                if (right - left < 1 || bottom - top < 1) return []
+                const isOnScreen = left >= 0 && right <= window.innerWidth
+                if (right - left < 1 || bottom - top < 1 || !isOnScreen)
+                    return []
                 label.style.pointerEvents = 'auto'
                 connector.style.pointerEvents = 'auto'
                 const stack = document.elementsFromPoint(

@@ -66,6 +66,27 @@ export type Messages = {
         invalid: string
         failed: string
     }
+    notes: {
+        heading: string
+        editorLabel: string
+        textLabel: string
+        placeholder: string
+        save: string
+        saving: string
+        saveHint: string
+        cancel: string
+        edit: string
+        editLabel: (title: string) => string
+        delete: string
+        deleteLabel: (title: string) => string
+        confirmDelete: string
+        showAll: string
+        showLess: string
+        untitled: string
+        collapse: string
+        expand: string
+        failed: Record<'save' | 'delete' | 'load' | 'signedOut', string>
+    }
 }
 
 export const messages: Record<Locale, Messages> = { de, en }

@@ -56,7 +56,7 @@ test('Shift + wheel down and a leftward swipe pan towards later dates', async ({
     const before = await view(page)
 
     await page.keyboard.down('Shift')
-    await page.mouse.wheel(0, 300)
+    await page.mouse.wheel(0, 100)
     await page.keyboard.up('Shift')
 
     await expect
@@ -64,7 +64,7 @@ test('Shift + wheel down and a leftward swipe pan towards later dates', async ({
         .toBeGreaterThan(before.start)
     const shiftPanned = await view(page)
     expect(shiftPanned.span).toBeCloseTo(before.span, -3)
-    await page.mouse.wheel(300, 0)
+    await page.mouse.wheel(100, 0)
     await expect
         .poll(async () => (await view(page)).start)
         .toBeGreaterThan(shiftPanned.start)

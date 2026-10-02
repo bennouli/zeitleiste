@@ -1,3 +1,5 @@
+import { NotesProvider } from '@/components/notes/NotesContext'
+import { NotesSidebar } from '@/components/notes/NotesSidebar'
 import { TimelineShell } from '@/components/TimelineShell'
 import type { Locale } from '@/i18n/locales'
 import { messages } from '@/i18n/messages'
@@ -5,7 +7,11 @@ import { loadEntries } from '@/lib/entries'
 import { Effect } from 'effect'
 import type { Metadata } from 'next'
 import type { ReactNode } from 'react'
+import { createNote, deleteNote, updateNote } from './notes/actions'
+import { loadReaderNotes } from './notes/readerNotes'
 import { requireReader } from './reader'
+
+const NOTES_ACTIONS = { createNote, updateNote, deleteNote }
 
 /** Title and description of the site in one locale. */
 export function siteMetadata(locale: Locale): Metadata {
@@ -13,7 +19,7 @@ export function siteMetadata(locale: Locale): Metadata {
     return { title: name, description }
 }
 
-/** The site for a logged-in reader: the timeline, with the page below it. */
+/** The site for a logged-in reader: the timeline, with the page below it and the reader's notes beside it. */
 export async function Site({
     lang,
     children,
@@ -21,7 +27,20 @@ export async function Site({
     lang: string
     children: ReactNode
 }) {
-    await requireReader(lang)
-    const entries = await Effect.runPromise(loadEntries())
-    return <TimelineShell entries={entries}>{children}</TimelineShell>
+    const reader = await requireReader(lang)
+    const [entries, notesLoad] = await Effect.runPromise(
+        Effect.all([loadEntries(), loadReaderNotes(reader)], {
+            concurrency: 'unbounded',
+        })
+    )
+    return (
+        <NotesProvider initialLoad={notesLoad} actions={NOTES_ACTIONS}>
+            <div className="lg:flex">
+                <div className="min-w-0 flex-1">
+                    <TimelineShell entries={entries}>{children}</TimelineShell>
+                </div>
+                <NotesSidebar />
+            </div>
+        </NotesProvider>
+    )
 }
