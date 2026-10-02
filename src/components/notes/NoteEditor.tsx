@@ -7,6 +7,7 @@ import {
     ITALIC_CLASS,
     LINK_CLASS,
 } from '@/components/richTextFormat'
+import type { NoteBody } from '@/lib/noteSchema'
 import { AutoFocusPlugin } from '@lexical/react/LexicalAutoFocusPlugin'
 import { ClearEditorPlugin } from '@lexical/react/LexicalClearEditorPlugin'
 import { LexicalComposer } from '@lexical/react/LexicalComposer'
@@ -28,16 +29,11 @@ import {
 } from 'lexical'
 import { Check, X } from 'lucide-react'
 import { type RefObject, useCallback, useEffect, useState } from 'react'
-import {
-    type NoteBody,
-    toEditorBody,
-    toNoteBody,
-    toStoredBody,
-} from './noteBody'
+import { toEditorBody, toNoteBody, toStoredBody } from './noteBody'
 import { NOTE_NODES, NOTE_TRANSFORMERS } from './noteMarkdown'
 import {
-    buttonClass,
-    iconButtonClass,
+    BUTTON_CLASS,
+    ICON_BUTTON_CLASS,
     NOTE_BULLET_LIST_CLASS,
     NOTE_NUMBER_LIST_CLASS,
     NOTE_QUOTE_CLASS,
@@ -175,7 +171,7 @@ function NoteEditorBody({
                     <button
                         type="button"
                         onClick={onCancel}
-                        className={iconButtonClass}
+                        className={ICON_BUTTON_CLASS}
                     >
                         <X aria-hidden size={16} strokeWidth={1.5} />
                         {t.notes.cancel}
@@ -187,7 +183,7 @@ function NoteEditorBody({
                     disabled={saving}
                     aria-keyshortcuts="Control+Enter Meta+Enter"
                     title={t.notes.saveHint}
-                    className={buttonClass}
+                    className={BUTTON_CLASS}
                 >
                     <Check aria-hidden size={16} strokeWidth={1.5} />
                     {saving ? t.notes.saving : t.notes.save}

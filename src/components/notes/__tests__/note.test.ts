@@ -1,5 +1,6 @@
+import type { NoteView } from '@/lib/noteSchema'
 import { describe, expect, it } from 'vitest'
-import { withNote, withoutNote, type NoteView } from '../note'
+import { withNote, withoutNote } from '../note'
 import { noteBody, paragraph, text } from './noteFixtures'
 
 function noteAt(

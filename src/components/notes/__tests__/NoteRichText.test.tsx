@@ -1,6 +1,6 @@
+import type { NoteNode } from '@/lib/noteSchema'
 import { render, screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
-import type { NoteNode } from '../noteBody'
 import { NoteRichText } from '../NoteRichText'
 import { heading, noteBody, paragraph, text } from './noteFixtures'
 

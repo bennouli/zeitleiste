@@ -1,3 +1,4 @@
+import type { NoteBody, NoteNode } from '@/lib/noteSchema'
 import { inLocale } from '@/test/i18n'
 import {
     fireEvent,
@@ -7,7 +8,6 @@ import {
     within,
 } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
-import type { NoteBody, NoteNode } from '../noteBody'
 import { NoteEditor } from '../NoteEditor'
 import { splitTitle } from '../noteTitle'
 import { noteBody, paragraph, text } from './noteFixtures'

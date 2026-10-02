@@ -1,7 +1,5 @@
 import type { NoteView } from '@/lib/noteSchema'
 
-export type { NoteView } from '@/lib/noteSchema'
-
 /** The notes with `note` added or replaced, most recently changed first. */
 export function withNote(notes: NoteView[], note: NoteView): NoteView[] {
     return byRecentChange([

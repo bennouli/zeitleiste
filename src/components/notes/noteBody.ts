@@ -1,8 +1,6 @@
 import type { NoteBody, NoteNode } from '@/lib/noteSchema'
 import type { SerializedEditorState } from 'lexical'
 
-export type { NoteBody, NoteNode } from '@/lib/noteSchema'
-
 const NEW_TAB = '_blank'
 const NEW_TAB_REL = 'noopener noreferrer'
 const EDITOR_LINK_KEYS = new Set(['url', 'target', 'rel', 'title'])

@@ -1,4 +1,4 @@
-import type { NoteBody, NoteNode } from '../noteBody'
+import type { NoteBody, NoteNode } from '@/lib/noteSchema'
 
 export function text(value: string, format = 0): NoteNode {
     return { type: 'text', version: 1, text: value, format }

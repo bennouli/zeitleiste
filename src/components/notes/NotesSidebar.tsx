@@ -5,7 +5,7 @@ import { PanelRightClose, PanelRightOpen } from 'lucide-react'
 import { useId, type KeyboardEvent } from 'react'
 import { useNotes } from './NotesContext'
 import { NotesPanel } from './NotesPanel'
-import { iconButtonClass } from './noteStyles'
+import { ICON_BUTTON_CLASS } from './noteStyles'
 import { useSidebarCollapsed } from './useSidebarCollapsed'
 
 function keepEscapeInSidebar(e: KeyboardEvent<HTMLElement>) {
@@ -38,7 +38,7 @@ export function NotesSidebar() {
                     aria-controls={panelId}
                     aria-label={collapsed ? t.notes.expand : t.notes.collapse}
                     title={collapsed ? t.notes.expand : t.notes.collapse}
-                    className={iconButtonClass}
+                    className={ICON_BUTTON_CLASS}
                 >
                     {collapsed ? (
                         <PanelRightOpen

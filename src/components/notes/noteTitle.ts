@@ -1,4 +1,5 @@
-import { childrenOf, type NoteBody, type NoteNode } from './noteBody'
+import type { NoteBody, NoteNode } from '@/lib/noteSchema'
+import { childrenOf } from './noteBody'
 
 export type TitledNote = {
     /** The first line with text; empty when the note has none. */

@@ -1,13 +1,13 @@
 'use client'
 
 import { useI18n } from '@/components/I18nContext'
+import type { NoteView } from '@/lib/noteSchema'
 import { ChevronDown, ChevronUp, Pencil, Trash2 } from 'lucide-react'
 import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react'
-import type { NoteView } from './note'
 import { NoteEditor } from './NoteEditor'
 import { NoteRichText } from './NoteRichText'
 import { useNotes } from './NotesContext'
-import { buttonClass, iconButtonClass, NOTE_TITLE_CLASS } from './noteStyles'
+import { BUTTON_CLASS, ICON_BUTTON_CLASS, NOTE_TITLE_CLASS } from './noteStyles'
 import { splitTitle } from './noteTitle'
 
 type CardMode = 'reading' | 'editing' | 'confirmingDelete'
@@ -99,7 +99,7 @@ function NoteCard({
                         type="button"
                         onClick={() => setMode('editing')}
                         aria-label={t.notes.editLabel(shownTitle)}
-                        className={iconButtonClass}
+                        className={ICON_BUTTON_CLASS}
                     >
                         <Pencil aria-hidden size={14} strokeWidth={1.5} />
                         {t.notes.edit}
@@ -109,7 +109,7 @@ function NoteCard({
                         type="button"
                         onClick={() => setMode('confirmingDelete')}
                         aria-label={t.notes.deleteLabel(shownTitle)}
-                        className={iconButtonClass}
+                        className={ICON_BUTTON_CLASS}
                     >
                         <Trash2 aria-hidden size={14} strokeWidth={1.5} />
                         {t.notes.delete}
@@ -154,7 +154,7 @@ function ClampedBody({ children }: { children: React.ReactNode }) {
                     onClick={() => setExpanded((wasExpanded) => !wasExpanded)}
                     aria-expanded={expanded}
                     aria-controls={bodyId}
-                    className={`self-start ${iconButtonClass}`}
+                    className={`self-start ${ICON_BUTTON_CLASS}`}
                 >
                     {expanded ? (
                         <ChevronUp aria-hidden size={14} strokeWidth={1.5} />
@@ -192,11 +192,11 @@ function DeleteConfirmation({
                 ref={cancelRef}
                 type="button"
                 onClick={onCancel}
-                className={iconButtonClass}
+                className={ICON_BUTTON_CLASS}
             >
                 {t.notes.cancel}
             </button>
-            <button type="button" onClick={onConfirm} className={buttonClass}>
+            <button type="button" onClick={onConfirm} className={BUTTON_CLASS}>
                 <Trash2 aria-hidden size={14} strokeWidth={1.5} />
                 {t.notes.delete}
             </button>

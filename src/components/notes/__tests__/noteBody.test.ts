@@ -1,5 +1,5 @@
+import type { NoteNode } from '@/lib/noteSchema'
 import { describe, expect, it } from 'vitest'
-import type { NoteNode } from '../noteBody'
 import { toEditorBody, toStoredBody } from '../noteBody'
 import { noteBody, paragraph, text } from './noteFixtures'
 

@@ -1,6 +1,7 @@
 'use client'
 
 import { formattedText, LINK_CLASS } from '@/components/richTextFormat'
+import type { NoteBody } from '@/lib/noteSchema'
 import type {
     DefaultNodeTypes,
     SerializedAutoLinkNode,
@@ -12,7 +13,6 @@ import {
     type JSXConvertersFunction,
     RichText,
 } from '@payloadcms/richtext-lexical/react'
-import type { NoteBody } from './noteBody'
 import {
     NOTE_BULLET_LIST_CLASS,
     NOTE_NUMBER_LIST_CLASS,

@@ -95,7 +95,7 @@ export const de = {
             delete: 'Die Notiz konnte nicht gelöscht werden. Bitte versuche es noch einmal.',
             load: 'Deine Notizen konnten nicht geladen werden. Bitte lade die Seite neu.',
             signedOut:
-                'Du bist nicht mehr angemeldet. Bitte melde dich neu an, dann sichere die Notiz noch einmal.',
+                'Du bist nicht mehr angemeldet. Bitte melde dich neu an und versuche es dann noch einmal.',
         },
     },
 } satisfies Messages

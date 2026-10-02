@@ -1,4 +1,9 @@
-import type { NoteChange, NotesLoad } from '@/lib/noteSchema'
+import type {
+    NoteChange,
+    NoteDeletion,
+    NotesLoad,
+    NoteView,
+} from '@/lib/noteSchema'
 import { expectNoAxeViolations } from '@/test/axe'
 import { inLocale } from '@/test/i18n'
 import {
@@ -9,7 +14,6 @@ import {
     within,
 } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import type { NoteView } from '../note'
 import { NotesProvider, type NotesActions } from '../NotesContext'
 import { NotesSidebar } from '../NotesSidebar'
 import { PRIVATE_UNDER_TESTS } from '../useSidebarCollapsed'
@@ -267,5 +271,30 @@ describe('NotesSidebar', () => {
         expect(await screen.findByRole('alert')).toHaveTextContent(
             'Du bist nicht mehr angemeldet.'
         )
+    })
+
+    it('asks to sign in again when the session ended before a delete', async () => {
+        const deleteNote = async (): Promise<NoteDeletion> => ({
+            deleted: false,
+            signedOut: true,
+        })
+        const signedOutActions = fakeActions({ deleteNote })
+        renderSidebar(signedOutActions)
+
+        fireEvent.click(
+            await screen.findByRole('button', {
+                name: 'Notiz löschen: Kiew 1240',
+            })
+        )
+        fireEvent.click(
+            within(
+                screen.getByRole('group', { name: 'Diese Notiz löschen?' })
+            ).getByRole('button', { name: 'Löschen' })
+        )
+
+        expect(await screen.findByRole('alert')).toHaveTextContent(
+            'Du bist nicht mehr angemeldet.'
+        )
+        expect(screen.getByText('Kiew 1240')).toBeInTheDocument()
     })
 })

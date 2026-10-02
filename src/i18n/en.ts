@@ -93,7 +93,7 @@ export const en = {
             delete: 'The note could not be deleted. Please try again.',
             load: 'Your notes could not be loaded. Please reload the page.',
             signedOut:
-                'You are no longer signed in. Please sign in again, then save the note once more.',
+                'You are no longer signed in. Please sign in again, then try once more.',
         },
     },
 } satisfies Messages
