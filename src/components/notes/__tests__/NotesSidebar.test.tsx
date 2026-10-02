@@ -226,4 +226,20 @@ describe('NotesSidebar', () => {
             'Deine Notizen konnten nicht geladen werden.'
         )
     })
+
+    it('keeps Escape on a sidebar control from closing an open post', async () => {
+        const signedInActions = fakeActions()
+        const escape = { key: 'Escape' }
+        const reachedWindow = vi.fn((e: KeyboardEvent) => e.defaultPrevented)
+        window.addEventListener('keydown', reachedWindow)
+        renderSidebar(signedInActions)
+        const collapse = await screen.findByRole('button', {
+            name: 'Notizen ausblenden',
+        })
+
+        fireEvent.keyDown(collapse, escape)
+
+        window.removeEventListener('keydown', reachedWindow)
+        expect(reachedWindow).toHaveReturnedWith(true)
+    })
 })

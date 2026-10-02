@@ -2,11 +2,15 @@
 
 import { useI18n } from '@/components/I18nContext'
 import { PanelRightClose, PanelRightOpen } from 'lucide-react'
-import { useId } from 'react'
+import { useId, type KeyboardEvent } from 'react'
 import { useNotes } from './NotesContext'
 import { NotesPanel } from './NotesPanel'
 import { iconButtonClass } from './noteStyles'
 import { useSidebarCollapsed } from './useSidebarCollapsed'
+
+function keepEscapeInSidebar(e: KeyboardEvent<HTMLElement>) {
+    if (e.key === 'Escape') e.preventDefault()
+}
 
 /** The notes beside the page from the `lg` breakpoint up; nothing for a visitor. */
 export function NotesSidebar() {
@@ -18,6 +22,7 @@ export function NotesSidebar() {
     return (
         <aside
             aria-label={t.notes.heading}
+            onKeyDown={keepEscapeInSidebar}
             className={`sticky top-0 hidden h-dvh shrink-0 flex-col border-l border-border bg-surface lg:flex ${collapsed ? 'w-auto' : 'w-sidebar'}`}
         >
             <div className="flex items-center justify-between gap-2 px-2 py-2">
