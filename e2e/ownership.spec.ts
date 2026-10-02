@@ -7,7 +7,7 @@ import { authHeaders, specAccounts, VISITOR, type Account } from './reader'
 
 type Owned = 'entries' | 'posts' | 'tags' | 'subjects' | 'media'
 type Headers = Record<string, string>
-type Stored = { id: number; owner: number; slug?: string }
+type Stored = { id: number; slug?: string }
 
 const accounts = specAccounts('ownership')
 const RUN = accounts.run
@@ -190,7 +190,12 @@ test('the owner is always the logged-in user, whatever the request sends', async
         'entries',
         spoofedEntry
     )
-    expect(tag.owner).toBe(author.id)
+    const storedTag = await payload.findByID({
+        collection: 'tags',
+        id: tag.id,
+        depth: 0,
+    })
+    expect(storedTag.owner).toBe(author.id)
     expect((await storedEntry(entry.id)).owner).toBe(author.id)
 
     const reassignResponse = await request.patch(`/api/entries/${entry.id}`, {
