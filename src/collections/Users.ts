@@ -9,7 +9,7 @@ import {
     loggedIn,
 } from './userAccess'
 import {
-    deleteOwnedNotes,
+    deleteOwnedContent,
     inviteNewUser,
     requireAcceptedInvitation,
     resendInvitationEndpoint,
@@ -47,7 +47,7 @@ export const Users: CollectionConfig = {
         beforeLogin: [requireAcceptedInvitation],
         beforeChange: [stampInvitation],
         afterChange: [inviteNewUser],
-        beforeDelete: [deleteOwnedNotes],
+        beforeDelete: [deleteOwnedContent],
     },
     endpoints: [
         {

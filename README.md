@@ -72,7 +72,7 @@ Build Command is `pnpm run ci`.
 
 `pnpm seed` imports the sample entries, their tags and posts into a database without entries; if any entry exists, it seeds nothing.
 `pnpm run ci` runs it after the migrations, so a fresh database receives the sample content once, and an entry deleted or re-slugged in the
-admin never comes back.
+admin never comes back. Seeded content belongs to the oldest admin account; a database without an admin seeds nothing.
 
 On production (`VERCEL_ENV=production`) the seed creates only the 18 sample tags, and only while the tags collection is empty; entries and
 posts there are the owner's. Preview deployments and local runs (`VERCEL_ENV` `preview`, `development` or unset) get the full sample

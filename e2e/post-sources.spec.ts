@@ -5,6 +5,7 @@ import type { Source } from '../src/lib/entry'
 import { paragraphsToLexical } from '../src/lib/richText'
 import type { Post } from '../src/payload-types'
 import { localPayload } from './payload'
+import { readerId } from './reader'
 
 const RUN = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
 const QUIET = { disableRevalidate: true }
@@ -19,12 +20,14 @@ const FTP_URL = 'ftp://example.org/tarle.pdf'
 type Created = { collection: 'entries' | 'posts'; id: number }
 
 let payload: Payload
+let owner: number
 const createdDocs: Created[] = []
 
 test.describe.configure({ mode: 'serial' })
 
 test.beforeAll(async () => {
     payload = await localPayload()
+    owner = await readerId(payload)
 })
 
 test.afterAll(async () => {
@@ -37,9 +40,9 @@ test.afterAll(async () => {
 type IncomingSource = Partial<Source>
 
 async function createPost(sources?: readonly IncomingSource[]) {
-    const data = { body: BODY, ...(sources && { sources }) } as Pick<
+    const data = { owner, body: BODY, ...(sources && { sources }) } as Pick<
         Post,
-        'body' | 'sources'
+        'owner' | 'body' | 'sources'
     >
     const doc = await payload.create({
         collection: 'posts',
@@ -52,6 +55,7 @@ async function createPost(sources?: readonly IncomingSource[]) {
 
 async function createEntry(post: number) {
     const data = {
+        owner,
         title: `E2E Quellen ${post} ${RUN}`,
         summary: 'Ein Eintrag, den der e2e-Lauf anlegt und wieder löscht.',
         startYear: 1853,

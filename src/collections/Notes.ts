@@ -1,9 +1,7 @@
-import type { CollectionConfig, FieldHook } from 'payload'
+import type { CollectionConfig } from 'payload'
 import { noteEditor } from './editors'
-import { loggedIn, ownerOnly } from './userAccess'
-
-const stampOwnerOnCreate: FieldHook = ({ operation, req, value }) =>
-    operation === 'create' ? req.user?.id : value
+import { ownerField } from './ownership'
+import { ownedAccess } from './userAccess'
 
 export const Notes: CollectionConfig = {
     slug: 'notes',
@@ -11,24 +9,9 @@ export const Notes: CollectionConfig = {
     admin: {
         defaultColumns: ['id', 'updatedAt'],
     },
-    access: {
-        create: loggedIn,
-        read: ownerOnly,
-        update: ownerOnly,
-        delete: ownerOnly,
-    },
+    access: ownedAccess(false),
     fields: [
-        {
-            name: 'owner',
-            type: 'relationship',
-            label: 'Verfasst von',
-            relationTo: 'users',
-            required: true,
-            defaultValue: ({ user }) => user?.id,
-            access: { update: () => false },
-            hooks: { beforeValidate: [stampOwnerOnCreate] },
-            admin: { readOnly: true, position: 'sidebar' },
-        },
+        ownerField,
         {
             name: 'body',
             type: 'richText',

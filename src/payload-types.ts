@@ -169,6 +169,7 @@ export interface User {
  */
 export interface Entry {
   id: number;
+  owner: number | User;
   title: string;
   /**
    * When enabled, the slug will auto-generate from the title field on save and autosave.
@@ -206,6 +207,7 @@ export interface Entry {
  */
 export interface Subject {
   id: number;
+  owner: number | User;
   name: string;
   /**
    * When enabled, the slug will auto-generate from the title field on save and autosave.
@@ -222,6 +224,7 @@ export interface Subject {
  */
 export interface Tag {
   id: number;
+  owner: number | User;
   name: string;
   /**
    * When enabled, the slug will auto-generate from the title field on save and autosave.
@@ -238,6 +241,7 @@ export interface Tag {
  */
 export interface Post {
   id: number;
+  owner: number | User;
   body: {
     root: {
       type: string;
@@ -274,6 +278,7 @@ export interface Post {
  */
 export interface Media {
   id: number;
+  owner: number | User;
   /**
    * Beschreibt das Bild für alle, die es nicht sehen.
    */
@@ -471,6 +476,7 @@ export interface UsersSelect<T extends boolean = true> {
  * via the `definition` "entries_select".
  */
 export interface EntriesSelect<T extends boolean = true> {
+  owner?: T;
   title?: T;
   generateSlug?: T;
   slug?: T;
@@ -498,6 +504,7 @@ export interface EntriesSelect<T extends boolean = true> {
  * via the `definition` "posts_select".
  */
 export interface PostsSelect<T extends boolean = true> {
+  owner?: T;
   body?: T;
   sources?:
     | T
@@ -515,6 +522,7 @@ export interface PostsSelect<T extends boolean = true> {
  * via the `definition` "subjects_select".
  */
 export interface SubjectsSelect<T extends boolean = true> {
+  owner?: T;
   name?: T;
   generateSlug?: T;
   slug?: T;
@@ -527,6 +535,7 @@ export interface SubjectsSelect<T extends boolean = true> {
  * via the `definition` "tags_select".
  */
 export interface TagsSelect<T extends boolean = true> {
+  owner?: T;
   name?: T;
   generateSlug?: T;
   slug?: T;
@@ -539,6 +548,7 @@ export interface TagsSelect<T extends boolean = true> {
  * via the `definition` "media_select".
  */
 export interface MediaSelect<T extends boolean = true> {
+  owner?: T;
   alt?: T;
   caption?: T;
   credit?: T;
