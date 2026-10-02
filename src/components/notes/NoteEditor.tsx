@@ -45,7 +45,7 @@ export type NoteEditorProps = {
     /** The note being edited; a new note starts empty. */
     initialBody?: NoteBody
     label: string
-    /** Resolves to whether the note was stored; a new note's editor then empties. */
+    /** Resolves to whether the note was stored. */
     onSave: (body: NoteBodyInput) => Promise<boolean>
     onCancel?: () => void
     editorRef?: RefObject<LexicalEditor | null>

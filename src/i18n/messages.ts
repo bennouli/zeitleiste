@@ -67,10 +67,8 @@ export type Messages = {
         failed: string
     }
     notes: {
-        /** The sidebar's landmark name. */
         heading: string
         editorLabel: string
-        /** The editing area inside an editor named by `editorLabel` or `editLabel`. */
         textLabel: string
         placeholder: string
         save: string

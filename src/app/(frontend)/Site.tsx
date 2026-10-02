@@ -28,10 +28,11 @@ export async function Site({
     children: ReactNode
 }) {
     const reader = await requireReader(lang)
-    const [entries, notesLoad] = await Promise.all([
-        Effect.runPromise(loadEntries()),
-        Effect.runPromise(loadReaderNotes(reader)),
-    ])
+    const [entries, notesLoad] = await Effect.runPromise(
+        Effect.all([loadEntries(), loadReaderNotes(reader)], {
+            concurrency: 'unbounded',
+        })
+    )
     return (
         <NotesProvider initialLoad={notesLoad} actions={NOTES_ACTIONS}>
             <div className="lg:flex">

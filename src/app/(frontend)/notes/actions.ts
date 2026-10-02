@@ -17,6 +17,8 @@ class NotSignedIn extends Data.TaggedError('NotSignedIn') {}
 
 const NOT_STORED: NoteChange = { stored: false, signedOut: false }
 const SIGNED_OUT_CHANGE: NoteChange = { stored: false, signedOut: true }
+const NOT_DELETED: NoteDeletion = { deleted: false, signedOut: false }
+const SIGNED_OUT_DELETION: NoteDeletion = { deleted: false, signedOut: true }
 
 export async function createNote(body: unknown): Promise<NoteChange> {
     const program = Effect.gen(function* () {
@@ -73,11 +75,7 @@ export async function deleteNote(id: unknown): Promise<NoteDeletion> {
         )
         return { deleted: true, signedOut: false }
     })
-    return runAtEdge(
-        program,
-        { deleted: false, signedOut: false },
-        { deleted: false, signedOut: true }
-    )
+    return runAtEdge(program, NOT_DELETED, SIGNED_OUT_DELETION)
 }
 
 const signedInSession = Effect.gen(function* () {
