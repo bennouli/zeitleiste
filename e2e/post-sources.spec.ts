@@ -53,7 +53,7 @@ async function createPost(sources?: readonly IncomingSource[]) {
 
 async function createEntry(post: number) {
     const data = {
-        title: `E2E Quellen ${RUN}`,
+        title: `E2E Quellen ${post} ${RUN}`,
         summary: 'Ein Eintrag, den der e2e-Lauf anlegt und wieder löscht.',
         startYear: 1853,
         type: 'war' as const,
@@ -95,14 +95,18 @@ test.describe('a source is refused', () => {
     const script = { title: TARLE.title, url: 'javascript:alert(1)' }
     const ftp = { title: TARLE.title, url: FTP_URL }
 
-    for (const [name, source] of Object.entries({
-        untitled,
-        unlinked,
-        script,
-        ftp,
-    })) {
+    const refusals: [string, IncomingSource, string][] = [
+        ['without a title', untitled, 'Titel'],
+        ['without a link', unlinked, 'Link'],
+        ['with a javascript: link', script, 'Link'],
+        ['with an ftp: link', ftp, 'Link'],
+    ]
+
+    for (const [name, source, field] of refusals) {
         test(name, async () => {
-            await expect(createPost([source])).rejects.toThrow(/sources/)
+            await expect(createPost([source])).rejects.toThrow(
+                `Quellen 1 > ${field}`
+            )
         })
     }
 })
