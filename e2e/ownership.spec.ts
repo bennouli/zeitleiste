@@ -290,6 +290,17 @@ test('deleting a user deletes everything they own', async ({ request }) => {
     const leaverHeaders = await authHeaders(request, leaver)
     const adminHeaders = await authHeaders(request, admin)
     const leaverDocs = await createOneOfEach(request, leaverHeaders, 'leave')
+    const moreEntryIds = await Promise.all(
+        ['leave 2', 'leave 3'].map(async (label) => {
+            const entry = await createOwned(
+                request,
+                leaverHeaders,
+                'entries',
+                entryTitled(label)
+            )
+            return entry.id
+        })
+    )
 
     const removalResponse = await request.delete(`/api/users/${leaver.id}`, {
         headers: adminHeaders,
@@ -303,4 +314,9 @@ test('deleting a user deletes everything they own', async ({ request }) => {
         })
         expect(totalDocs, collection).toBe(0)
     }
+    const { totalDocs: entriesLeft } = await payload.count({
+        collection: 'entries',
+        where: { id: { in: moreEntryIds } },
+    })
+    expect(entriesLeft).toBe(0)
 })

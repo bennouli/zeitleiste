@@ -18,11 +18,12 @@ export const requireOwnerOnDraftedTables: SchemaHook = ({
     extendTable,
 }) => {
     for (const { table, column, constraint } of DRAFTED_OWNER_COLUMNS) {
-        const ownerColumn = schema.tables[table]?.[column]
-        if (ownerColumn === undefined)
+        const draftedTable = schema.tables[table]
+        const ownerColumn = draftedTable?.[column]
+        if (draftedTable === undefined || ownerColumn === undefined)
             throw new Error(`${table}.${column} is missing from the schema`)
         extendTable({
-            table: schema.tables[table]!,
+            table: draftedTable,
             extraConfig: () => ({
                 [constraint]: check(
                     constraint,
