@@ -1,7 +1,13 @@
+import { messages } from '@/i18n/messages'
 import type { EntrySearch } from '@/lib/noteSchema'
 import { act, renderHook } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { PRIVATE_UNDER_TESTS, useEntrySearch } from '../useEntrySearch'
+import {
+    entrySearchStatus,
+    PRIVATE_UNDER_TESTS,
+    useEntrySearch,
+    type EntrySearchOutcome,
+} from '../useEntrySearch'
 
 const { SEARCH_DELAY_MS } = PRIVATE_UNDER_TESTS
 
@@ -100,5 +106,43 @@ describe('useEntrySearch', () => {
             { status: 'failed' },
             { status: 'signedOut' },
         ])
+    })
+})
+
+describe('entrySearchStatus', () => {
+    const notesText = messages.de.notes
+
+    it('counts what was found and says when nothing was', () => {
+        const none: EntrySearchOutcome = { status: 'found', entries: [] }
+        const one: EntrySearchOutcome = {
+            status: 'found',
+            entries: [KIEW_ENTRY],
+        }
+        const two: EntrySearchOutcome = {
+            status: 'found',
+            entries: [KIEW_ENTRY, NOWGOROD_ENTRY],
+        }
+
+        expect(
+            [none, one, two].map((outcome) =>
+                entrySearchStatus(outcome, notesText)
+            )
+        ).toEqual([
+            'Kein Eintrag gefunden.',
+            'Ein Eintrag gefunden.',
+            '2 Einträge gefunden.',
+        ])
+    })
+
+    it('hints before typing and asks to sign in again once the session ended', () => {
+        const idle: EntrySearchOutcome = { status: 'idle' }
+        const signedOut: EntrySearchOutcome = { status: 'signedOut' }
+
+        expect(entrySearchStatus(idle, notesText)).toBe(
+            notesText.entrySearchHint
+        )
+        expect(entrySearchStatus(signedOut, notesText)).toBe(
+            notesText.failed.signedOut
+        )
     })
 })

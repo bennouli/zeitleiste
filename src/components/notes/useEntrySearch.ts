@@ -1,5 +1,6 @@
 'use client'
 
+import type { Messages } from '@/i18n/messages'
 import type { EntrySearch, LinkedEntry } from '@/lib/noteSchema'
 import { useEffect, useState } from 'react'
 
@@ -60,6 +61,27 @@ export function useEntrySearch(
         query,
         setQuery,
         outcome: currentOutcome(searchedText, settledSearch),
+    }
+}
+
+/** What the search is doing or found, in words for its status line. */
+export function entrySearchStatus(
+    outcome: EntrySearchOutcome,
+    notesText: Messages['notes']
+): string {
+    switch (outcome.status) {
+        case 'idle':
+            return notesText.entrySearchHint
+        case 'searching':
+            return notesText.entrySearching
+        case 'found':
+            return outcome.entries.length === 0
+                ? notesText.noEntryFound
+                : notesText.entriesFound(outcome.entries.length)
+        case 'failed':
+            return notesText.entrySearchFailed
+        case 'signedOut':
+            return notesText.failed.signedOut
     }
 }
 

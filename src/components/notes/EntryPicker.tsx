@@ -2,13 +2,12 @@
 
 import { FOCUS_RING_CLASS } from '@/components/focusRing'
 import { useI18n } from '@/components/I18nContext'
-import type { Messages } from '@/i18n/messages'
 import type { LinkedEntry } from '@/lib/noteSchema'
 import { X } from 'lucide-react'
 import { useEffect, useId, useRef } from 'react'
 import { useNotes } from './NotesContext'
 import { ICON_BUTTON_CLASS } from './noteStyles'
-import { useEntrySearch, type EntrySearchOutcome } from './useEntrySearch'
+import { entrySearchStatus, useEntrySearch } from './useEntrySearch'
 
 type EntryPickerProps = {
     /** Names the group, e.g. "Link note to an entry: <note title>". */
@@ -41,7 +40,7 @@ export function EntryPicker({ label, onPick, onCancel }: EntryPickerProps) {
                 className={`rounded-sm border border-border bg-surface px-3 py-1 text-note text-fg ${FOCUS_RING_CLASS}`}
             />
             <p role="status" className="text-label-lg text-fg-muted">
-                {statusText(outcome, t.notes)}
+                {entrySearchStatus(outcome, t.notes)}
             </p>
             {outcome.status === 'found' && outcome.entries.length > 0 && (
                 <ul className="flex flex-col">
@@ -70,24 +69,4 @@ export function EntryPicker({ label, onPick, onCancel }: EntryPickerProps) {
             </div>
         </div>
     )
-}
-
-function statusText(
-    outcome: EntrySearchOutcome,
-    notesText: Messages['notes']
-): string {
-    switch (outcome.status) {
-        case 'idle':
-            return notesText.entrySearchHint
-        case 'searching':
-            return notesText.entrySearching
-        case 'found':
-            return outcome.entries.length === 0
-                ? notesText.noEntryFound
-                : notesText.entriesFound(outcome.entries.length)
-        case 'failed':
-            return notesText.entrySearchFailed
-        case 'signedOut':
-            return notesText.failed.signedOut
-    }
 }
