@@ -1,6 +1,7 @@
 'use client'
 
 import { useI18n } from '@/components/I18nContext'
+import { LARGE_ICON_BUTTON_CLASS } from '@/components/iconButton'
 import { usePostControls } from '@/components/PostContext'
 import { type Entry } from '@/lib/entry'
 import { entryMetaParts } from '@/lib/format'
@@ -52,7 +53,7 @@ export function Post({ entry }: { entry: Entry }) {
                 onClick={close}
                 aria-label={t.post.close}
                 title={t.post.closeShort}
-                className="absolute top-5.5 right-0 size-7 text-fg-muted hover:text-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
+                className={`absolute top-5.5 right-0 ${LARGE_ICON_BUTTON_CLASS}`}
             >
                 <X
                     aria-hidden="true"

@@ -1,13 +1,14 @@
 'use client'
 
 import { useI18n } from '@/components/I18nContext'
+import { LARGE_ICON_BUTTON_CLASS } from '@/components/iconButton'
 import clsx from 'clsx'
 import { PanelRightClose, PanelRightOpen, X } from 'lucide-react'
 import { useId, useRef, type KeyboardEvent } from 'react'
 import { useNotes } from './NotesContext'
 import { NOTES_ASIDE_ID, useNotesOverlay } from './NotesOverlayContext'
 import { NotesPanel } from './NotesPanel'
-import { ICON_BUTTON_CLASS, LARGE_ICON_BUTTON_CLASS } from './noteStyles'
+import { ICON_BUTTON_CLASS } from './noteStyles'
 import { useNotesOverlayMode } from './useNotesOverlayMode'
 import { useSidebarCollapsed } from './useSidebarCollapsed'
 

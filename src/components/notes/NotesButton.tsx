@@ -1,11 +1,11 @@
 'use client'
 
 import { useI18n } from '@/components/I18nContext'
+import { LARGE_ICON_BUTTON_CLASS } from '@/components/iconButton'
 import { NO_DRAG_ATTR } from '@/components/timeline/useGestures'
 import { NotebookPen } from 'lucide-react'
 import { useNotes } from './NotesContext'
 import { NOTES_ASIDE_ID, useNotesOverlay } from './NotesOverlayContext'
-import { LARGE_ICON_BUTTON_CLASS } from './noteStyles'
 
 /** The top-bar button that opens the notes over the page, below the breakpoint where the sidebar shows. */
 export function NotesButton() {

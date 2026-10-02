@@ -4,13 +4,13 @@ import { useLayoutEffect, useRef, type RefObject } from 'react'
 import { inertOutside } from './inertOutside'
 import { useNotesOverlay } from './NotesOverlayContext'
 
-/** While the notes cover the page: the rest is inert, focus is inside, and widening to the sidebar ends the overlay without losing focus. */
 type OverlayElements = {
     asideRef: RefObject<HTMLElement | null>
     focusOnOpenRef: RefObject<HTMLElement | null>
     focusWhenPanelHidesRef: RefObject<HTMLElement | null>
 }
 
+/** While the notes cover the page: the rest is inert, focus is inside, and widening to the sidebar ends the overlay without losing focus. */
 export function useNotesOverlayMode({
     asideRef,
     focusOnOpenRef,
