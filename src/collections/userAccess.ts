@@ -9,6 +9,9 @@ export const adminOnlyField: FieldAccess = ({ req }) => isAdmin(req.user)
 
 export const loggedIn: Access = ({ req }) => Boolean(req.user)
 
+export const ownerOnly: Access = ({ req: { user } }) =>
+    user ? { owner: { equals: user.id } } : false
+
 export const adminOrSelf: Access = ({ req: { user } }) => {
     if (isAdmin(user)) return true
     return user ? { id: { equals: user.id } } : false

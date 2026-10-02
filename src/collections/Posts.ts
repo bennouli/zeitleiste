@@ -1,35 +1,6 @@
-import {
-    BlockquoteFeature,
-    BoldFeature,
-    FixedToolbarFeature,
-    HeadingFeature,
-    InlineToolbarFeature,
-    ItalicFeature,
-    lexicalEditor,
-    LinkFeature,
-    OrderedListFeature,
-    ParagraphFeature,
-    UnorderedListFeature,
-    UploadFeature,
-} from '@payloadcms/richtext-lexical'
 import type { CollectionConfig } from 'payload'
+import { bodyEditor } from './bodyEditor'
 import { revalidatePostChange, revalidatePostDelete } from './revalidate'
-
-const postEditor = lexicalEditor({
-    features: [
-        ParagraphFeature(),
-        HeadingFeature({ enabledHeadingSizes: ['h3', 'h4'] }),
-        BoldFeature(),
-        ItalicFeature(),
-        UnorderedListFeature(),
-        OrderedListFeature(),
-        LinkFeature({ enabledCollections: [] }),
-        BlockquoteFeature(),
-        UploadFeature({ enabledCollections: ['media'], maxDepth: 1 }),
-        FixedToolbarFeature(),
-        InlineToolbarFeature(),
-    ],
-})
 
 export const Posts: CollectionConfig = {
     slug: 'posts',
@@ -50,7 +21,7 @@ export const Posts: CollectionConfig = {
             type: 'richText',
             label: 'Text',
             required: true,
-            editor: postEditor,
+            editor: bodyEditor,
         },
         {
             name: 'entry',

@@ -5,6 +5,7 @@ import {
     adminOrFirstUser,
     adminOrSelf,
     loggedIn,
+    ownerOnly,
 } from '../userAccess'
 
 const admin = { id: 1, role: 'admin' }
@@ -87,5 +88,22 @@ describe('loggedIn', () => {
     it('denies a visitor', () => {
         const args = requestFor(null)
         expect(loggedIn(args)).toBe(false)
+    })
+})
+
+describe('ownerOnly', () => {
+    it('limits an editor to the documents they own', () => {
+        const args = requestFor(editor)
+        expect(ownerOnly(args)).toEqual({ owner: { equals: 2 } })
+    })
+
+    it('limits an admin to the documents they own', () => {
+        const args = requestFor(admin)
+        expect(ownerOnly(args)).toEqual({ owner: { equals: 1 } })
+    })
+
+    it('denies a visitor', () => {
+        const args = requestFor(null)
+        expect(ownerOnly(args)).toBe(false)
     })
 })
