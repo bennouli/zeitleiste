@@ -7,7 +7,7 @@ import {
     type NoteChange,
     type NoteDeletion,
     type NotesLoad,
-} from '@/components/notes/noteSchema'
+} from '@/lib/noteSchema'
 import config from '@/payload.config'
 import { Cause, Data, Effect, Schema } from 'effect'
 import { headers } from 'next/headers'

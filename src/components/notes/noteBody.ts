@@ -1,7 +1,7 @@
+import type { NoteBody, NoteNode } from '@/lib/noteSchema'
 import type { SerializedEditorState } from 'lexical'
-import type { NoteBody, NoteNode } from './noteSchema'
 
-export type { NoteBody, NoteNode } from './noteSchema'
+export type { NoteBody, NoteNode } from '@/lib/noteSchema'
 
 const NEW_TAB = '_blank'
 const NEW_TAB_REL = 'noopener noreferrer'

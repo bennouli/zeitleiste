@@ -1,3 +1,4 @@
+import type { NotesLoad } from '@/lib/noteSchema'
 import { expectNoAxeViolations } from '@/test/axe'
 import { inLocale } from '@/test/i18n'
 import {
@@ -9,11 +10,7 @@ import {
 } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { NoteView } from '../note'
-import {
-    NotesProvider,
-    type NotesActions,
-    type NotesLoad,
-} from '../NotesContext'
+import { NotesProvider, type NotesActions } from '../NotesContext'
 import { NotesSidebar } from '../NotesSidebar'
 import { PRIVATE_UNDER_TESTS } from '../useSidebarCollapsed'
 import { noteBody, paragraph, text } from './noteFixtures'

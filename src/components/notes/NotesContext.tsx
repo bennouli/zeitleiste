@@ -1,5 +1,12 @@
 'use client'
 
+import type {
+    NoteBody,
+    NoteChange,
+    NoteDeletion,
+    NotesLoad,
+    NoteView,
+} from '@/lib/noteSchema'
 import {
     createContext,
     useCallback,
@@ -10,15 +17,6 @@ import {
     type ReactNode,
 } from 'react'
 import { withNote, withoutNote } from './note'
-import type {
-    NoteBody,
-    NoteChange,
-    NoteDeletion,
-    NotesLoad,
-    NoteView,
-} from './noteSchema'
-
-export type { NoteChange, NotesLoad } from './noteSchema'
 
 /** The server actions behind the notes; plain data in, plain data out. */
 export type NotesActions = {
