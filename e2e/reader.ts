@@ -1,9 +1,11 @@
-import { expect, type Page } from '@playwright/test'
+import { expect, type APIRequestContext, type Page } from '@playwright/test'
 import { Schema } from 'effect'
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
+import type { Payload } from 'payload'
 import type { Locale } from '../src/i18n/locales'
 import { messages } from '../src/i18n/messages'
+import type { User } from '../src/payload-types'
 
 const Credentials = Schema.Struct({
     email: Schema.NonEmptyString,
@@ -63,4 +65,64 @@ export async function expectLoginPage(page: Page, lang: Locale) {
             name: messages[lang].login.heading,
         })
     ).toBeVisible()
+}
+
+export type Account = Credentials & { id: number }
+
+/** The users one spec file creates, deleted with their notes when it is done. */
+export function specAccounts(prefix: string) {
+    const run = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
+    const ids: number[] = []
+    return {
+        run,
+        async create(
+            payload: Payload,
+            name: string,
+            role: User['role'] = 'editor'
+        ): Promise<Account> {
+            const credentials = {
+                email: `e2e-${prefix}-${name}-${run}@example.test`,
+                password: `${name}-pass-1`,
+            }
+            const user = await payload.create({
+                collection: 'users',
+                data: {
+                    ...credentials,
+                    role,
+                    invitationAcceptedAt: new Date().toISOString(),
+                },
+            })
+            ids.push(user.id)
+            return { ...credentials, id: user.id }
+        },
+        async removeAll(payload: Payload) {
+            await payload.delete({
+                collection: 'notes',
+                where: { owner: { in: ids } },
+            })
+            await payload.delete({
+                collection: 'users',
+                where: { id: { in: ids } },
+            })
+        },
+    }
+}
+
+/** Signs the page's browser context in, as the login form would. */
+export async function signIn(page: Page, credentials: Credentials) {
+    const res = await page.request.post('/api/users/login', {
+        data: credentials,
+    })
+    expect(res.status()).toBe(200)
+}
+
+/** Headers that authenticate a REST request as the given user. */
+export async function authHeaders(
+    request: APIRequestContext,
+    credentials: Credentials
+) {
+    const res = await request.post('/api/users/login', { data: credentials })
+    expect(res.status()).toBe(200)
+    const { token } = await res.json()
+    return { Authorization: `JWT ${token}` }
 }
