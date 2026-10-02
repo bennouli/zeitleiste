@@ -12,6 +12,7 @@ vi.mock('next/navigation', () => ({
     },
 }))
 
+const READER = { id: 1 }
 const loadPost = vi.hoisted(() => vi.fn())
 const requireReader = vi.hoisted(() => vi.fn())
 
@@ -21,11 +22,11 @@ vi.mock('@/lib/entries', () => ({ loadPost }))
 
 beforeEach(() => {
     loadPost.mockReset()
-    loadPost.mockImplementation((slug: string) =>
+    loadPost.mockImplementation((_reader: unknown, slug: string) =>
         Effect.succeed(findEntry(entries, slug))
     )
     requireReader.mockReset()
-    requireReader.mockResolvedValue({ id: 1 })
+    requireReader.mockResolvedValue(READER)
 })
 
 const VISITOR_REDIRECT = new Error('NEXT_REDIRECT')
@@ -47,13 +48,13 @@ describe('post page', () => {
         expect(loadPost).not.toHaveBeenCalled()
     })
 
-    it('renders the post loaded by its slug alone', async () => {
+    it('renders the post the reader owns at the slug', async () => {
         const englishParams = params('oktoberrevolution', 'en')
         render(await PostPage(englishParams))
         expect(
             screen.getByRole('heading', { level: 2, name: 'Oktoberrevolution' })
         ).toBeInTheDocument()
-        expect(loadPost).toHaveBeenLastCalledWith('oktoberrevolution')
+        expect(loadPost).toHaveBeenLastCalledWith(READER, 'oktoberrevolution')
     })
 
     it('is a 404 under an address without a known locale', async () => {

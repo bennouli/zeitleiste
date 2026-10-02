@@ -4,39 +4,26 @@ import {
     type APIRequestContext,
     type Page,
 } from '@playwright/test'
-import type { Payload } from 'payload'
 import { paragraphsToLexical } from '../src/lib/richText'
-import { localPayload } from './payload'
+import { readerAccount } from './reader'
 import { openTimeline } from './timeline'
 
 const RUN = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
-const EDITOR = {
-    email: `e2e-publisher-${RUN}@example.test`,
-    password: 'publisher-pass-1',
-}
 
 type Created = { collection: 'entries' | 'posts'; id: number }
 
-let payload: Payload
 let authorization: string
 const created: Created[] = []
 
 test.describe.configure({ mode: 'serial' })
 
 test.beforeAll(async ({ playwright }, { project }) => {
-    payload = await localPayload()
-    await payload.create({
-        collection: 'users',
-        data: {
-            ...EDITOR,
-            role: 'editor',
-            invitationAcceptedAt: new Date().toISOString(),
-        },
-    })
     const api = await playwright.request.newContext({
         baseURL: project.use.baseURL,
     })
-    const login = await api.post('/api/users/login', { data: EDITOR })
+    const login = await api.post('/api/users/login', {
+        data: readerAccount(),
+    })
     expect(login.status()).toBe(200)
     authorization = `JWT ${(await login.json()).token}`
     await api.dispose()
@@ -53,10 +40,6 @@ test.afterAll(async ({ playwright }, { project }) => {
         expect(res.status()).toBe(200)
     }
     await api.dispose()
-    await payload.delete({
-        collection: 'users',
-        where: { email: { equals: EDITOR.email } },
-    })
 })
 
 async function createDoc(

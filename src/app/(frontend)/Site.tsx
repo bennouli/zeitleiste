@@ -41,7 +41,7 @@ export async function Site({
 }) {
     const reader = await requireReader(lang)
     const [entries, notesLoad] = await Effect.runPromise(
-        Effect.all([loadEntries(), loadReaderNotes(reader)], {
+        Effect.all([loadEntries(reader), loadReaderNotes(reader)], {
             concurrency: 'unbounded',
         })
     )

@@ -1,3 +1,4 @@
+import type { User } from '@/payload-types'
 import config from '@/payload.config'
 import { Data, Effect, Schema } from 'effect'
 import { getPayload, type Payload, type Where } from 'payload'
@@ -20,33 +21,42 @@ class LoadError extends Data.TaggedError('LoadError')<{
 const POST_NOT_LOADED: Post = { body: paragraphsToLexical('') }
 
 /**
- * Every published entry, sorted by start. An entry's post is only marked as
- * present; `loadPost` loads its body.
+ * Every published entry of the reader, sorted by start. An entry's post is only
+ * marked as present; `loadPost` loads its body.
  */
-export const loadEntries = Effect.fn('loadEntries')(function* () {
-    const docs = yield* findPublishedEntries({})
+export const loadEntries = Effect.fn('loadEntries')(function* (reader: User) {
+    const docs = yield* findPublishedEntries(reader)
     return docs.map((doc) =>
         entryOf(doc, postIdOf(doc) === undefined ? undefined : POST_NOT_LOADED)
     )
 })
 
-/** The published entry at `slug` with its post; undefined if there is none or it has no post. */
-export const loadPost = Effect.fn('loadPost')(function* (slug: string) {
-    const [doc] = yield* findPublishedEntries({ slug: { equals: slug } })
+/** The reader's published entry at `slug` with its post; undefined if there is none or it has no post. */
+export const loadPost = Effect.fn('loadPost')(function* (
+    reader: User,
+    slug: string
+) {
+    const [doc] = yield* findPublishedEntries(reader, {
+        slug: { equals: slug },
+    })
     const postId = doc && postIdOf(doc)
     if (doc === undefined || postId === undefined) return undefined
-    const post = yield* findPost(postId)
+    const post = yield* findPost(reader, postId)
     return post && entryOf(doc, postOf(post))
 })
 
-function findPublishedEntries(where: Where) {
+const PUBLISHED: Where = { _status: { equals: 'published' } }
+
+function findPublishedEntries(reader: User, ...constraints: Where[]) {
     return payloadCall('find entries', (payload) =>
         payload.find({
             collection: 'entries',
-            where,
+            where: { and: [PUBLISHED, ...constraints] },
+            user: reader,
             overrideAccess: false,
             draft: false,
             depth: 1,
+            populate: { posts: {} },
             sort: 'startAt',
             pagination: false,
         })
@@ -56,16 +66,13 @@ function findPublishedEntries(where: Where) {
     )
 }
 
-/**
- * Posts are readable by editors only, so the Local API leaves an anonymous
- * entry's `post` as an id. Only ids taken from a published entry reach here.
- */
-function findPost(id: number) {
+function findPost(reader: User, id: number) {
     return payloadCall('find post', (payload) =>
         payload.find({
             collection: 'posts',
             where: { id: { equals: id } },
-            overrideAccess: true,
+            user: reader,
+            overrideAccess: false,
             select: { body: true, sources: true },
             depth: 1,
             limit: 1,

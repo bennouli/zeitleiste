@@ -3,7 +3,7 @@ import { Effect } from 'effect'
 import type { Payload } from 'payload'
 import type { Source } from '../src/lib/entry'
 import { paragraphsToLexical } from '../src/lib/richText'
-import type { Post } from '../src/payload-types'
+import type { Post, User } from '../src/payload-types'
 import { localPayload } from './payload'
 import { readerId } from './reader'
 
@@ -21,6 +21,7 @@ type Created = { collection: 'entries' | 'posts'; id: number }
 
 let payload: Payload
 let owner: number
+let reader: User
 const createdDocs: Created[] = []
 
 test.describe.configure({ mode: 'serial' })
@@ -28,6 +29,7 @@ test.describe.configure({ mode: 'serial' })
 test.beforeAll(async () => {
     payload = await localPayload()
     owner = await readerId(payload)
+    reader = await payload.findByID({ collection: 'users', id: owner })
 })
 
 test.afterAll(async () => {
@@ -74,7 +76,7 @@ async function createEntry(post: number) {
 
 async function loadedPost({ slug }: { slug?: string | null }) {
     const { loadPost } = await import('../src/lib/entries')
-    const entry = await Effect.runPromise(loadPost(slug ?? ''))
+    const entry = await Effect.runPromise(loadPost(reader, slug ?? ''))
     return entry?.post
 }
 

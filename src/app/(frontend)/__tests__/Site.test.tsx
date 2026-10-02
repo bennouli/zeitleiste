@@ -31,7 +31,7 @@ describe('Site', () => {
         expect(loadReaderNotes).not.toHaveBeenCalled()
     })
 
-    it('loads the notes of the reader it verified', async () => {
+    it('loads the entries and notes of the reader it verified', async () => {
         const notesLoad = { notes: [], loadFailed: false }
         requireReader.mockResolvedValue(READER)
         loadEntries.mockReturnValue(Effect.succeed([]))
@@ -40,6 +40,7 @@ describe('Site', () => {
 
         await Site(siteProps)
 
+        expect(loadEntries).toHaveBeenCalledWith(READER)
         expect(loadReaderNotes).toHaveBeenCalledWith(READER)
     })
 })

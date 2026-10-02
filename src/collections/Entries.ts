@@ -109,7 +109,7 @@ export const Entries: CollectionConfig = {
         useAsTitle: 'title',
         defaultColumns: ['title', 'startYear', 'type', '_status'],
     },
-    access: ownedAccess({ _status: { equals: 'published' } }),
+    access: ownedAccess(false),
     indexes: uniquePerOwner('slug'),
     versions: {
         drafts: true,
