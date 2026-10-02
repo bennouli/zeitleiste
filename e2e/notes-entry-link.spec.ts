@@ -19,19 +19,20 @@ test.beforeAll(async () => {
 })
 
 test.afterAll(async () => {
-    await accounts.removeAll(payload)
     await payload.delete({
         collection: 'entries',
         where: { id: { in: entryIds } },
         context: QUIET,
     })
+    await accounts.removeAll(payload)
 })
 
 /** A draft, so it never shows on the timeline other specs walk; readers can still find it. */
-async function storeEntry(title: string) {
+async function storeEntry(ownerId: number, title: string) {
     const entry = await payload.create({
         collection: 'entries',
         data: {
+            owner: ownerId,
             title,
             summary: `Zusammenfassung ${RUN}`,
             startYear: 1240,
@@ -68,7 +69,7 @@ test('a note linked to an entry from the sidebar still shows the link after a re
     page,
 }) => {
     const author = await accounts.create(payload, 'link')
-    const entry = await storeEntry(`Mongolen erobern Kiew ${RUN}`)
+    const entry = await storeEntry(author.id, `Mongolen erobern Kiew ${RUN}`)
     const noteTitle = `Kiew ${RUN}`
     const note = await storeNote(author.id, noteTitle)
     await signIn(page, author)
@@ -106,7 +107,7 @@ test('removing the link leaves the note unlinked and otherwise unchanged', async
     page,
 }) => {
     const author = await accounts.create(payload, 'unlink')
-    const entry = await storeEntry(`Nowgorod wird Republik ${RUN}`)
+    const entry = await storeEntry(author.id, `Nowgorod wird Republik ${RUN}`)
     const noteTitle = `Nowgorod ${RUN}`
     const note = await storeNote(author.id, noteTitle, entry.id)
     await signIn(page, author)
@@ -135,7 +136,7 @@ test('a note is linked and unlinked with the keyboard alone', async ({
     page,
 }) => {
     const author = await accounts.create(payload, 'keyboard')
-    const entry = await storeEntry(`Taufe der Kiewer Rus ${RUN}`)
+    const entry = await storeEntry(author.id, `Taufe der Kiewer Rus ${RUN}`)
     const noteTitle = `Taufe ${RUN}`
     await storeNote(author.id, noteTitle)
     await signIn(page, author)
@@ -169,7 +170,7 @@ test('a note is linked and unlinked with the keyboard alone', async ({
 
 test('deleting an entry keeps its notes, without the link', async () => {
     const author = await accounts.create(payload, 'deleted-entry')
-    const entry = await storeEntry(`Gelöschter Eintrag ${RUN}`)
+    const entry = await storeEntry(author.id, `Gelöschter Eintrag ${RUN}`)
     const note = await storeNote(author.id, `Pskow ${RUN}`, entry.id)
 
     await payload.delete({
@@ -186,8 +187,11 @@ test('deleting an entry keeps its notes, without the link', async () => {
 test('the notes of an entry are only the reader’s own notes linked to it', async () => {
     const author = await accounts.create(payload, 'entry-notes')
     const stranger = await accounts.create(payload, 'entry-stranger')
-    const entry = await storeEntry(`Schlacht an der Newa ${RUN}`)
-    const otherEntry = await storeEntry(`Schlacht auf dem Eis ${RUN}`)
+    const entry = await storeEntry(author.id, `Schlacht an der Newa ${RUN}`)
+    const otherEntry = await storeEntry(
+        author.id,
+        `Schlacht auf dem Eis ${RUN}`
+    )
     const linkedNote = await storeNote(author.id, `Newa ${RUN}`, entry.id)
     await storeNote(author.id, `Peipussee ${RUN}`, otherEntry.id)
     await storeNote(author.id, `Ohne Eintrag ${RUN}`)

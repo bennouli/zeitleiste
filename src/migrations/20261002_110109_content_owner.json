@@ -248,6 +248,12 @@
           "primaryKey": true,
           "notNull": true
         },
+        "owner_id": {
+          "name": "owner_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
         "title": {
           "name": "title",
           "type": "varchar",
@@ -376,6 +382,21 @@
         }
       },
       "indexes": {
+        "entries_owner_idx": {
+          "name": "entries_owner_idx",
+          "columns": [
+            {
+              "expression": "owner_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
         "entries_slug_idx": {
           "name": "entries_slug_idx",
           "columns": [
@@ -386,7 +407,7 @@
               "nulls": "last"
             }
           ],
-          "isUnique": true,
+          "isUnique": false,
           "concurrently": false,
           "method": "btree",
           "with": {}
@@ -510,9 +531,43 @@
           "concurrently": false,
           "method": "btree",
           "with": {}
+        },
+        "owner_slug_idx": {
+          "name": "owner_slug_idx",
+          "columns": [
+            {
+              "expression": "owner_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "slug",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
         }
       },
       "foreignKeys": {
+        "entries_owner_id_users_id_fk": {
+          "name": "entries_owner_id_users_id_fk",
+          "tableFrom": "entries",
+          "tableTo": "users",
+          "columnsFrom": [
+            "owner_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        },
         "entries_subject_id_subjects_id_fk": {
           "name": "entries_subject_id_subjects_id_fk",
           "tableFrom": "entries",
@@ -706,6 +761,12 @@
           "primaryKey": false,
           "notNull": false
         },
+        "version_owner_id": {
+          "name": "version_owner_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
         "version_title": {
           "name": "version_title",
           "type": "varchar",
@@ -857,6 +918,21 @@
           "columns": [
             {
               "expression": "parent_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "_entries_v_version_version_owner_idx": {
+          "name": "_entries_v_version_version_owner_idx",
+          "columns": [
+            {
+              "expression": "version_owner_id",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -1046,6 +1122,27 @@
           "concurrently": false,
           "method": "btree",
           "with": {}
+        },
+        "version_owner_version_slug_idx": {
+          "name": "version_owner_version_slug_idx",
+          "columns": [
+            {
+              "expression": "version_owner_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "version_slug",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
         }
       },
       "foreignKeys": {
@@ -1055,6 +1152,19 @@
           "tableTo": "entries",
           "columnsFrom": [
             "parent_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        },
+        "_entries_v_version_owner_id_users_id_fk": {
+          "name": "_entries_v_version_owner_id_users_id_fk",
+          "tableFrom": "_entries_v",
+          "tableTo": "users",
+          "columnsFrom": [
+            "version_owner_id"
           ],
           "columnsTo": [
             "id"
@@ -1249,6 +1359,12 @@
           "primaryKey": true,
           "notNull": true
         },
+        "owner_id": {
+          "name": "owner_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
         "body": {
           "name": "body",
           "type": "jsonb",
@@ -1271,6 +1387,21 @@
         }
       },
       "indexes": {
+        "posts_owner_idx": {
+          "name": "posts_owner_idx",
+          "columns": [
+            {
+              "expression": "owner_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
         "posts_updated_at_idx": {
           "name": "posts_updated_at_idx",
           "columns": [
@@ -1302,7 +1433,21 @@
           "with": {}
         }
       },
-      "foreignKeys": {},
+      "foreignKeys": {
+        "posts_owner_id_users_id_fk": {
+          "name": "posts_owner_id_users_id_fk",
+          "tableFrom": "posts",
+          "tableTo": "users",
+          "columnsFrom": [
+            "owner_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "policies": {},
@@ -1317,6 +1462,12 @@
           "name": "id",
           "type": "serial",
           "primaryKey": true,
+          "notNull": true
+        },
+        "owner_id": {
+          "name": "owner_id",
+          "type": "integer",
+          "primaryKey": false,
           "notNull": true
         },
         "name": {
@@ -1360,17 +1511,17 @@
         }
       },
       "indexes": {
-        "subjects_name_idx": {
-          "name": "subjects_name_idx",
+        "subjects_owner_idx": {
+          "name": "subjects_owner_idx",
           "columns": [
             {
-              "expression": "name",
+              "expression": "owner_id",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
             }
           ],
-          "isUnique": true,
+          "isUnique": false,
           "concurrently": false,
           "method": "btree",
           "with": {}
@@ -1385,7 +1536,7 @@
               "nulls": "last"
             }
           ],
-          "isUnique": true,
+          "isUnique": false,
           "concurrently": false,
           "method": "btree",
           "with": {}
@@ -1419,9 +1570,65 @@
           "concurrently": false,
           "method": "btree",
           "with": {}
+        },
+        "owner_name_idx": {
+          "name": "owner_name_idx",
+          "columns": [
+            {
+              "expression": "owner_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "name",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "owner_slug_1_idx": {
+          "name": "owner_slug_1_idx",
+          "columns": [
+            {
+              "expression": "owner_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "slug",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
         }
       },
-      "foreignKeys": {},
+      "foreignKeys": {
+        "subjects_owner_id_users_id_fk": {
+          "name": "subjects_owner_id_users_id_fk",
+          "tableFrom": "subjects",
+          "tableTo": "users",
+          "columnsFrom": [
+            "owner_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "policies": {},
@@ -1436,6 +1643,12 @@
           "name": "id",
           "type": "serial",
           "primaryKey": true,
+          "notNull": true
+        },
+        "owner_id": {
+          "name": "owner_id",
+          "type": "integer",
+          "primaryKey": false,
           "notNull": true
         },
         "name": {
@@ -1480,17 +1693,17 @@
         }
       },
       "indexes": {
-        "tags_name_idx": {
-          "name": "tags_name_idx",
+        "tags_owner_idx": {
+          "name": "tags_owner_idx",
           "columns": [
             {
-              "expression": "name",
+              "expression": "owner_id",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
             }
           ],
-          "isUnique": true,
+          "isUnique": false,
           "concurrently": false,
           "method": "btree",
           "with": {}
@@ -1505,7 +1718,7 @@
               "nulls": "last"
             }
           ],
-          "isUnique": true,
+          "isUnique": false,
           "concurrently": false,
           "method": "btree",
           "with": {}
@@ -1539,9 +1752,65 @@
           "concurrently": false,
           "method": "btree",
           "with": {}
+        },
+        "owner_name_1_idx": {
+          "name": "owner_name_1_idx",
+          "columns": [
+            {
+              "expression": "owner_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "name",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "owner_slug_2_idx": {
+          "name": "owner_slug_2_idx",
+          "columns": [
+            {
+              "expression": "owner_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "slug",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
         }
       },
-      "foreignKeys": {},
+      "foreignKeys": {
+        "tags_owner_id_users_id_fk": {
+          "name": "tags_owner_id_users_id_fk",
+          "tableFrom": "tags",
+          "tableTo": "users",
+          "columnsFrom": [
+            "owner_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "policies": {},
@@ -1556,6 +1825,12 @@
           "name": "id",
           "type": "serial",
           "primaryKey": true,
+          "notNull": true
+        },
+        "owner_id": {
+          "name": "owner_id",
+          "type": "integer",
+          "primaryKey": false,
           "notNull": true
         },
         "alt": {
@@ -1754,6 +2029,21 @@
         }
       },
       "indexes": {
+        "media_owner_idx": {
+          "name": "media_owner_idx",
+          "columns": [
+            {
+              "expression": "owner_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
         "media_updated_at_idx": {
           "name": "media_updated_at_idx",
           "columns": [
@@ -1845,7 +2135,21 @@
           "with": {}
         }
       },
-      "foreignKeys": {},
+      "foreignKeys": {
+        "media_owner_id_users_id_fk": {
+          "name": "media_owner_id_users_id_fk",
+          "tableFrom": "media",
+          "tableTo": "users",
+          "columnsFrom": [
+            "owner_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "policies": {},
@@ -1874,12 +2178,6 @@
           "primaryKey": false,
           "notNull": true
         },
-        "entry_id": {
-          "name": "entry_id",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false
-        },
         "updated_at": {
           "name": "updated_at",
           "type": "timestamp(3) with time zone",
@@ -1901,21 +2199,6 @@
           "columns": [
             {
               "expression": "owner_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "notes_entry_idx": {
-          "name": "notes_entry_idx",
-          "columns": [
-            {
-              "expression": "entry_id",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -1964,19 +2247,6 @@
           "tableTo": "users",
           "columnsFrom": [
             "owner_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "set null",
-          "onUpdate": "no action"
-        },
-        "notes_entry_id_entries_id_fk": {
-          "name": "notes_entry_id_entries_id_fk",
-          "tableFrom": "notes",
-          "tableTo": "entries",
-          "columnsFrom": [
-            "entry_id"
           ],
           "columnsTo": [
             "id"
@@ -2821,6 +3091,6 @@
     "tables": {},
     "columns": {}
   },
-  "id": "a45d0a38-8e1c-4b9d-8210-d16caa97fea5",
+  "id": "a3e4d959-3f8d-4df3-b935-6e39a779fa4f",
   "prevId": "00000000-0000-0000-0000-000000000000"
 }

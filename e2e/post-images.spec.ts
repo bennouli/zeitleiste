@@ -3,6 +3,7 @@ import { readFile } from 'node:fs/promises'
 import type { Payload } from 'payload'
 import { paragraphsToLexical } from '../src/lib/richText'
 import { localPayload } from './payload'
+import { readerId } from './reader'
 
 const RUN = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
 const QUIET = { disableRevalidate: true }
@@ -14,12 +15,14 @@ const CREDIT = 'e2e-Fixture'
 type Created = { collection: 'entries' | 'posts' | 'media'; id: number }
 
 let payload: Payload
+let owner: number
 const createdDocs: Created[] = []
 
 test.describe.configure({ mode: 'serial' })
 
 test.beforeAll(async () => {
     payload = await localPayload()
+    owner = await readerId(payload)
 })
 
 test.afterAll(async () => {
@@ -38,7 +41,7 @@ async function createImage() {
     }
     const doc = await payload.create({
         collection: 'media',
-        data: { alt: ALT, caption: CAPTION, credit: CREDIT },
+        data: { owner, alt: ALT, caption: CAPTION, credit: CREDIT },
         file,
     })
     createdDocs.push({ collection: 'media', id: doc.id })
@@ -59,7 +62,7 @@ async function createPostWithImage(mediaId: number) {
     const body = { root: { ...root, children: [...root.children, imageNode] } }
     const doc = await payload.create({
         collection: 'posts',
-        data: { body },
+        data: { owner, body },
         context: QUIET,
     })
     createdDocs.push({ collection: 'posts', id: doc.id })
@@ -68,6 +71,7 @@ async function createPostWithImage(mediaId: number) {
 
 async function createEntry(post: number) {
     const data = {
+        owner,
         title: `E2E Bild ${RUN}`,
         summary: 'Ein Eintrag, den der e2e-Lauf anlegt und wieder löscht.',
         startYear: 1995,

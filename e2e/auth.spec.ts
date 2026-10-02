@@ -27,7 +27,7 @@ const ENTRY = {
 } as const
 
 let payload: Payload
-let entryId: number
+let entryId: number | undefined
 
 test.describe.configure({ mode: 'serial' })
 test.use({ storageState: VISITOR })
@@ -43,16 +43,11 @@ test.beforeAll(async () => {
         collection: 'users',
         data: { ...EDITOR, role: 'editor', invitationAcceptedAt: acceptedAt },
     })
-    const entry = await payload.create({
-        collection: 'entries',
-        data: ENTRY,
-        draft: true,
-    })
-    entryId = entry.id
 })
 
 test.afterAll(async () => {
-    await payload.delete({ collection: 'entries', id: entryId })
+    if (entryId !== undefined)
+        await payload.delete({ collection: 'entries', id: entryId })
     await payload.delete({
         collection: 'users',
         where: { email: { like: `-${RUN}@example.test` } },
@@ -151,6 +146,13 @@ test('an admin invites an editor, who sets a password through the link, logs in 
     expect(invited.role).toBe('editor')
     expect(invited.invitedAt).toBeTruthy()
     expect(invited.invitationAcceptedAt).toBeFalsy()
+    const inviteesEntry = { ...ENTRY, owner: invited.id }
+    const { id: ownEntryId } = await payload.create({
+        collection: 'entries',
+        data: inviteesEntry,
+        draft: true,
+    })
+    entryId = ownEntryId
 
     await page.getByRole('button', { name: 'Einladung erneut senden' }).click()
     await expect(
@@ -169,8 +171,8 @@ test('an admin invites an editor, who sets a password through the link, logs in 
     await adminLogin(inviteePage, invitee)
 
     const editedSummary = 'Die Zusammenfassung nach der Bearbeitung.'
-    await saveEntrySummary(inviteePage, entryId, editedSummary)
-    await expect.poll(() => storedSummary(entryId)).toBe(editedSummary)
+    await saveEntrySummary(inviteePage, ownEntryId, editedSummary)
+    await expect.poll(() => storedSummary(ownEntryId)).toBe(editedSummary)
 
     await setInvitationPassword(inviteePage, token, 'another-pass-1')
     await expect(inviteePage.getByText(UNUSABLE)).toBeVisible()

@@ -1,5 +1,7 @@
 import type { CollectionConfig } from 'payload'
+import { ownerField, uniquePerOwner } from './ownership'
 import { germanSlugField } from './slugField'
+import { ownedAccess } from './userAccess'
 
 export const Subjects: CollectionConfig = {
     slug: 'subjects',
@@ -8,16 +10,15 @@ export const Subjects: CollectionConfig = {
         useAsTitle: 'name',
         defaultColumns: ['name', 'slug'],
     },
-    access: {
-        read: () => true,
-    },
+    access: ownedAccess(true),
+    indexes: uniquePerOwner('name', 'slug'),
     fields: [
+        ownerField,
         {
             name: 'name',
             type: 'text',
             label: 'Name',
             required: true,
-            unique: true,
         },
         germanSlugField('name'),
         {

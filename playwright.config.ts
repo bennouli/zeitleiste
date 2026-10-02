@@ -2,7 +2,8 @@ import { defineConfig, devices } from '@playwright/test'
 import { READER_STATE } from './e2e/reader'
 
 const PORT = 3100
-const PUBLISHING = /(publishing|content-language|post-images)\.spec\.ts/
+const PUBLISHING =
+    /(publishing|content-language|post-images|post-sources)\.spec\.ts/
 
 export default defineConfig({
     testDir: './e2e',
