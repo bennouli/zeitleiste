@@ -7,6 +7,7 @@ import {
 import type { Payload } from 'payload'
 import { paragraphsToLexical } from '../src/lib/richText'
 import { localPayload } from './payload'
+import { VISITOR } from './reader'
 
 const RUN = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
 const emailFor = (name: string) => `e2e-notes-${name}-${RUN}@example.test`
@@ -21,6 +22,7 @@ let payload: Payload
 const userIds = new Map<string, number>()
 
 test.describe.configure({ mode: 'serial' })
+test.use({ storageState: VISITOR })
 
 test.beforeAll(async () => {
     payload = await localPayload()
