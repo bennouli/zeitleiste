@@ -9,7 +9,11 @@ import {
 } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { NoteView } from '../note'
-import { NotesProvider, type NotesActions } from '../NotesContext'
+import {
+    NotesProvider,
+    type NotesActions,
+    type NotesLoad,
+} from '../NotesContext'
 import { NotesSidebar } from '../NotesSidebar'
 import { PRIVATE_UNDER_TESTS } from '../useSidebarCollapsed'
 import { noteBody, paragraph, text } from './noteFixtures'
@@ -28,7 +32,11 @@ const NOWGOROD: NoteView = {
 
 function fakeActions(overrides: Partial<NotesActions> = {}): NotesActions {
     return {
-        listNotes: async () => ({ signedIn: true, notes: [NOWGOROD, KIEW] }),
+        listNotes: async () => ({
+            signedIn: true,
+            notes: [NOWGOROD, KIEW],
+            loadFailed: false,
+        }),
         createNote: async () => ({ stored: false }),
         updateNote: async () => ({ stored: false }),
         deleteNote: async () => ({ deleted: true }),
@@ -61,7 +69,8 @@ describe('NotesSidebar', () => {
     })
 
     it('lists the notes with their first line as title, newest first', async () => {
-        renderSidebar(fakeActions())
+        const signedInActions = fakeActions()
+        renderSidebar(signedInActions)
 
         const sidebar = await screen.findByRole('complementary', {
             name: 'Notizen',
@@ -77,13 +86,15 @@ describe('NotesSidebar', () => {
     })
 
     it('remembers the collapse across a reload', async () => {
-        const { unmount } = renderSidebar(fakeActions())
+        const firstVisit = fakeActions()
+        const reload = fakeActions()
+        const { unmount } = renderSidebar(firstVisit)
         fireEvent.click(
             await screen.findByRole('button', { name: 'Notizen ausblenden' })
         )
         unmount()
 
-        renderSidebar(fakeActions())
+        renderSidebar(reload)
 
         const expand = await screen.findByRole('button', {
             name: 'Notizen einblenden',
@@ -96,7 +107,8 @@ describe('NotesSidebar', () => {
 
     it('deletes a note only after confirmation', async () => {
         const deleteNote = vi.fn(async () => ({ deleted: true }))
-        renderSidebar(fakeActions({ deleteNote }))
+        const deletingActions = fakeActions({ deleteNote })
+        renderSidebar(deletingActions)
 
         fireEvent.click(
             await screen.findByRole('button', {
@@ -114,6 +126,28 @@ describe('NotesSidebar', () => {
             expect(screen.queryByText('Kiew 1240')).not.toBeInTheDocument()
         )
         expect(deleteNote).toHaveBeenCalledWith(7)
+        expect(
+            screen.getByRole('textbox', { name: 'Neue Notiz' })
+        ).toHaveFocus()
+    })
+
+    it('puts the focus on cancel when asking to delete, and back on the button after', async () => {
+        const quietActions = fakeActions()
+        renderSidebar(quietActions)
+        const deleteButton = await screen.findByRole('button', {
+            name: 'Notiz löschen: Kiew 1240',
+        })
+
+        fireEvent.click(deleteButton)
+        const cancel = within(
+            screen.getByRole('group', { name: 'Diese Notiz löschen?' })
+        ).getByRole('button', { name: 'Abbrechen' })
+        expect(cancel).toHaveFocus()
+        fireEvent.click(cancel)
+
+        expect(
+            screen.getByRole('button', { name: 'Notiz löschen: Kiew 1240' })
+        ).toHaveFocus()
     })
 
     it('edits a note in place and moves it to the top', async () => {
@@ -126,7 +160,8 @@ describe('NotesSidebar', () => {
             stored: true as const,
             note: edited,
         }))
-        renderSidebar(fakeActions({ updateNote }))
+        const updatingActions = fakeActions({ updateNote })
+        renderSidebar(updatingActions)
 
         fireEvent.click(
             await screen.findByRole('button', {
@@ -149,13 +184,19 @@ describe('NotesSidebar', () => {
             ).toEqual(['Kiew 1240, geändert', 'Nowgorod'])
         )
         expect(updateNote).toHaveBeenCalledWith(7, expect.anything())
+        expect(
+            screen.getByRole('button', {
+                name: 'Notiz bearbeiten: Kiew 1240, geändert',
+            })
+        ).toHaveFocus()
     })
 
     it('says so when a change fails', async () => {
         const deleteNote = vi.fn(async () => {
             throw new Error('offline')
         })
-        renderSidebar(fakeActions({ deleteNote }))
+        const offlineActions = fakeActions({ deleteNote })
+        renderSidebar(offlineActions)
 
         fireEvent.click(
             await screen.findByRole('button', {
@@ -168,7 +209,24 @@ describe('NotesSidebar', () => {
             ).getByRole('button', { name: 'Löschen' })
         )
 
-        expect(await screen.findByRole('alert')).toBeInTheDocument()
+        expect(await screen.findByRole('alert')).toHaveTextContent(
+            'Die Notiz konnte nicht gelöscht werden.'
+        )
         expect(screen.getByText('Kiew 1240')).toBeInTheDocument()
+    })
+
+    it('tells a signed-in user when the notes could not be loaded', async () => {
+        const listNotes = async (): Promise<NotesLoad> => ({
+            signedIn: true,
+            notes: [],
+            loadFailed: true,
+        })
+        const failingActions = fakeActions({ listNotes })
+
+        renderSidebar(failingActions)
+
+        expect(await screen.findByRole('alert')).toHaveTextContent(
+            'Deine Notizen konnten nicht geladen werden.'
+        )
     })
 })

@@ -89,6 +89,10 @@ export const de = {
         untitled: 'Notiz ohne Titel',
         collapse: 'Notizen ausblenden',
         expand: 'Notizen einblenden',
-        failed: 'Die Notiz konnte nicht gesichert werden. Bitte versuche es noch einmal.',
+        failed: {
+            save: 'Die Notiz konnte nicht gesichert werden. Bitte versuche es noch einmal.',
+            delete: 'Die Notiz konnte nicht gelöscht werden. Bitte versuche es noch einmal.',
+            load: 'Deine Notizen konnten nicht geladen werden. Bitte lade die Seite neu.',
+        },
     },
 } satisfies Messages

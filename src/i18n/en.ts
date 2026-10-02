@@ -87,6 +87,10 @@ export const en = {
         untitled: 'Untitled note',
         collapse: 'Hide notes',
         expand: 'Show notes',
-        failed: 'The note could not be saved. Please try again.',
+        failed: {
+            save: 'The note could not be saved. Please try again.',
+            delete: 'The note could not be deleted. Please try again.',
+            load: 'Your notes could not be loaded. Please reload the page.',
+        },
     },
 } satisfies Messages

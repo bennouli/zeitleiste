@@ -14,8 +14,8 @@ export function useSidebarCollapsed(): [boolean, (collapsed: boolean) => void] {
         readCollapsed,
         () => false
     )
-    const setCollapsed = useCallback((next: boolean) => {
-        writeCollapsed(next)
+    const setCollapsed = useCallback((isCollapsed: boolean) => {
+        writeCollapsed(isCollapsed)
         listeners.forEach((listener) => listener())
     }, [])
     return [collapsed, setCollapsed]
@@ -43,7 +43,7 @@ function writeCollapsed(collapsed: boolean): void {
         if (collapsed) window.localStorage.setItem(STORAGE_KEY, COLLAPSED)
         else window.localStorage.removeItem(STORAGE_KEY)
     } catch {
-        // Storage is unavailable (private mode, quota): the choice lasts this page only.
+        return
     }
 }
 

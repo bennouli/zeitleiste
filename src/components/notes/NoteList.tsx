@@ -12,25 +12,60 @@ import { splitTitle } from './noteTitle'
 
 type CardMode = 'reading' | 'editing' | 'confirmingDelete'
 
+type CardButton = 'edit' | 'delete'
+
+type NoteListProps = {
+    notes: NoteView[]
+    /** Called once a note is gone, so focus has somewhere to go. */
+    onNoteDeleted: () => void
+}
+
 /** The user's notes, most recently changed first. */
-export function NoteList({ notes }: { notes: NoteView[] }) {
+export function NoteList({ notes, onNoteDeleted }: NoteListProps) {
     return (
         <ul className="flex flex-col divide-y divide-border">
             {notes.map((note) => (
                 <li key={note.id} className="py-3">
-                    <NoteCard note={note} />
+                    <NoteCard note={note} onDeleted={onNoteDeleted} />
                 </li>
             ))}
         </ul>
     )
 }
 
-function NoteCard({ note }: { note: NoteView }) {
+function NoteCard({
+    note,
+    onDeleted,
+}: {
+    note: NoteView
+    onDeleted: () => void
+}) {
     const { t } = useI18n()
     const { update, remove } = useNotes()
     const [mode, setMode] = useState<CardMode>('reading')
+    const focusTarget = useRef<CardButton | null>(null)
+    const editButtonRef = useRef<HTMLButtonElement>(null)
+    const deleteButtonRef = useRef<HTMLButtonElement>(null)
     const { title, rest } = splitTitle(note.body)
     const shownTitle = title || t.notes.untitled
+
+    useEffect(() => {
+        if (mode !== 'reading' || focusTarget.current === null) return
+        const button =
+            focusTarget.current === 'edit' ? editButtonRef : deleteButtonRef
+        focusTarget.current = null
+        button.current?.focus()
+    }, [mode])
+
+    const readAgain = (button: CardButton) => {
+        focusTarget.current = button
+        setMode('reading')
+    }
+
+    const confirmDelete = async () => {
+        if (await remove(note.id)) onDeleted()
+        else readAgain('delete')
+    }
 
     if (mode === 'editing')
         return (
@@ -38,11 +73,11 @@ function NoteCard({ note }: { note: NoteView }) {
                 initialBody={note.body}
                 label={t.notes.editLabel(shownTitle)}
                 onSave={async (body) => {
-                    const stored = await update(note.id, body)
-                    if (stored) setMode('reading')
-                    return stored
+                    const isStored = await update(note.id, body)
+                    if (isStored) readAgain('edit')
+                    return isStored
                 }}
-                onCancel={() => setMode('reading')}
+                onCancel={() => readAgain('edit')}
             />
         )
 
@@ -56,12 +91,13 @@ function NoteCard({ note }: { note: NoteView }) {
             </ClampedBody>
             {mode === 'confirmingDelete' ? (
                 <DeleteConfirmation
-                    onConfirm={() => void remove(note.id)}
-                    onCancel={() => setMode('reading')}
+                    onConfirm={() => void confirmDelete()}
+                    onCancel={() => readAgain('delete')}
                 />
             ) : (
                 <div className="flex justify-end gap-1">
                     <button
+                        ref={editButtonRef}
                         type="button"
                         onClick={() => setMode('editing')}
                         aria-label={t.notes.editLabel(shownTitle)}
@@ -71,6 +107,7 @@ function NoteCard({ note }: { note: NoteView }) {
                         {t.notes.edit}
                     </button>
                     <button
+                        ref={deleteButtonRef}
                         type="button"
                         onClick={() => setMode('confirmingDelete')}
                         aria-label={t.notes.deleteLabel(shownTitle)}
@@ -141,8 +178,8 @@ function DeleteConfirmation({
     onCancel: () => void
 }) {
     const { t } = useI18n()
-    const confirmRef = useRef<HTMLButtonElement>(null)
-    useEffect(() => confirmRef.current?.focus(), [])
+    const cancelRef = useRef<HTMLButtonElement>(null)
+    useEffect(() => cancelRef.current?.focus(), [])
     return (
         <div
             role="group"
@@ -151,18 +188,14 @@ function DeleteConfirmation({
         >
             <span className="text-label-lg">{t.notes.confirmDelete}</span>
             <button
+                ref={cancelRef}
                 type="button"
                 onClick={onCancel}
                 className={iconButtonClass}
             >
                 {t.notes.cancel}
             </button>
-            <button
-                ref={confirmRef}
-                type="button"
-                onClick={onConfirm}
-                className={buttonClass}
-            >
+            <button type="button" onClick={onConfirm} className={buttonClass}>
                 <Trash2 aria-hidden size={14} strokeWidth={1.5} />
                 {t.notes.delete}
             </button>

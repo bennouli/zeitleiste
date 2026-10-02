@@ -1,5 +1,5 @@
 import AxeBuilder from '@axe-core/playwright'
-import { expect, test, type Page } from '@playwright/test'
+import { expect, test, type Page, type Response } from '@playwright/test'
 import type { Payload } from 'payload'
 import { paragraphsToLexical } from '../src/lib/richText'
 import { localPayload } from './payload'
@@ -107,7 +107,8 @@ test('a note longer than twelve lines is cut off and can be expanded', async ({
 }) => {
     const author = await newAuthor('long')
     const lines = Array.from({ length: 20 }, (_, i) => `Zeile ${i + 1}`)
-    await storeNote(author.id, ['Lange Notiz', ...lines].join('\n\n'))
+    const longNote = ['Lange Notiz', ...lines].join('\n\n')
+    await storeNote(author.id, longNote)
     await signIn(page, author)
     await page.goto('/de')
 
@@ -197,15 +198,41 @@ test('a visitor sees no sidebar and gets no notes from the server', async ({
     const author = await newAuthor('private')
     const secret = `Geheim ${RUN}`
     await storeNote(author.id, secret)
-    const responses: string[] = []
-    page.on('response', async (response) => {
-        if (response.request().method() === 'POST')
-            responses.push(await response.text())
-    })
+    const isPost = (response: Response) =>
+        response.request().method() === 'POST'
+    const notesLoad = page.waitForResponse(isPost)
 
-    await page.goto('/de', { waitUntil: 'networkidle' })
+    await page.goto('/de')
+    const notesResponse = await notesLoad
 
     await expect(sidebarOf(page)).toHaveCount(0)
     expect(await page.content()).not.toContain(secret)
-    expect(responses.join('\n')).not.toContain(secret)
+    expect(await notesResponse.text()).not.toContain(secret)
+})
+
+test('a note is written, saved and deleted with the keyboard alone', async ({
+    page,
+}) => {
+    const author = await newAuthor('keyboard')
+    await signIn(page, author)
+    await page.goto('/de')
+    const sidebar = sidebarOf(page)
+    const editor = newNoteEditor(page)
+
+    await editor.focus()
+    await page.keyboard.type('Tastatur')
+    await page.keyboard.press('ControlOrMeta+Enter')
+    const deleteButton = sidebar.getByRole('button', {
+        name: 'Notiz löschen: Tastatur',
+    })
+    await deleteButton.focus()
+    await page.keyboard.press('Enter')
+    await expect(
+        sidebar.getByRole('button', { name: 'Abbrechen' })
+    ).toBeFocused()
+    await page.keyboard.press('Tab')
+    await page.keyboard.press('Enter')
+
+    await expect(sidebar.getByRole('article')).toHaveCount(0)
+    await expect(editor).toBeFocused()
 })

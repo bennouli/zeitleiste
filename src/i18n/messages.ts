@@ -85,7 +85,7 @@ export type Messages = {
         untitled: string
         collapse: string
         expand: string
-        failed: string
+        failed: Record<'save' | 'delete' | 'load', string>
     }
 }
 

@@ -20,7 +20,7 @@ const BodyNode = Schema.StructWithRest(
     [Schema.Record(Schema.String, Schema.Unknown)]
 )
 
-const NoteBody = Schema.Struct({
+const NoteBodyInput = Schema.Struct({
     root: Schema.Struct({
         type: Schema.Literal('root'),
         children: Schema.mutable(Schema.Array(BodyNode)),
@@ -41,7 +41,7 @@ const NoteBody = Schema.Struct({
 
 const StoredNote = Schema.Struct({
     id: NoteId,
-    body: NoteBody,
+    body: NoteBodyInput,
     updatedAt: Schema.String,
 })
 
@@ -52,7 +52,7 @@ export async function listNotes(): Promise<NotesLoad> {
     const program = Effect.gen(function* () {
         const { payload, user } = yield* session
         if (user === null) return { signedIn: false } satisfies NotesLoad
-        const { docs } = yield* payloadCall('find notes', () =>
+        const userNotes = payloadCall('find notes', () =>
             payload.find({
                 collection: 'notes',
                 user,
@@ -62,16 +62,31 @@ export async function listNotes(): Promise<NotesLoad> {
                 pagination: false,
                 select: { body: true, updatedAt: true },
             })
+        ).pipe(
+            Effect.flatMap(({ docs }) => decode(Schema.Array(StoredNote), docs))
         )
-        const notes = yield* decode(Schema.Array(StoredNote), docs)
-        return { signedIn: true, notes: [...notes] } satisfies NotesLoad
+        return yield* userNotes.pipe(
+            Effect.map((notes): NotesLoad => ({
+                signedIn: true,
+                notes: [...notes],
+                loadFailed: false,
+            })),
+            Effect.tapError(({ operation, cause }) =>
+                Effect.logError(`Notes: ${operation} failed`, cause)
+            ),
+            Effect.orElseSucceed((): NotesLoad => ({
+                signedIn: true,
+                notes: [],
+                loadFailed: true,
+            }))
+        )
     })
     return runAtEdge(program, { signedIn: false })
 }
 
 export async function createNote(body: unknown): Promise<NoteChange> {
     const program = Effect.gen(function* () {
-        const noteBody = yield* decode(NoteBody, body)
+        const noteBody = yield* decode(NoteBodyInput, body)
         const { payload, user } = yield* signedInSession
         const note = yield* payloadCall('create note', () =>
             payload.create({
@@ -93,7 +108,7 @@ export async function updateNote(
 ): Promise<NoteChange> {
     const program = Effect.gen(function* () {
         const noteId = yield* decode(NoteId, id)
-        const noteBody = yield* decode(NoteBody, body)
+        const noteBody = yield* decode(NoteBodyInput, body)
         const { payload, user } = yield* signedInSession
         const note = yield* payloadCall('update note', () =>
             payload.update({
@@ -169,17 +184,20 @@ function decode<S extends Schema.Top>(schema: S, input: unknown) {
 
 async function runAtEdge<A>(
     program: Effect.Effect<A, NotesFailed | NotSignedIn>,
-    onFailure: A
+    fallback: A
 ): Promise<A> {
     const exit = await Effect.runPromiseExit(
         program.pipe(
             Effect.tapErrorTag('NotesFailed', ({ operation, cause }) =>
                 Effect.logError(`Notes: ${operation} failed`, cause)
             ),
-            Effect.orElseSucceed(() => onFailure)
+            Effect.tapErrorTag('NotSignedIn', () =>
+                Effect.logWarning('Notes: a change arrived without a session')
+            ),
+            Effect.orElseSucceed(() => fallback)
         )
     )
     if (Exit.isSuccess(exit)) return exit.value
     console.error(Cause.pretty(exit.cause))
-    return onFailure
+    return fallback
 }
