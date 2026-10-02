@@ -29,7 +29,7 @@ export type NotesActions = {
 
 export type NotesFailure = 'load' | 'save' | 'delete' | null
 
-export type Notes = {
+export type NotesState = {
     signedIn: boolean
     /** Most recently changed first. */
     notes: NoteView[]
@@ -41,7 +41,7 @@ export type Notes = {
     remove: (id: number) => Promise<boolean>
 }
 
-const NOT_SIGNED_IN: Notes = {
+const NOT_SIGNED_IN: NotesState = {
     signedIn: false,
     notes: [],
     failure: null,
@@ -50,7 +50,7 @@ const NOT_SIGNED_IN: Notes = {
     remove: async () => false,
 }
 
-const NotesContext = createContext<Notes>(NOT_SIGNED_IN)
+const NotesContext = createContext<NotesState>(NOT_SIGNED_IN)
 
 /** Loads the signed-in user's notes once the page is interactive. */
 export function NotesProvider({
@@ -109,8 +109,8 @@ export function NotesProvider({
         [actions]
     )
 
-    const notes = useMemo(
-        (): Notes => ({
+    const notesState = useMemo(
+        (): NotesState => ({
             signedIn: notesLoad.signedIn,
             notes: notesLoad.signedIn ? notesLoad.notes : [],
             failure,
@@ -121,9 +121,9 @@ export function NotesProvider({
         [notesLoad, failure, actions, applyChange, remove]
     )
 
-    return <NotesContext value={notes}>{children}</NotesContext>
+    return <NotesContext value={notesState}>{children}</NotesContext>
 }
 
-export function useNotes(): Notes {
+export function useNotes(): NotesState {
     return useContext(NotesContext)
 }

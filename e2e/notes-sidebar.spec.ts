@@ -198,9 +198,10 @@ test('a visitor sees no sidebar and gets no notes from the server', async ({
     const author = await newAuthor('private')
     const secret = `Geheim ${RUN}`
     await storeNote(author.id, secret)
-    const isPost = (response: Response) =>
-        response.request().method() === 'POST'
-    const notesLoad = page.waitForResponse(isPost)
+    const isServerAction = (response: Response) =>
+        response.request().method() === 'POST' &&
+        response.request().headers()['next-action'] !== undefined
+    const notesLoad = page.waitForResponse(isServerAction)
 
     await page.goto('/de')
     const notesResponse = await notesLoad
