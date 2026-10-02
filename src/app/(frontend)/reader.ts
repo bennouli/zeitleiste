@@ -17,10 +17,7 @@ export const currentReader = cache(async () => {
     return Effect.runPromise(authenticatedUser(requestHeaders))
 })
 
-/**
- * Sends a visitor to the login page of `lang`, keeping the requested path.
- * Called before any site content is loaded.
- */
+/** The logged-in user; a visitor is sent to the login page of `lang`, keeping the requested path. */
 export const requireReader = cache(async (lang: string) => {
     const reader = await currentReader()
     if (reader !== null) return reader
