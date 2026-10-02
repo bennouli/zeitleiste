@@ -41,6 +41,41 @@ describe('NoteBody', () => {
         expect(Result.isFailure(decodeBody(withUpload))).toBe(true)
     })
 
+    it('rejects an upload nested inside a paragraph', () => {
+        const nestedUpload = bodyWith({
+            type: 'paragraph',
+            version: 1,
+            children: [{ type: 'upload', version: 3, value: 1 }],
+        })
+
+        expect(Result.isFailure(decodeBody(nestedUpload))).toBe(true)
+    })
+
+    it('accepts formatted text, links and line breaks inside a list', () => {
+        const linkedList = bodyWith({
+            type: 'list',
+            version: 1,
+            children: [
+                {
+                    type: 'listitem',
+                    version: 1,
+                    children: [
+                        { type: 'text', version: 1, text: 'Siehe', format: 1 },
+                        { type: 'linebreak', version: 1 },
+                        {
+                            type: 'link',
+                            version: 3,
+                            fields: { url: 'https://example.org' },
+                            children: [],
+                        },
+                    ],
+                },
+            ],
+        })
+
+        expect(Result.isSuccess(decodeBody(linkedList))).toBe(true)
+    })
+
     it('rejects a value that is not rich text', () => {
         const plainText = { text: 'Kiew' }
 

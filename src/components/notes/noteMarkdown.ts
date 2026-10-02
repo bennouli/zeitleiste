@@ -21,8 +21,7 @@ import {
     QuoteNode,
 } from '@lexical/rich-text'
 
-/** `noteEditor` validates `h3` and `h4` only. */
-const HEADING_TAG_BY_MARK = { '#': 'h3', '##': 'h4' } as const
+const NOTE_EDITOR_HEADING_TAG_BY_MARK = { '#': 'h3', '##': 'h4' } as const
 
 const HEADING_MARK_BY_TAG: Record<string, string> = { h3: '#', h4: '##' }
 
@@ -35,7 +34,9 @@ const NOTE_HEADING: ElementTransformer = {
     regExp: /^(##?)\s/,
     replace: (parentNode, children, match, isImport) => {
         const mark = match[1] === '#' ? '#' : '##'
-        const heading = $createHeadingNode(HEADING_TAG_BY_MARK[mark])
+        const heading = $createHeadingNode(
+            NOTE_EDITOR_HEADING_TAG_BY_MARK[mark]
+        )
         heading.append(...children)
         parentNode.replace(heading)
         if (!isImport) heading.select(0, 0)

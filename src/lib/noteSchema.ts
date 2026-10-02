@@ -8,26 +8,44 @@ export const NoteNode = Schema.StructWithRest(
 )
 export type NoteNode = typeof NoteNode.Type
 
-/** The blocks `noteEditor` allows at the top of a note; no uploads. */
-const NOTE_BLOCK_TYPES: ReadonlySet<string> = new Set([
+const NOTE_EDITOR_NODE_TYPES: ReadonlySet<string> = new Set([
     'paragraph',
     'heading',
     'quote',
     'list',
+    'listitem',
+    'text',
+    'linebreak',
+    'tab',
+    'link',
+    'autolink',
 ])
 
-const onlyNoteBlocks = Schema.makeFilter(
-    (blocks: ReadonlyArray<NoteNode>) =>
-        blocks.every((block) => NOTE_BLOCK_TYPES.has(block.type)) ||
-        'a note holds paragraphs, headings, quotes and lists only',
-    { title: 'note blocks' }
+function holdsOnlyNoteEditorNodes(nodes: ReadonlyArray<unknown>): boolean {
+    return nodes.every(
+        (node) =>
+            Schema.is(NoteNode)(node) &&
+            NOTE_EDITOR_NODE_TYPES.has(node.type) &&
+            holdsOnlyNoteEditorNodes(
+                Array.isArray(node.children) ? node.children : []
+            )
+    )
+}
+
+const onlyNoteEditorNodes = Schema.makeFilter(
+    (nodes: ReadonlyArray<NoteNode>) =>
+        holdsOnlyNoteEditorNodes(nodes) ||
+        'a note holds only the nodes noteEditor writes',
+    { title: 'noteEditor nodes' }
 )
 
 /** A note's rich text in the format Payload stores and its converters render. */
 export const NoteBody = Schema.Struct({
     root: Schema.Struct({
         type: Schema.String,
-        children: Schema.mutable(Schema.Array(NoteNode)).check(onlyNoteBlocks),
+        children: Schema.mutable(Schema.Array(NoteNode)).check(
+            onlyNoteEditorNodes
+        ),
         direction: Schema.NullOr(Schema.Literals(['ltr', 'rtl'])),
         format: Schema.Literals([
             'left',
