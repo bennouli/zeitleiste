@@ -1,6 +1,7 @@
 import { MEDIA_WIDTHS } from '@/lib/media'
 import type { CollectionConfig } from 'payload'
-import { loggedIn } from './userAccess'
+import { ownerField } from './ownership'
+import { loggedIn, ownerOnly, ownerOr } from './userAccess'
 
 export const mediaCollection = ({
     canStoreUploads,
@@ -14,10 +15,10 @@ export const mediaCollection = ({
         defaultColumns: ['filename', 'alt', 'updatedAt'],
     },
     access: {
-        read: () => true,
+        read: ownerOr(true),
         create: (args) => canStoreUploads && loggedIn(args),
-        update: loggedIn,
-        delete: loggedIn,
+        update: ownerOnly,
+        delete: ownerOnly,
     },
     upload: {
         mimeTypes: ['image/jpeg', 'image/png', 'image/webp', 'image/avif'],
@@ -29,6 +30,7 @@ export const mediaCollection = ({
         adminThumbnail: 'w480',
     },
     fields: [
+        ownerField,
         {
             name: 'alt',
             type: 'text',

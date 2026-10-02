@@ -1,6 +1,8 @@
 import type { CollectionConfig } from 'payload'
 import { postEditor } from './editors'
+import { ownerField } from './ownership'
 import { revalidatePostChange, revalidatePostDelete } from './revalidate'
+import { ownedAccess } from './userAccess'
 
 export const Posts: CollectionConfig = {
     slug: 'posts',
@@ -8,14 +10,13 @@ export const Posts: CollectionConfig = {
     admin: {
         defaultColumns: ['id', 'entry', 'updatedAt'],
     },
-    access: {
-        read: ({ req }) => Boolean(req.user),
-    },
+    access: ownedAccess(false),
     hooks: {
         afterChange: [revalidatePostChange],
         afterDelete: [revalidatePostDelete],
     },
     fields: [
+        ownerField,
         {
             name: 'body',
             type: 'richText',

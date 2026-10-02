@@ -40,6 +40,7 @@ function withLink(fields: Record<string, unknown>): PostBody {
 
 const ZAR: Media = {
     id: 3,
+    owner: 1,
     url: '/api/media/file/zar.png',
     width: 3200,
     height: 2000,
