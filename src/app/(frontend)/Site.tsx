@@ -1,4 +1,3 @@
-import { I18nProvider } from '@/components/I18nContext'
 import { TimelineShell } from '@/components/TimelineShell'
 import type { Locale } from '@/i18n/locales'
 import { messages } from '@/i18n/messages'
@@ -6,7 +5,7 @@ import { loadEntries } from '@/lib/entries'
 import { Effect } from 'effect'
 import type { Metadata } from 'next'
 import type { ReactNode } from 'react'
-import { Document } from '../Document'
+import { requireReader } from './reader'
 
 /** Title and description of the site in one locale. */
 export function siteMetadata(locale: Locale): Metadata {
@@ -14,20 +13,15 @@ export function siteMetadata(locale: Locale): Metadata {
     return { title: name, description }
 }
 
-/** The public site in one locale: the timeline, with the page below it. */
+/** The site for a logged-in reader: the timeline, with the page below it. */
 export async function Site({
-    locale,
+    lang,
     children,
 }: {
-    locale: Locale
+    lang: string
     children: ReactNode
 }) {
+    await requireReader(lang)
     const entries = await Effect.runPromise(loadEntries())
-    return (
-        <Document lang={locale}>
-            <I18nProvider locale={locale}>
-                <TimelineShell entries={entries}>{children}</TimelineShell>
-            </I18nProvider>
-        </Document>
-    )
+    return <TimelineShell entries={entries}>{children}</TimelineShell>
 }

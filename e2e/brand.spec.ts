@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test'
 import { messages } from '../src/i18n/messages'
+import { VISITOR } from './reader'
 import { openTimeline, timelineRegion } from './timeline'
 
 const BRAND = 'liniya'
@@ -30,10 +31,14 @@ for (const { path, title } of PAGES) {
     })
 }
 
-test(`the admin's page titles end in ${BRAND}`, async ({ page }) => {
-    await page.goto('/admin/login')
+test.describe('a visitor', () => {
+    test.use({ storageState: VISITOR })
 
-    await expect(page).toHaveTitle(new RegExp(`\\S – ${BRAND}$`))
+    test(`sees the admin's page titles end in ${BRAND}`, async ({ page }) => {
+        await page.goto('/admin/login')
+
+        await expect(page).toHaveTitle(new RegExp(`\\S – ${BRAND}$`))
+    })
 })
 
 for (const lang of ['de', 'en'] as const) {

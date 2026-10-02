@@ -1,14 +1,10 @@
 import { entries } from '@/data/entries'
-import { findEntry, postSlugs } from '@/lib/posts'
+import { findEntry } from '@/lib/posts'
 import { sampleEntry } from '@/test/entries'
 import { render, screen } from '@testing-library/react'
 import { Effect } from 'effect'
-import { describe, expect, it, vi } from 'vitest'
-import PostPage, {
-    dynamicParams,
-    generateMetadata,
-    generateStaticParams,
-} from '../page'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import PostPage, { generateMetadata } from '../page'
 
 vi.mock('next/navigation', () => ({
     notFound: () => {
@@ -17,15 +13,22 @@ vi.mock('next/navigation', () => ({
 }))
 
 const loadPost = vi.hoisted(() => vi.fn())
+const requireReader = vi.hoisted(() => vi.fn())
 
-vi.mock('@/lib/entries', () => ({
-    loadEntries: () => Effect.succeed(entries),
-    loadPost,
-}))
+vi.mock('@/app/(frontend)/reader', () => ({ requireReader }))
 
-loadPost.mockImplementation((slug: string) =>
-    Effect.succeed(findEntry(entries, slug))
-)
+vi.mock('@/lib/entries', () => ({ loadPost }))
+
+beforeEach(() => {
+    loadPost.mockReset()
+    loadPost.mockImplementation((slug: string) =>
+        Effect.succeed(findEntry(entries, slug))
+    )
+    requireReader.mockReset()
+    requireReader.mockResolvedValue({ id: 1 })
+})
+
+const VISITOR_REDIRECT = new Error('NEXT_REDIRECT')
 
 const params = (slug: string, lang = 'de') => ({
     params: Promise.resolve({ lang, slug }),
@@ -33,11 +36,15 @@ const params = (slug: string, lang = 'de') => ({
 const noPost = entries.find((e) => !e.post)!
 
 describe('post page', () => {
-    it('prebuilds the published posts and renders later ones on request', async () => {
-        expect(await generateStaticParams()).toEqual(
-            postSlugs(entries).map((slug) => ({ slug }))
+    it('sends a visitor to the login page before loading the post', async () => {
+        requireReader.mockRejectedValue(VISITOR_REDIRECT)
+        const englishParams = params('oktoberrevolution', 'en')
+        await expect(PostPage(englishParams)).rejects.toBe(VISITOR_REDIRECT)
+        await expect(generateMetadata(englishParams)).rejects.toBe(
+            VISITOR_REDIRECT
         )
-        expect(dynamicParams).toBe(true)
+        expect(requireReader).toHaveBeenCalledWith('en')
+        expect(loadPost).not.toHaveBeenCalled()
     })
 
     it('renders the post loaded by its slug alone', async () => {

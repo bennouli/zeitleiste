@@ -4,6 +4,7 @@ import { useI18n } from '@/components/I18nContext'
 import { KeyRound } from 'lucide-react'
 import Link from 'next/link'
 import { useActionState, useId } from 'react'
+import { actionClass, inputClass } from './formStyles'
 
 export type AcceptInvitationStatus =
     'idle' | 'missing' | 'mismatch' | 'unusable' | 'failed' | 'accepted'
@@ -21,12 +22,6 @@ type FormError = (typeof FORM_ERRORS)[number]
 function isFormError(status: AcceptInvitationStatus): status is FormError {
     return FORM_ERRORS.some((error) => error === status)
 }
-
-const inputClass =
-    'mt-1 block w-full rounded-sm border border-border bg-surface px-3 py-2 text-body text-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus'
-
-const actionClass =
-    'inline-flex cursor-pointer items-center gap-2 rounded-sm border border-fg bg-accent px-4 py-2 text-accent-fg hover:bg-surface hover:text-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus disabled:cursor-wait'
 
 export function AcceptInvitationForm({ action }: AcceptInvitationFormProps) {
     const [status, formAction, pending] = useActionState(action, 'idle')

@@ -1,7 +1,6 @@
-import { entries } from '@/data/entries'
 import { describe, expect, it } from 'vitest'
 import type { Entry } from '../entry'
-import { findEntry, postHref, postSlugs, slugFromPathname } from '../posts'
+import { findEntry, postHref, slugFromPathname } from '../posts'
 import { paragraphsToLexical } from '../richText'
 
 const base = {
@@ -15,19 +14,6 @@ const sample: Entry[] = [
     { ...base, id: 'b', title: 'B' },
     { ...base, id: 'c', title: 'C', post: { body: paragraphsToLexical('y') } },
 ]
-
-describe('postSlugs', () => {
-    it('lists only entries with a post, in order', () => {
-        expect(postSlugs(sample)).toEqual(['a', 'c'])
-    })
-
-    it('covers the sample data posts', () => {
-        expect(postSlugs(entries)).toContain('oktoberrevolution')
-        expect(postSlugs(entries)).toHaveLength(
-            entries.filter((e) => e.post).length
-        )
-    })
-})
 
 describe('findEntry', () => {
     it('finds an entry with a post', () => {

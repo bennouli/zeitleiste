@@ -60,4 +60,15 @@ export const de = {
             'Dein Passwort ist gespeichert. Du kannst dich jetzt anmelden.',
         login: 'Zur Anmeldung',
     },
+    login: {
+        pageTitle: `Anmelden – ${APP_NAME}`,
+        heading: 'Anmelden',
+        intro: 'Die Zeitleiste ist nur für angemeldete Benutzer sichtbar.',
+        email: 'E-Mail-Adresse',
+        password: 'Passwort',
+        submit: 'Anmelden',
+        submitting: 'Wird angemeldet …',
+        invalid: 'E-Mail-Adresse oder Passwort ist falsch.',
+        failed: 'Die Anmeldung ist gerade nicht möglich. Bitte versuche es später noch einmal.',
+    },
 } satisfies Messages

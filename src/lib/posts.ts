@@ -2,11 +2,6 @@ import type { Locale } from '@/i18n/locales'
 import { startHref } from '@/i18n/paths'
 import type { Entry } from './entry'
 
-/** Slugs (entry ids) of all entries that have a post. */
-export function postSlugs(entries: readonly Entry[]): string[] {
-    return entries.filter((e) => e.post !== undefined).map((e) => e.id)
-}
-
 /** The entry whose post lives at `slug`; undefined if there is none or it has no post. */
 export function findEntry(
     entries: readonly Entry[],
