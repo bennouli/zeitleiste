@@ -66,10 +66,11 @@ export function NotesProvider({
     useEffect(() => {
         let isWanted = true
         actions.listNotes().then(
-            (loaded) => {
+            (currentLoad) => {
                 if (!isWanted) return
-                setNotesLoad(loaded)
-                if (loaded.signedIn && loaded.loadFailed) setFailure('load')
+                setNotesLoad(currentLoad)
+                if (currentLoad.signedIn && currentLoad.loadFailed)
+                    setFailure('load')
             },
             () => isWanted && setFailure('load')
         )
@@ -79,17 +80,20 @@ export function NotesProvider({
     }, [actions])
 
     const applyChange = useCallback(async (change: Promise<NoteChange>) => {
-        const outcome = await change.catch((): NoteChange => ({
+        const noteChange = await change.catch((): NoteChange => ({
             stored: false,
         }))
-        setFailure(outcome.stored ? null : 'save')
-        if (outcome.stored)
-            setNotesLoad((loaded) =>
-                loaded.signedIn
-                    ? { ...loaded, notes: withNote(loaded.notes, outcome.note) }
-                    : loaded
+        setFailure(noteChange.stored ? null : 'save')
+        if (noteChange.stored)
+            setNotesLoad((currentLoad) =>
+                currentLoad.signedIn
+                    ? {
+                          ...currentLoad,
+                          notes: withNote(currentLoad.notes, noteChange.note),
+                      }
+                    : currentLoad
             )
-        return outcome.stored
+        return noteChange.stored
     }, [])
 
     const remove = useCallback(
@@ -99,10 +103,13 @@ export function NotesProvider({
                 .catch(() => ({ deleted: false }))
             setFailure(deleted ? null : 'delete')
             if (deleted)
-                setNotesLoad((loaded) =>
-                    loaded.signedIn
-                        ? { ...loaded, notes: withoutNote(loaded.notes, id) }
-                        : loaded
+                setNotesLoad((currentLoad) =>
+                    currentLoad.signedIn
+                        ? {
+                              ...currentLoad,
+                              notes: withoutNote(currentLoad.notes, id),
+                          }
+                        : currentLoad
                 )
             return deleted
         },

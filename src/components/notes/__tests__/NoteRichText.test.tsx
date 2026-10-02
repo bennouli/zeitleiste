@@ -43,5 +43,8 @@ describe('NoteRichText', () => {
         expect(screen.getByText('fett').closest('strong')).toHaveClass(
             'font-medium'
         )
+        expect(screen.getByText('fett').closest('em')).toHaveClass(
+            'font-serif-italic'
+        )
     })
 })

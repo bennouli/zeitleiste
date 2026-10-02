@@ -115,7 +115,7 @@ test('a note longer than twelve lines is cut off and can be expanded', async ({
     const note = sidebarOf(page).getByRole('article')
     const showAll = note.getByRole('button', { name: 'Ganz anzeigen' })
     await expect(showAll).toBeVisible()
-    await expect(note.getByText('Zeile 20')).not.toBeInViewport()
+    await expect(note.locator('[data-clamped]')).toHaveCount(1)
     const clampedHeight = (await note.boundingBox())?.height ?? 0
 
     await showAll.click()

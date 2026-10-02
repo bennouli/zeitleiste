@@ -151,7 +151,7 @@ function ClampedBody({ children }: { children: React.ReactNode }) {
             {(overflows || expanded) && (
                 <button
                     type="button"
-                    onClick={() => setExpanded((was) => !was)}
+                    onClick={() => setExpanded((wasExpanded) => !wasExpanded)}
                     aria-expanded={expanded}
                     aria-controls={bodyId}
                     className={`self-start ${iconButtonClass}`}
@@ -177,14 +177,17 @@ function DeleteConfirmation({
 }) {
     const { t } = useI18n()
     const cancelRef = useRef<HTMLButtonElement>(null)
+    const questionId = useId()
     useEffect(() => cancelRef.current?.focus(), [])
     return (
         <div
             role="group"
-            aria-label={t.notes.confirmDelete}
+            aria-labelledby={questionId}
             className="flex items-center justify-end gap-2"
         >
-            <span className="text-label-lg">{t.notes.confirmDelete}</span>
+            <span id={questionId} className="text-label-lg">
+                {t.notes.confirmDelete}
+            </span>
             <button
                 ref={cancelRef}
                 type="button"

@@ -21,6 +21,16 @@ import {
     NOTE_TITLE_CLASS,
 } from './noteStyles'
 
+/** A note's title is its `h3`, so the body's headings sit one level lower. */
+const OUTLINE_TAG = {
+    h1: 'h4',
+    h2: 'h4',
+    h3: 'h4',
+    h4: 'h5',
+    h5: 'h6',
+    h6: 'h6',
+} as const
+
 const HEADING_CLASS: Partial<Record<SerializedHeadingNode['tag'], string>> = {
     h3: NOTE_TITLE_CLASS,
     h4: NOTE_SUBHEADING_CLASS,
@@ -42,7 +52,7 @@ const noteConverters: JSXConvertersFunction<DefaultNodeTypes> = ({
         <p>{nodesToJSX({ nodes: node.children })}</p>
     ),
     heading: ({ node, nodesToJSX }) => {
-        const Heading = node.tag
+        const Heading = OUTLINE_TAG[node.tag]
         return (
             <Heading className={HEADING_CLASS[node.tag]}>
                 {nodesToJSX({ nodes: node.children })}

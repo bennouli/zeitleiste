@@ -31,9 +31,9 @@ describe('toStoredBody', () => {
         const newTabLink = { ...editorLink, target: '_blank' }
         const body = noteBody(paragraph(newTabLink))
 
-        const [stored] = toStoredBody(body).root.children
+        const [storedParagraph] = toStoredBody(body).root.children
 
-        expect(stored).toMatchObject({
+        expect(storedParagraph).toMatchObject({
             children: [{ fields: { newTab: true } }],
         })
     })

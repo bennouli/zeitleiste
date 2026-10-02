@@ -161,7 +161,10 @@ const signedInSession = session.pipe(
 
 function storedChange(note: unknown) {
     return decode(StoredNote, note).pipe(
-        Effect.map((decoded): NoteChange => ({ stored: true, note: decoded }))
+        Effect.map((storedNote): NoteChange => ({
+            stored: true,
+            note: storedNote,
+        }))
     )
 }
 
