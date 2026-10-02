@@ -10,8 +10,7 @@ export type NoteNode = typeof NoteNode.Type
 
 type NodeRule = {
     hasValidFields: (node: NoteNode) => boolean
-    /** The node types it may hold; null for a leaf. */
-    childTypes: ReadonlySet<string> | null
+    leafOrChildTypes: 'leaf' | ReadonlySet<string>
 }
 
 const BLOCK_TYPES: ReadonlySet<string> = new Set([
@@ -36,30 +35,36 @@ const INLINE_TYPES: ReadonlySet<string> = new Set([
 const anyFields = () => true
 
 const NOTE_EDITOR_NODE_RULES: Readonly<Record<string, NodeRule>> = {
-    paragraph: { hasValidFields: anyFields, childTypes: INLINE_TYPES },
-    quote: { hasValidFields: anyFields, childTypes: INLINE_TYPES },
+    paragraph: { hasValidFields: anyFields, leafOrChildTypes: INLINE_TYPES },
+    quote: { hasValidFields: anyFields, leafOrChildTypes: INLINE_TYPES },
     heading: {
         hasValidFields: (node) => node.tag === 'h3' || node.tag === 'h4',
-        childTypes: INLINE_TYPES,
+        leafOrChildTypes: INLINE_TYPES,
     },
     list: {
         hasValidFields: (node) =>
             (node.tag === 'ul' && node.listType === 'bullet') ||
             (node.tag === 'ol' && node.listType === 'number'),
-        childTypes: new Set(['listitem']),
+        leafOrChildTypes: new Set(['listitem']),
     },
     listitem: {
         hasValidFields: anyFields,
-        childTypes: new Set([...INLINE_TYPES, 'list']),
+        leafOrChildTypes: new Set([...INLINE_TYPES, 'list']),
     },
-    link: { hasValidFields: hasLinkFields, childTypes: LINK_CONTENT_TYPES },
-    autolink: { hasValidFields: hasLinkFields, childTypes: LINK_CONTENT_TYPES },
+    link: {
+        hasValidFields: hasLinkFields,
+        leafOrChildTypes: LINK_CONTENT_TYPES,
+    },
+    autolink: {
+        hasValidFields: hasLinkFields,
+        leafOrChildTypes: LINK_CONTENT_TYPES,
+    },
     text: {
         hasValidFields: (node) => typeof node.text === 'string',
-        childTypes: null,
+        leafOrChildTypes: 'leaf',
     },
-    linebreak: { hasValidFields: anyFields, childTypes: null },
-    tab: { hasValidFields: anyFields, childTypes: null },
+    linebreak: { hasValidFields: anyFields, leafOrChildTypes: 'leaf' },
+    tab: { hasValidFields: anyFields, leafOrChildTypes: 'leaf' },
 }
 
 function hasLinkFields(node: NoteNode): boolean {
@@ -79,11 +84,13 @@ function isNoteEditorNode(
     if (!Schema.is(NoteNode)(node) || !allowedTypes.has(node.type)) return false
     const rule = NOTE_EDITOR_NODE_RULES[node.type]
     if (rule === undefined || !rule.hasValidFields(node)) return false
-    const { childTypes } = rule
-    if (childTypes === null) return true
+    const { leafOrChildTypes } = rule
+    if (leafOrChildTypes === 'leaf') return true
     return (
         Array.isArray(node.children) &&
-        node.children.every((child) => isNoteEditorNode(child, childTypes))
+        node.children.every((child) =>
+            isNoteEditorNode(child, leafOrChildTypes)
+        )
     )
 }
 
@@ -118,6 +125,8 @@ export const NoteBody = Schema.Struct({
     }),
 })
 export type NoteBody = typeof NoteBody.Type
+/** A body as a caller hands it to an action, before decoding. */
+export type NoteBodyInput = typeof NoteBody.Encoded
 
 /** A stored note as the client holds it. */
 export const NoteView = Schema.Struct({

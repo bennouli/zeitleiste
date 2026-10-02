@@ -12,14 +12,12 @@ export function childrenOf(node: NoteNode): NoteNode[] {
     return Array.isArray(children) ? children : []
 }
 
-/** Lexical's serialized state, typed as the stored body it becomes. */
 export function toNoteBody({ root }: SerializedEditorState): NoteBody {
     return {
         root: { ...root, children: root.children.map((node) => ({ ...node })) },
     }
 }
 
-/** The editor's state as Payload stores it: a link keeps its target under `fields`. */
 export function toStoredBody(editorBody: NoteBody): NoteBody {
     return mapNodes(editorBody, (node) => {
         if (!isLink(node)) return node
@@ -35,7 +33,6 @@ export function toStoredBody(editorBody: NoteBody): NoteBody {
     })
 }
 
-/** A stored note as the editor reads it: a link's target moves out of `fields`. */
 export function toEditorBody(storedBody: NoteBody): NoteBody {
     return mapNodes(storedBody, (node) => {
         if (!isLink(node)) return node

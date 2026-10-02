@@ -16,7 +16,6 @@ type CardButton = 'edit' | 'delete'
 
 type NoteListProps = {
     notes: NoteView[]
-    /** Called once a note is gone, so focus has somewhere to go. */
     onNoteDeleted: () => void
 }
 
@@ -128,13 +127,14 @@ function ClampedBody({ children }: { children: React.ReactNode }) {
     const [overflows, setOverflows] = useState(false)
 
     useLayoutEffect(() => {
-        const el = bodyRef.current
-        if (!el || expanded) return
-        const measure = () => setOverflows(el.scrollHeight > el.clientHeight)
+        const body = bodyRef.current
+        if (!body || expanded) return
+        const measure = () =>
+            setOverflows(body.scrollHeight > body.clientHeight)
         measure()
         if (typeof ResizeObserver === 'undefined') return
         const observer = new ResizeObserver(measure)
-        observer.observe(el)
+        observer.observe(body)
         return () => observer.disconnect()
     }, [expanded, children])
 

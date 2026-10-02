@@ -7,7 +7,7 @@ import {
     ITALIC_CLASS,
     LINK_CLASS,
 } from '@/components/richTextFormat'
-import type { NoteBody } from '@/lib/noteSchema'
+import type { NoteBody, NoteBodyInput } from '@/lib/noteSchema'
 import { AutoFocusPlugin } from '@lexical/react/LexicalAutoFocusPlugin'
 import { ClearEditorPlugin } from '@lexical/react/LexicalClearEditorPlugin'
 import { LexicalComposer } from '@lexical/react/LexicalComposer'
@@ -46,9 +46,8 @@ export type NoteEditorProps = {
     initialBody?: NoteBody
     label: string
     /** Resolves to whether the note was stored; a new note's editor then empties. */
-    onSave: (body: NoteBody) => Promise<boolean>
+    onSave: (body: NoteBodyInput) => Promise<boolean>
     onCancel?: () => void
-    /** Receives the Lexical editor, so the caller can focus it. */
     editorRef?: RefObject<LexicalEditor | null>
 }
 

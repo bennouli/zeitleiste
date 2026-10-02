@@ -58,7 +58,8 @@ describe('a signed-in user', () => {
     beforeEach(() => signedInAs(AUTHOR))
 
     it('reads only through access control, newest change first', async () => {
-        payloadStub.find.mockResolvedValue({ docs: [STORED] })
+        const foundNotes = { docs: [STORED] }
+        payloadStub.find.mockResolvedValue(foundNotes)
 
         const notesLoad = await listNotes()
 
@@ -78,7 +79,8 @@ describe('a signed-in user', () => {
     })
 
     it('hears about a failed load instead of looking like a visitor', async () => {
-        payloadStub.find.mockRejectedValue(new Error('database down'))
+        const databaseDown = new Error('database down')
+        payloadStub.find.mockRejectedValue(databaseDown)
 
         const notesLoad = await listNotes()
 
@@ -147,11 +149,26 @@ describe('a signed-in user', () => {
     })
 
     it('reports a change Payload refuses as not stored', async () => {
-        payloadStub.update.mockRejectedValue(new Error('Forbidden'))
+        const forbidden = new Error('Forbidden')
+        payloadStub.update.mockRejectedValue(forbidden)
         const noteId = STORED.id
 
         const change = await updateNote(noteId, BODY)
 
         expect(change).toEqual({ stored: false, signedOut: false })
+    })
+
+    it('skips a stored note it cannot read and keeps the others', async () => {
+        const unreadable = { ...STORED, id: 8, body: { root: 'kaputt' } }
+        const foundNotes = { docs: [unreadable, STORED] }
+        payloadStub.find.mockResolvedValue(foundNotes)
+
+        const notesLoad = await listNotes()
+
+        expect(notesLoad).toEqual({
+            signedIn: true,
+            notes: [STORED],
+            loadFailed: false,
+        })
     })
 })

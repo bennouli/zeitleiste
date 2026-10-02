@@ -9,7 +9,7 @@ import {
     type NotesLoad,
 } from '@/lib/noteSchema'
 import config from '@/payload.config'
-import { Cause, Data, Effect, Schema } from 'effect'
+import { Array as Arr, Cause, Data, Effect, Schema } from 'effect'
 import { headers } from 'next/headers'
 import { getPayload } from 'payload'
 
@@ -21,7 +21,7 @@ class NotesFailed extends Data.TaggedError('NotesFailed')<{
 class NotSignedIn extends Data.TaggedError('NotSignedIn') {}
 
 const NOT_STORED: NoteChange = { stored: false, signedOut: false }
-const STORED_NOTHING_SIGNED_OUT: NoteChange = { stored: false, signedOut: true }
+const SIGNED_OUT_CHANGE: NoteChange = { stored: false, signedOut: true }
 
 /** The signed-in user's notes, most recently changed first; a visitor gets none. */
 export async function listNotes(): Promise<NotesLoad> {
@@ -39,7 +39,20 @@ export async function listNotes(): Promise<NotesLoad> {
                 select: { body: true, updatedAt: true },
             })
         ).pipe(
-            Effect.flatMap(({ docs }) => decode(Schema.Array(NoteView), docs))
+            Effect.flatMap(({ docs }) =>
+                Effect.forEach(docs, (doc) =>
+                    decode(NoteView, doc).pipe(
+                        Effect.tapError(({ cause }) =>
+                            Effect.logError(
+                                'Notes: a stored note is unreadable',
+                                cause
+                            )
+                        ),
+                        Effect.option
+                    )
+                )
+            ),
+            Effect.map(Arr.getSomes)
         )
         return yield* userNotes.pipe(
             Effect.map((notes): NotesLoad => ({
@@ -75,7 +88,7 @@ export async function createNote(body: unknown): Promise<NoteChange> {
         )
         return yield* storedChange(note)
     })
-    return runAtEdge(program, NOT_STORED, STORED_NOTHING_SIGNED_OUT)
+    return runAtEdge(program, NOT_STORED, SIGNED_OUT_CHANGE)
 }
 
 export async function updateNote(
@@ -98,7 +111,7 @@ export async function updateNote(
         )
         return yield* storedChange(note)
     })
-    return runAtEdge(program, NOT_STORED, STORED_NOTHING_SIGNED_OUT)
+    return runAtEdge(program, NOT_STORED, SIGNED_OUT_CHANGE)
 }
 
 export async function deleteNote(id: unknown): Promise<NoteDeletion> {

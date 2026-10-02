@@ -85,7 +85,13 @@ describe('NoteBody', () => {
     it('rejects nodes the renderer cannot draw', () => {
         const unreadable = [
             { type: 'heading', tag: 'h1', version: 1, children: [] },
-            { type: 'list', tag: 'script', listType: 'bullet', version: 1 },
+            {
+                type: 'list',
+                tag: 'script',
+                listType: 'bullet',
+                version: 1,
+                children: [],
+            },
             {
                 type: 'paragraph',
                 version: 1,

@@ -1,7 +1,7 @@
 'use client'
 
 import type {
-    NoteBody,
+    NoteBodyInput,
     NoteChange,
     NoteDeletion,
     NotesLoad,
@@ -21,8 +21,8 @@ import { withNote, withoutNote } from './note'
 /** The server actions behind the notes; plain data in, plain data out. */
 export type NotesActions = {
     listNotes: () => Promise<NotesLoad>
-    createNote: (body: NoteBody) => Promise<NoteChange>
-    updateNote: (id: number, body: NoteBody) => Promise<NoteChange>
+    createNote: (body: NoteBodyInput) => Promise<NoteChange>
+    updateNote: (id: number, body: NoteBodyInput) => Promise<NoteChange>
     deleteNote: (id: number) => Promise<NoteDeletion>
 }
 
@@ -35,8 +35,8 @@ export type NotesState = {
     /** What failed last; null once a change succeeds. */
     failure: NotesFailure
     /** Each resolves to whether the change was stored. */
-    create: (body: NoteBody) => Promise<boolean>
-    update: (id: number, body: NoteBody) => Promise<boolean>
+    create: (body: NoteBodyInput) => Promise<boolean>
+    update: (id: number, body: NoteBodyInput) => Promise<boolean>
     remove: (id: number) => Promise<boolean>
 }
 
