@@ -29,6 +29,7 @@ const SITE_PAGES = [
 const FORGED_SESSION = { Cookie: 'payload-token=forged' }
 const RSC_REQUEST = { ...FORGED_SESSION, RSC: '1' }
 const UNKNOWN_INVITATION = '/einladung/unbekannt'
+const UNROUTED_PATH = '/einladung/unbekannt/weiter'
 const NO_REDIRECTS = { maxRedirects: 0 }
 const WRONG_CREDENTIALS = [
     {
@@ -87,8 +88,8 @@ for (const { name, credentials } of WRONG_CREDENTIALS) {
         ).toBeVisible()
         await expect(page).toHaveURL('/de/login')
         await expect(timelineRegion(page)).toHaveCount(0)
-        const shown = await page.content()
-        for (const text of CONTENT) expect(shown).not.toContain(text)
+        const pageHtml = await page.content()
+        for (const text of CONTENT) expect(pageHtml).not.toContain(text)
     })
 }
 
@@ -96,32 +97,43 @@ for (const { path, lang } of SITE_PAGES) {
     test(`a visitor gets no entries or posts from ${path}, only the way to the login page`, async ({
         request,
     }) => {
-        const plain = await request.get(path, NO_REDIRECTS)
-        const forged = await request.get(path, {
+        const plainResponse = await request.get(path, NO_REDIRECTS)
+        const forgedResponse = await request.get(path, {
             ...NO_REDIRECTS,
             headers: FORGED_SESSION,
         })
-        const rsc = await request.get(path, {
+        const rscResponse = await request.get(path, {
             ...NO_REDIRECTS,
             headers: RSC_REQUEST,
         })
 
-        for (const response of [plain, forged]) {
+        for (const response of [plainResponse, forgedResponse]) {
             expect(response.status()).toBe(307)
             expect(response.headers().location).toBe(loginPathFor(lang, path))
         }
-        for (const response of [plain, forged, rsc]) {
+        for (const response of [plainResponse, forgedResponse, rscResponse]) {
             const body = await response.text()
             for (const text of CONTENT) expect(body).not.toContain(text)
         }
     })
 }
 
+test('a visitor at an unknown address outside both languages gets the login page and no entries', async ({
+    request,
+}) => {
+    const unroutedResponse = await request.get(UNROUTED_PATH, NO_REDIRECTS)
+
+    expect(unroutedResponse.status()).toBe(307)
+    expect(unroutedResponse.headers().location).toBe('/de/login')
+    const body = await unroutedResponse.text()
+    for (const text of CONTENT) expect(body).not.toContain(text)
+})
+
 test('the login page itself shows a visitor no entries', async ({ page }) => {
     await page.goto(loginPathFor('de', `/de/post/${POST_ENTRY.id}`))
     await expectLoginPage(page, 'de')
-    const shown = await page.content()
-    for (const text of CONTENT) expect(shown).not.toContain(text)
+    const pageHtml = await page.content()
+    for (const text of CONTENT) expect(pageHtml).not.toContain(text)
 })
 
 test('an invited user reaches the invitation without logging in', async ({

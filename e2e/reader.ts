@@ -1,10 +1,18 @@
 import { expect, type Page } from '@playwright/test'
+import { Schema } from 'effect'
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
 import type { Locale } from '../src/i18n/locales'
 import { messages } from '../src/i18n/messages'
 
-export type Credentials = { email: string; password: string }
+const Credentials = Schema.Struct({
+    email: Schema.NonEmptyString,
+    password: Schema.NonEmptyString,
+})
+
+export type Credentials = typeof Credentials.Type
+
+const decodeCredentials = Schema.decodeUnknownSync(Credentials)
 
 const AUTH_DIR = path.join(import.meta.dirname, '.auth')
 const READER_ACCOUNT = path.join(AUTH_DIR, 'reader-account.json')
@@ -28,7 +36,7 @@ export function saveReaderAccount(credentials: Credentials) {
 
 /** The credentials of the reader the login setup created for this run. */
 export function readerAccount(): Credentials {
-    return JSON.parse(readFileSync(READER_ACCOUNT, 'utf8'))
+    return decodeCredentials(JSON.parse(readFileSync(READER_ACCOUNT, 'utf8')))
 }
 
 /** Fills and sends the site's login form the page shows. */

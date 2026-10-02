@@ -8,16 +8,19 @@ const requestHeaders = vi.hoisted(() => ({ current: new Headers() }))
 vi.mock('@/payload.config', () => ({ default: {} }))
 vi.mock('payload', () => ({ getPayload: async () => ({ auth }) }))
 vi.mock('next/headers', () => ({ headers: async () => requestHeaders.current }))
-vi.mock('next/navigation', () => ({
-    redirect: (href: string) => {
+const redirect = vi.hoisted(() =>
+    vi.fn((href: string) => {
         throw new Error(`NEXT_REDIRECT ${href}`)
-    },
-}))
+    })
+)
+
+vi.mock('next/navigation', () => ({ redirect }))
 
 const READER = { id: 7, email: 'reader@example.test' }
 
 beforeEach(() => {
     auth.mockReset()
+    redirect.mockClear()
     requestHeaders.current = new Headers({
         [REQUESTED_PATH_HEADER]: '/en/post/x?quelle=alt',
     })
@@ -45,8 +48,9 @@ describe('requireReader', () => {
         )
     })
 
-    it('fails when Payload cannot check the session', async () => {
+    it('fails instead of treating an unchecked session as a visitor', async () => {
         auth.mockRejectedValue(new Error('database down'))
         await expect(requireReader('de')).rejects.toThrow()
+        expect(redirect).not.toHaveBeenCalled()
     })
 })
