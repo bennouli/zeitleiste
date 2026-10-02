@@ -20,7 +20,8 @@ class NotesFailed extends Data.TaggedError('NotesFailed')<{
 
 class NotSignedIn extends Data.TaggedError('NotSignedIn') {}
 
-const NOT_STORED: NoteChange = { stored: false }
+const NOT_STORED: NoteChange = { stored: false, signedOut: false }
+const STORED_NOTHING_SIGNED_OUT: NoteChange = { stored: false, signedOut: true }
 
 /** The signed-in user's notes, most recently changed first; a visitor gets none. */
 export async function listNotes(): Promise<NotesLoad> {
@@ -56,7 +57,7 @@ export async function listNotes(): Promise<NotesLoad> {
             }))
         )
     })
-    return runAtEdge(program, { signedIn: false })
+    return runAtEdge(program, { signedIn: false }, { signedIn: false })
 }
 
 export async function createNote(body: unknown): Promise<NoteChange> {
@@ -74,7 +75,7 @@ export async function createNote(body: unknown): Promise<NoteChange> {
         )
         return yield* storedChange(note)
     })
-    return runAtEdge(program, NOT_STORED)
+    return runAtEdge(program, NOT_STORED, STORED_NOTHING_SIGNED_OUT)
 }
 
 export async function updateNote(
@@ -97,7 +98,7 @@ export async function updateNote(
         )
         return yield* storedChange(note)
     })
-    return runAtEdge(program, NOT_STORED)
+    return runAtEdge(program, NOT_STORED, STORED_NOTHING_SIGNED_OUT)
 }
 
 export async function deleteNote(id: unknown): Promise<NoteDeletion> {
@@ -112,9 +113,13 @@ export async function deleteNote(id: unknown): Promise<NoteDeletion> {
                 overrideAccess: false,
             })
         )
-        return { deleted: true }
+        return { deleted: true, signedOut: false }
     })
-    return runAtEdge(program, { deleted: false })
+    return runAtEdge(
+        program,
+        { deleted: false, signedOut: false },
+        { deleted: false, signedOut: true }
+    )
 }
 
 const session = Effect.gen(function* () {
@@ -160,15 +165,18 @@ function decode<S extends Schema.Top>(schema: S, input: unknown) {
 
 function runAtEdge<A>(
     program: Effect.Effect<A, NotesFailed | NotSignedIn>,
-    fallback: A
+    fallback: A,
+    signedOutAnswer: A
 ): Promise<A> {
     return Effect.runPromise(
         program.pipe(
             Effect.tapErrorTag('NotesFailed', ({ operation, cause }) =>
                 Effect.logError(`Notes: ${operation} failed`, cause)
             ),
-            Effect.tapErrorTag('NotSignedIn', () =>
-                Effect.logWarning('Notes: a change arrived without a session')
+            Effect.catchTag('NotSignedIn', () =>
+                Effect.logWarning(
+                    'Notes: a change arrived without a session'
+                ).pipe(Effect.as(signedOutAnswer))
             ),
             Effect.catchCause((cause) =>
                 Cause.hasFails(cause)

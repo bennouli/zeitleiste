@@ -44,9 +44,9 @@ describe('a visitor', () => {
         const deletion = await deleteNote(noteId)
 
         expect([created, updated, deletion]).toEqual([
-            { stored: false },
-            { stored: false },
-            { deleted: false },
+            { stored: false, signedOut: true },
+            { stored: false, signedOut: true },
+            { deleted: false, signedOut: true },
         ])
         expect(payloadStub.create).not.toHaveBeenCalled()
         expect(payloadStub.update).not.toHaveBeenCalled()
@@ -128,7 +128,7 @@ describe('a signed-in user', () => {
 
         const change = await createNote(notRichText)
 
-        expect(change).toEqual({ stored: false })
+        expect(change).toEqual({ stored: false, signedOut: false })
         expect(payloadStub.create).not.toHaveBeenCalled()
     })
 
@@ -139,8 +139,8 @@ describe('a signed-in user', () => {
         const deletion = await deleteNote(notAnId)
 
         expect([change, deletion]).toEqual([
-            { stored: false },
-            { deleted: false },
+            { stored: false, signedOut: false },
+            { deleted: false, signedOut: false },
         ])
         expect(payloadStub.update).not.toHaveBeenCalled()
         expect(payloadStub.delete).not.toHaveBeenCalled()
@@ -152,6 +152,6 @@ describe('a signed-in user', () => {
 
         const change = await updateNote(noteId, BODY)
 
-        expect(change).toEqual({ stored: false })
+        expect(change).toEqual({ stored: false, signedOut: false })
     })
 })

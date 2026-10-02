@@ -1,4 +1,4 @@
-import type { NotesLoad } from '@/lib/noteSchema'
+import type { NoteChange, NotesLoad } from '@/lib/noteSchema'
 import { expectNoAxeViolations } from '@/test/axe'
 import { inLocale } from '@/test/i18n'
 import {
@@ -34,9 +34,9 @@ function fakeActions(overrides: Partial<NotesActions> = {}): NotesActions {
             notes: [NOWGOROD, KIEW],
             loadFailed: false,
         }),
-        createNote: async () => ({ stored: false }),
-        updateNote: async () => ({ stored: false }),
-        deleteNote: async () => ({ deleted: true }),
+        createNote: async () => ({ stored: false, signedOut: false }),
+        updateNote: async () => ({ stored: false, signedOut: false }),
+        deleteNote: async () => ({ deleted: true, signedOut: false }),
         ...overrides,
     }
 }
@@ -103,7 +103,10 @@ describe('NotesSidebar', () => {
     })
 
     it('deletes a note only after confirmation', async () => {
-        const deleteNote = vi.fn(async () => ({ deleted: true }))
+        const deleteNote = vi.fn(async () => ({
+            deleted: true,
+            signedOut: false,
+        }))
         const deletingActions = fakeActions({ deleteNote })
         renderSidebar(deletingActions)
 
@@ -238,5 +241,31 @@ describe('NotesSidebar', () => {
 
         window.removeEventListener('keydown', reachedWindow)
         expect(reachedWindow).toHaveReturnedWith(true)
+    })
+
+    it('asks to sign in again when the session has ended', async () => {
+        const updateNote = async (): Promise<NoteChange> => ({
+            stored: false,
+            signedOut: true,
+        })
+        const signedOutActions = fakeActions({ updateNote })
+        renderSidebar(signedOutActions)
+
+        fireEvent.click(
+            await screen.findByRole('button', {
+                name: 'Notiz bearbeiten: Kiew 1240',
+            })
+        )
+        fireEvent.click(
+            within(
+                screen.getByRole('group', {
+                    name: 'Notiz bearbeiten: Kiew 1240',
+                })
+            ).getByRole('button', { name: 'Sichern' })
+        )
+
+        expect(await screen.findByRole('alert')).toHaveTextContent(
+            'Du bist nicht mehr angemeldet.'
+        )
     })
 })

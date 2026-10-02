@@ -26,7 +26,7 @@ export type NotesActions = {
     deleteNote: (id: number) => Promise<NoteDeletion>
 }
 
-export type NotesFailure = 'load' | 'save' | 'delete' | null
+export type NotesFailure = 'load' | 'save' | 'delete' | 'signedOut' | null
 
 export type NotesState = {
     signedIn: boolean
@@ -81,8 +81,15 @@ export function NotesProvider({
     const applyChange = useCallback(async (change: Promise<NoteChange>) => {
         const noteChange = await change.catch((): NoteChange => ({
             stored: false,
+            signedOut: false,
         }))
-        setFailure(noteChange.stored ? null : 'save')
+        setFailure(
+            failureOf(
+                noteChange.stored,
+                !noteChange.stored && noteChange.signedOut,
+                'save'
+            )
+        )
         if (noteChange.stored)
             setNotesLoad((currentLoad) =>
                 currentLoad.signedIn
@@ -97,10 +104,14 @@ export function NotesProvider({
 
     const remove = useCallback(
         async (id: number) => {
-            const { deleted } = await actions
+            const deletion = await actions
                 .deleteNote(id)
-                .catch(() => ({ deleted: false }))
-            setFailure(deleted ? null : 'delete')
+                .catch((): NoteDeletion => ({
+                    deleted: false,
+                    signedOut: false,
+                }))
+            const { deleted } = deletion
+            setFailure(failureOf(deleted, deletion.signedOut, 'delete'))
             if (deleted)
                 setNotesLoad((currentLoad) =>
                     currentLoad.signedIn
@@ -128,6 +139,15 @@ export function NotesProvider({
     )
 
     return <NotesContext value={notesState}>{children}</NotesContext>
+}
+
+function failureOf(
+    succeeded: boolean,
+    signedOut: boolean,
+    attempted: 'save' | 'delete'
+): NotesFailure {
+    if (succeeded) return null
+    return signedOut ? 'signedOut' : attempted
 }
 
 export function useNotes(): NotesState {
