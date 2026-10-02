@@ -309,14 +309,14 @@ describe('linking a note to an entry', () => {
             searched: true as const,
             entries: [KIEW_ENTRY, NOWGOROD_ENTRY],
         }))
-        const linked: NoteView = {
+        const linkedKiewNote: NoteView = {
             ...KIEW,
             updatedAt: '2026-10-03T10:00:00.000Z',
             entry: KIEW_ENTRY,
         }
         const linkNote = vi.fn(async () => ({
             stored: true as const,
-            note: linked,
+            note: linkedKiewNote,
         }))
         const linkingActions = fakeActions({ searchEntries, linkNote })
         renderSidebar(linkingActions)
@@ -380,13 +380,13 @@ describe('linking a note to an entry', () => {
 
     it('removes the link and offers linking again', async () => {
         const linkedKiew: NoteView = { ...KIEW, entry: KIEW_ENTRY }
-        const unlinked: NoteView = {
+        const unlinkedKiewNote: NoteView = {
             ...KIEW,
             updatedAt: '2026-10-03T10:00:00.000Z',
         }
         const linkNote = vi.fn(async () => ({
             stored: true as const,
-            note: unlinked,
+            note: unlinkedKiewNote,
         }))
         const unlinkingActions = fakeActions({ linkNote })
         const linkedLoad: NotesLoad = {

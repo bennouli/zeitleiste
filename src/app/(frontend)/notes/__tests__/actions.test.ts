@@ -50,10 +50,10 @@ describe('a visitor', () => {
 
         const created = await createNote(BODY)
         const updated = await updateNote(noteId, BODY)
-        const linked = await linkNote(noteId, ENTRY.id)
+        const linkChange = await linkNote(noteId, ENTRY.id)
         const deletion = await deleteNote(noteId)
 
-        expect([created, updated, linked, deletion]).toEqual([
+        expect([created, updated, linkChange, deletion]).toEqual([
             { stored: false, signedOut: true },
             { stored: false, signedOut: true },
             { stored: false, signedOut: true },
@@ -65,7 +65,8 @@ describe('a visitor', () => {
     })
 
     it('can neither search the entries nor list the notes of one', async () => {
-        const entrySearch = await searchEntries('Kiew')
+        const query = 'Kiew'
+        const entrySearch = await searchEntries(query)
         const entryNotes = await listEntryNotes(ENTRY.id)
 
         expect(entrySearch).toEqual({ searched: false, signedOut: true })
@@ -224,8 +225,9 @@ describe('searching the entries', () => {
     it('finds entries by title as the user, through access control', async () => {
         const foundEntries = { docs: [ENTRY] }
         payloadStub.find.mockResolvedValue(foundEntries)
+        const paddedQuery = '  Kiew '
 
-        const entrySearch = await searchEntries('  Kiew ')
+        const entrySearch = await searchEntries(paddedQuery)
 
         expect(entrySearch).toEqual({ searched: true, entries: [ENTRY] })
         expect(payloadStub.find).toHaveBeenCalledWith(

@@ -51,18 +51,18 @@ describe('withoutNote', () => {
 describe('linkedEntryOf', () => {
     it('gives the linked entry the reader may read', () => {
         const entry = { id: 32, title: 'Mongolen erobern Kiew' }
-        const linked = { ...noteAt(1, '2026-10-01T10:00:00.000Z'), entry }
+        const linkedNote = { ...noteAt(1, '2026-10-01T10:00:00.000Z'), entry }
 
-        expect(linkedEntryOf(linked)).toEqual(entry)
+        expect(linkedEntryOf(linkedNote)).toEqual(entry)
     })
 
     it('treats an entry hidden from the reader, given by id only, as no link', () => {
         const hiddenEntryId = 32
-        const linked = {
+        const linkedNote = {
             ...noteAt(1, '2026-10-01T10:00:00.000Z'),
             entry: hiddenEntryId,
         }
 
-        expect(linkedEntryOf(linked)).toBeNull()
+        expect(linkedEntryOf(linkedNote)).toBeNull()
     })
 })

@@ -95,13 +95,13 @@ describe('useEntrySearch', () => {
         const { result } = renderHook(() => useEntrySearch(search))
 
         await typePausing(result.current.setQuery, 'offline')
-        const offline = result.current.outcome
+        const offlineOutcome = result.current.outcome
         await typePausing(result.current.setQuery, 'kaputt')
-        const thrown = result.current.outcome
+        const thrownOutcome = result.current.outcome
         await typePausing(result.current.setQuery, 'expired')
-        const expired = result.current.outcome
+        const expiredOutcome = result.current.outcome
 
-        expect([offline, thrown, expired]).toEqual([
+        expect([offlineOutcome, thrownOutcome, expiredOutcome]).toEqual([
             { status: 'failed' },
             { status: 'failed' },
             { status: 'signedOut' },
@@ -113,18 +113,18 @@ describe('entrySearchStatus', () => {
     const notesText = messages.de.notes
 
     it('counts what was found and says when nothing was', () => {
-        const none: EntrySearchOutcome = { status: 'found', entries: [] }
-        const one: EntrySearchOutcome = {
+        const noMatch: EntrySearchOutcome = { status: 'found', entries: [] }
+        const oneMatch: EntrySearchOutcome = {
             status: 'found',
             entries: [KIEW_ENTRY],
         }
-        const two: EntrySearchOutcome = {
+        const twoMatches: EntrySearchOutcome = {
             status: 'found',
             entries: [KIEW_ENTRY, NOWGOROD_ENTRY],
         }
 
         expect(
-            [none, one, two].map((outcome) =>
+            [noMatch, oneMatch, twoMatches].map((outcome) =>
                 entrySearchStatus(outcome, notesText)
             )
         ).toEqual([

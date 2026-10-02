@@ -125,10 +125,46 @@ test('removing the link leaves the note unlinked and otherwise unchanged', async
         })
     ).toBeFocused()
     await expect(sidebar.getByText(entry.title)).toHaveCount(0)
-    const unlinked = await storedNote(note.id)
-    expect(unlinked.entry).toBeNull()
-    expect(unlinked.body).toEqual(note.body)
-    expect(unlinked.owner).toBe(author.id)
+    const unlinkedNote = await storedNote(note.id)
+    expect(unlinkedNote.entry).toBeNull()
+    expect(unlinkedNote.body).toEqual(note.body)
+    expect(unlinkedNote.owner).toBe(author.id)
+})
+
+test('a note is linked and unlinked with the keyboard alone', async ({
+    page,
+}) => {
+    const author = await accounts.create(payload, 'keyboard')
+    const entry = await storeEntry(`Taufe der Kiewer Rus ${RUN}`)
+    const noteTitle = `Taufe ${RUN}`
+    await storeNote(author.id, noteTitle)
+    await signIn(page, author)
+    await page.goto('/de')
+    const sidebar = sidebarOf(page)
+    const linkButton = sidebar.getByRole('button', {
+        name: `Notiz mit einem Eintrag verknüpfen: ${noteTitle}`,
+    })
+
+    await sidebar
+        .getByRole('button', { name: `Notiz bearbeiten: ${noteTitle}` })
+        .focus()
+    await page.keyboard.press('Tab')
+    await expect(linkButton).toBeFocused()
+    await page.keyboard.press('Enter')
+    await page.keyboard.type(`Taufe ${RUN}`)
+    const pick = sidebar.getByRole('button', { name: entry.title })
+    await expect(pick).toBeVisible()
+    await page.keyboard.press('Tab')
+    await expect(pick).toBeFocused()
+    await page.keyboard.press('Enter')
+
+    const unlink = sidebar.getByRole('button', {
+        name: `Verknüpfung mit ${entry.title} entfernen`,
+    })
+    await expect(unlink).toBeFocused()
+    await page.keyboard.press('Enter')
+    await expect(linkButton).toBeFocused()
+    await expect(sidebar.getByText(entry.title)).toHaveCount(0)
 })
 
 test('deleting an entry keeps its notes, without the link', async () => {
@@ -142,9 +178,9 @@ test('deleting an entry keeps its notes, without the link', async () => {
         context: QUIET,
     })
 
-    const kept = await storedNote(note.id)
-    expect(kept.entry).toBeNull()
-    expect(kept.body).toEqual(note.body)
+    const keptNote = await storedNote(note.id)
+    expect(keptNote.entry).toBeNull()
+    expect(keptNote.body).toEqual(note.body)
 })
 
 test('the notes of an entry are only the reader’s own notes linked to it', async () => {
@@ -152,7 +188,7 @@ test('the notes of an entry are only the reader’s own notes linked to it', asy
     const stranger = await accounts.create(payload, 'entry-stranger')
     const entry = await storeEntry(`Schlacht an der Newa ${RUN}`)
     const otherEntry = await storeEntry(`Schlacht auf dem Eis ${RUN}`)
-    const linked = await storeNote(author.id, `Newa ${RUN}`, entry.id)
+    const linkedNote = await storeNote(author.id, `Newa ${RUN}`, entry.id)
     await storeNote(author.id, `Peipussee ${RUN}`, otherEntry.id)
     await storeNote(author.id, `Ohne Eintrag ${RUN}`)
     await storeNote(stranger.id, `Fremde Newa ${RUN}`, entry.id)
@@ -168,6 +204,6 @@ test('the notes of an entry are only the reader’s own notes linked to it', asy
     )
 
     expect(loadFailed).toBe(false)
-    expect(notes.map((note) => note.id)).toEqual([linked.id])
+    expect(notes.map((note) => note.id)).toEqual([linkedNote.id])
     expect(notes[0]?.entry).toEqual({ id: entry.id, title: entry.title })
 })

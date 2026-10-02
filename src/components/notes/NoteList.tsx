@@ -59,6 +59,7 @@ function NoteCard({
     const { title, rest } = splitTitle(note.body)
     const shownTitle = title || t.notes.untitled
     const linkedEntry = linkedEntryOf(note)
+    const linkedEntryId = linkedEntry?.id
 
     useEffect(() => {
         if (mode !== 'reading' || focusTarget.current === null) return
@@ -71,7 +72,7 @@ function NoteCard({
         const button = buttonRefs[focusTarget.current]
         focusTarget.current = null
         button.current?.focus()
-    })
+    }, [mode, linkedEntryId])
 
     const readAgain = (button: CardButton) => {
         focusTarget.current = button
@@ -88,7 +89,8 @@ function NoteCard({
     }
 
     const unlink = async () => {
-        if (await link(note.id, null)) readAgain('link')
+        focusTarget.current = 'link'
+        if (!(await link(note.id, null))) focusTarget.current = null
     }
 
     if (mode === 'editing')
