@@ -9,22 +9,23 @@ import {
     useState,
     type ReactNode,
 } from 'react'
-import { withNote, withoutNote, type NoteView } from './note'
-import type { NoteBody } from './noteBody'
+import { withNote, withoutNote } from './note'
+import type {
+    NoteBody,
+    NoteChange,
+    NoteDeletion,
+    NotesLoad,
+    NoteView,
+} from './noteSchema'
 
-/** What the server hands a page: a visitor gets no notes. */
-export type NotesLoad =
-    | { signedIn: false }
-    | { signedIn: true; notes: NoteView[]; loadFailed: boolean }
-
-export type NoteChange = { stored: true; note: NoteView } | { stored: false }
+export type { NoteChange, NotesLoad } from './noteSchema'
 
 /** The server actions behind the notes; plain data in, plain data out. */
 export type NotesActions = {
     listNotes: () => Promise<NotesLoad>
     createNote: (body: NoteBody) => Promise<NoteChange>
     updateNote: (id: number, body: NoteBody) => Promise<NoteChange>
-    deleteNote: (id: number) => Promise<{ deleted: boolean }>
+    deleteNote: (id: number) => Promise<NoteDeletion>
 }
 
 export type NotesFailure = 'load' | 'save' | 'delete' | null

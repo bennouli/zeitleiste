@@ -1,7 +1,14 @@
 'use server'
 
-import type { NoteChange, NotesLoad } from '@/components/notes/NotesContext'
-import config from '@payload-config'
+import {
+    NoteBody,
+    NoteId,
+    NoteView,
+    type NoteChange,
+    type NoteDeletion,
+    type NotesLoad,
+} from '@/components/notes/noteSchema'
+import config from '@/payload.config'
 import { Cause, Data, Effect, Schema } from 'effect'
 import { headers } from 'next/headers'
 import { getPayload } from 'payload'
@@ -12,38 +19,6 @@ class NotesFailed extends Data.TaggedError('NotesFailed')<{
 }> {}
 
 class NotSignedIn extends Data.TaggedError('NotSignedIn') {}
-
-const NoteId = Schema.Int.check(Schema.isGreaterThan(0))
-
-const BodyNode = Schema.StructWithRest(
-    Schema.Struct({ type: Schema.String, version: Schema.Number }),
-    [Schema.Record(Schema.String, Schema.Unknown)]
-)
-
-const NoteBodyInput = Schema.Struct({
-    root: Schema.Struct({
-        type: Schema.Literal('root'),
-        children: Schema.mutable(Schema.Array(BodyNode)),
-        direction: Schema.NullOr(Schema.Literals(['ltr', 'rtl'])),
-        format: Schema.Literals([
-            'left',
-            'start',
-            'center',
-            'right',
-            'end',
-            'justify',
-            '',
-        ]),
-        indent: Schema.Number,
-        version: Schema.Number,
-    }),
-})
-
-const StoredNote = Schema.Struct({
-    id: NoteId,
-    body: NoteBodyInput,
-    updatedAt: Schema.String,
-})
 
 const NOT_STORED: NoteChange = { stored: false }
 
@@ -63,7 +38,7 @@ export async function listNotes(): Promise<NotesLoad> {
                 select: { body: true, updatedAt: true },
             })
         ).pipe(
-            Effect.flatMap(({ docs }) => decode(Schema.Array(StoredNote), docs))
+            Effect.flatMap(({ docs }) => decode(Schema.Array(NoteView), docs))
         )
         return yield* userNotes.pipe(
             Effect.map((notes): NotesLoad => ({
@@ -86,7 +61,7 @@ export async function listNotes(): Promise<NotesLoad> {
 
 export async function createNote(body: unknown): Promise<NoteChange> {
     const program = Effect.gen(function* () {
-        const noteBody = yield* decode(NoteBodyInput, body)
+        const noteBody = yield* decode(NoteBody, body)
         const { payload, user } = yield* signedInSession
         const note = yield* attempt('create note', () =>
             payload.create({
@@ -108,7 +83,7 @@ export async function updateNote(
 ): Promise<NoteChange> {
     const program = Effect.gen(function* () {
         const noteId = yield* decode(NoteId, id)
-        const noteBody = yield* decode(NoteBodyInput, body)
+        const noteBody = yield* decode(NoteBody, body)
         const { payload, user } = yield* signedInSession
         const note = yield* attempt('update note', () =>
             payload.update({
@@ -125,7 +100,7 @@ export async function updateNote(
     return runAtEdge(program, NOT_STORED)
 }
 
-export async function deleteNote(id: unknown): Promise<{ deleted: boolean }> {
+export async function deleteNote(id: unknown): Promise<NoteDeletion> {
     const program = Effect.gen(function* () {
         const noteId = yield* decode(NoteId, id)
         const { payload, user } = yield* signedInSession
@@ -160,7 +135,7 @@ const signedInSession = session.pipe(
 )
 
 function storedChange(note: unknown) {
-    return decode(StoredNote, note).pipe(
+    return decode(NoteView, note).pipe(
         Effect.map((storedNote): NoteChange => ({
             stored: true,
             note: storedNote,

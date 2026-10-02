@@ -1,12 +1,6 @@
-import type { NoteBody } from './noteBody'
+import type { NoteView } from './noteSchema'
 
-/** A stored note as the client holds it. */
-export type NoteView = {
-    id: number
-    body: NoteBody
-    /** ISO timestamp of the last change. */
-    updatedAt: string
-}
+export type { NoteView } from './noteSchema'
 
 /** The notes with `note` added or replaced, most recently changed first. */
 export function withNote(notes: NoteView[], note: NoteView): NoteView[] {

@@ -1,10 +1,7 @@
-import type { Note } from '@/payload-types'
 import type { SerializedEditorState } from 'lexical'
+import type { NoteBody, NoteNode } from './noteSchema'
 
-/** A note's rich text in the format Payload stores and its converters render. */
-export type NoteBody = Note['body']
-
-export type NoteNode = NoteBody['root']['children'][number]
+export type { NoteBody, NoteNode } from './noteSchema'
 
 const NEW_TAB = '_blank'
 const NEW_TAB_REL = 'noopener noreferrer'
