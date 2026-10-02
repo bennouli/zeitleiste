@@ -66,6 +66,27 @@ export type Messages = {
         invalid: string
         failed: string
     }
+    notes: {
+        /** The sidebar's landmark name. */
+        heading: string
+        editorLabel: string
+        placeholder: string
+        save: string
+        saving: string
+        saveHint: string
+        cancel: string
+        edit: string
+        editLabel: (title: string) => string
+        delete: string
+        deleteLabel: (title: string) => string
+        confirmDelete: string
+        showAll: string
+        showLess: string
+        untitled: string
+        collapse: string
+        expand: string
+        failed: string
+    }
 }
 
 export const messages: Record<Locale, Messages> = { de, en }
