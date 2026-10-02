@@ -138,12 +138,12 @@ test('a post of B is not found for A, who reads their own post at the slug both 
 }) => {
     await signIn(page, userA)
 
-    const foreignPost = await page.goto(`/de/post/${B_OWN.slug}`)
-    expect(foreignPost?.status()).toBe(404)
+    const foreignPostResponse = await page.goto(`/de/post/${B_OWN.slug}`)
+    expect(foreignPostResponse?.status()).toBe(404)
     await expect(page.getByRole('heading', { name: NOT_FOUND })).toBeVisible()
 
-    const sharedSlugPost = await page.goto(`/de/post/${SHARED_SLUG}`)
-    expect(sharedSlugPost?.status()).toBe(200)
+    const sharedSlugResponse = await page.goto(`/de/post/${SHARED_SLUG}`)
+    expect(sharedSlugResponse?.status()).toBe(200)
     const article = page.getByRole('article')
     await expect(
         article.getByRole('heading', { level: 2, name: A_SHARED.title })
@@ -157,9 +157,9 @@ test('the post of B’s never-published draft is not found, for B either', async
 }) => {
     await signIn(page, userB)
 
-    const draftPost = await page.goto(`/de/post/${B_DRAFT.slug}`)
+    const draftPostResponse = await page.goto(`/de/post/${B_DRAFT.slug}`)
 
-    expect(draftPost?.status()).toBe(404)
+    expect(draftPostResponse?.status()).toBe(404)
 })
 
 test('after B logs out and A logs in on the same page, the timeline shows no entry of B', async ({

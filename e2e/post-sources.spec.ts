@@ -4,11 +4,10 @@ import type { Payload } from 'payload'
 import type { Source } from '../src/lib/entry'
 import { paragraphsToLexical } from '../src/lib/richText'
 import type { Post, User } from '../src/payload-types'
-import { localPayload } from './payload'
+import { localPayload, QUIET } from './payload'
 import { readerId } from './reader'
 
 const RUN = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
-const QUIET = { disableRevalidate: true }
 const BODY = paragraphsToLexical('Ein Beitrag, den der e2e-Lauf anlegt.')
 const TARLE = {
     title: 'Tarle: Der Krimkrieg',
