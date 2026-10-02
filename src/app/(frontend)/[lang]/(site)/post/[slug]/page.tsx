@@ -1,8 +1,8 @@
+import { requireReader } from '@/app/(frontend)/reader'
 import { Post } from '@/components/post/Post'
 import { messages } from '@/i18n/messages'
 import { routeLocale } from '@/i18n/routeLocale'
-import { loadEntries, loadPost } from '@/lib/entries'
-import { postSlugs } from '@/lib/posts'
+import { loadPost } from '@/lib/entries'
 import { Effect } from 'effect'
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
@@ -12,19 +12,13 @@ type Props = {
     params: Promise<{ lang: string; slug: string }>
 }
 
-export const dynamicParams = true
-
 const publishedPost = cache((slug: string) => Effect.runPromise(loadPost(slug)))
 
 async function postOfRoute({ params }: Props) {
     const { lang, slug } = await params
+    await requireReader(lang)
     routeLocale(lang)
     return publishedPost(slug)
-}
-
-export async function generateStaticParams() {
-    const entries = await Effect.runPromise(loadEntries())
-    return postSlugs(entries).map((slug) => ({ slug }))
 }
 
 export async function generateMetadata(props: Props): Promise<Metadata> {

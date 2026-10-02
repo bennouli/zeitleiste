@@ -55,6 +55,17 @@ export type Messages = {
         accepted: string
         login: string
     }
+    login: {
+        pageTitle: string
+        heading: string
+        intro: string
+        email: string
+        password: string
+        submit: string
+        submitting: string
+        invalid: string
+        failed: string
+    }
 }
 
 export const messages: Record<Locale, Messages> = { de, en }

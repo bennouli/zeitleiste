@@ -58,4 +58,15 @@ export const en = {
         accepted: 'Your password is saved. You can sign in now.',
         login: 'Go to sign-in',
     },
+    login: {
+        pageTitle: `Sign in – ${APP_NAME}`,
+        heading: 'Sign in',
+        intro: 'The timeline is only visible to signed-in users.',
+        email: 'Email address',
+        password: 'Password',
+        submit: 'Sign in',
+        submitting: 'Signing in …',
+        invalid: 'The email address or password is wrong.',
+        failed: 'Signing in is not possible right now. Please try again later.',
+    },
 } satisfies Messages

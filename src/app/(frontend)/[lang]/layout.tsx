@@ -2,7 +2,8 @@ import { LOCALES } from '@/i18n/locales'
 import { documentLocale } from '@/i18n/routeLocale'
 import type { Metadata } from 'next'
 import type { ReactNode } from 'react'
-import { Site, siteMetadata } from '../Site'
+import { Document } from '../../Document'
+import { siteMetadata } from '../Site'
 
 type LayoutParams = { params: Promise<{ lang: string }> }
 
@@ -24,5 +25,5 @@ export default async function LocaleLayout({
     params: Promise<{ lang: string }>
 }) {
     const locale = documentLocale((await params).lang)
-    return <Site locale={locale}>{children}</Site>
+    return <Document locale={locale}>{children}</Document>
 }
