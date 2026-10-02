@@ -1,5 +1,5 @@
 import { expect, test as teardown } from '@playwright/test'
-import { localPayload } from './payload'
+import { localPayload, QUIET } from './payload'
 import { readerAccount } from './reader'
 
 teardown('the reader is deleted with everything they own', async () => {
@@ -7,7 +7,7 @@ teardown('the reader is deleted with everything they own', async () => {
     const { errors } = await payload.delete({
         collection: 'users',
         where: { email: { equals: readerAccount().email } },
-        context: { disableRevalidate: true },
+        context: QUIET,
     })
     expect(errors).toEqual([])
 })

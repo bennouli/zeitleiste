@@ -2,7 +2,7 @@ import { expect, test, type Page } from '@playwright/test'
 import type { Payload } from 'payload'
 import { messages } from '../src/i18n/messages'
 import { paragraphsToLexical } from '../src/lib/richText'
-import { localPayload } from './payload'
+import { localPayload, QUIET } from './payload'
 import {
     expectLoginPage,
     logIn,
@@ -11,7 +11,7 @@ import {
     VISITOR,
     type Account,
 } from './reader'
-import { timelineRegion } from './timeline'
+import { entrySlugsOnTimeline, timelineRegion } from './timeline'
 
 type OwnEntry = {
     slug: string
@@ -22,7 +22,6 @@ type OwnEntry = {
 
 const accounts = specAccounts('own-timeline')
 const RUN = accounts.run
-const QUIET = { disableRevalidate: true }
 const SHARED_SLUG = `geteilt-${RUN}`
 const NOT_FOUND = messages.de.notFound.heading
 
@@ -114,26 +113,6 @@ async function storeEntry(
         draft: status === 'draft',
         context: QUIET,
     })
-}
-
-/** The slugs of every entry the timeline draws: cards, stacks and span bars. */
-function entrySlugsOnTimeline(page: Page) {
-    return timelineRegion(page)
-        .locator('[data-entry-id], [data-span-id], [data-entry-ids]')
-        .evaluateAll((els) =>
-            [
-                ...new Set(
-                    els.flatMap((el) => {
-                        const { entryId, spanId, entryIds } = (
-                            el as HTMLElement
-                        ).dataset
-                        return (entryId ?? spanId ?? entryIds ?? '').split(' ')
-                    })
-                ),
-            ]
-                .filter(Boolean)
-                .sort()
-        )
 }
 
 async function expectOnlyEntriesOf(page: Page, slugs: string[]) {

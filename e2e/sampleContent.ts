@@ -6,8 +6,7 @@ import {
     tagNamesOf,
     type SeedEntry,
 } from '../src/data/seedMapping'
-
-const QUIET = { disableRevalidate: true }
+import { QUIET } from './payload'
 
 /** The sample entries with their tags and posts, published and owned by `owner`: the timeline every site spec reads. */
 export async function createSampleContent(payload: Payload, owner: number) {

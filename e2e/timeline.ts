@@ -25,6 +25,26 @@ export function timelineRegion(page: Page): Locator {
     })
 }
 
+/** The slugs of every entry the timeline draws: cards, stacks and span bars. */
+export function entrySlugsOnTimeline(page: Page) {
+    return timelineRegion(page)
+        .locator('[data-entry-id], [data-span-id], [data-entry-ids]')
+        .evaluateAll((els) =>
+            [
+                ...new Set(
+                    els.flatMap((el) => {
+                        const { entryId, spanId, entryIds } = (
+                            el as HTMLElement
+                        ).dataset
+                        return (entryId ?? spanId ?? entryIds ?? '').split(' ')
+                    })
+                ),
+            ]
+                .filter(Boolean)
+                .sort()
+        )
+}
+
 export async function openTimeline(page: Page, path = '/de') {
     await page.goto(path)
     const region = timelineRegion(page)
