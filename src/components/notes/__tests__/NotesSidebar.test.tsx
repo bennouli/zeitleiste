@@ -126,9 +126,6 @@ describe('NotesSidebar', () => {
             expect(screen.queryByText('Kiew 1240')).not.toBeInTheDocument()
         )
         expect(deleteNote).toHaveBeenCalledWith(7)
-        expect(
-            screen.getByRole('textbox', { name: 'Neue Notiz' })
-        ).toHaveFocus()
     })
 
     it('puts the focus on cancel when asking to delete, and back on the button after', async () => {

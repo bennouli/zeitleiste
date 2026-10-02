@@ -1,6 +1,7 @@
 'use client'
 
 import { useI18n } from '@/components/I18nContext'
+import type { LexicalEditor } from 'lexical'
 import { useRef } from 'react'
 import { NoteEditor } from './NoteEditor'
 import { NoteList } from './NoteList'
@@ -10,14 +11,15 @@ import { useNotes } from './NotesContext'
 export function NotesPanel() {
     const { t } = useI18n()
     const { notes, failure, create } = useNotes()
-    const panelRef = useRef<HTMLDivElement>(null)
-    const focusNewNote = () =>
-        panelRef.current
-            ?.querySelector<HTMLElement>('[contenteditable="true"]')
-            ?.focus()
+    const newNoteEditor = useRef<LexicalEditor | null>(null)
+    const focusNewNote = () => newNoteEditor.current?.focus()
     return (
-        <div ref={panelRef} className="flex flex-col gap-4">
-            <NoteEditor label={t.notes.editorLabel} onSave={create} />
+        <div className="flex flex-col gap-4">
+            <NoteEditor
+                label={t.notes.editorLabel}
+                onSave={create}
+                editorRef={newNoteEditor}
+            />
             {failure && (
                 <p role="alert" className="text-label-lg">
                     {t.notes.failed[failure]}

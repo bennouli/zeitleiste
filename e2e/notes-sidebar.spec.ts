@@ -223,10 +223,19 @@ test('a note is written, saved and deleted with the keyboard alone', async ({
     await editor.focus()
     await page.keyboard.type('Tastatur')
     await page.keyboard.press('ControlOrMeta+Enter')
-    const deleteButton = sidebar.getByRole('button', {
-        name: 'Notiz löschen: Tastatur',
-    })
-    await deleteButton.focus()
+    await expect(
+        sidebar.getByRole('heading', { level: 3, name: 'Tastatur' })
+    ).toBeVisible()
+    await page.keyboard.press('Tab')
+    await expect(sidebar.getByRole('button', { name: 'Sichern' })).toBeFocused()
+    await page.keyboard.press('Tab')
+    await expect(
+        sidebar.getByRole('button', { name: 'Notiz bearbeiten: Tastatur' })
+    ).toBeFocused()
+    await page.keyboard.press('Tab')
+    await expect(
+        sidebar.getByRole('button', { name: 'Notiz löschen: Tastatur' })
+    ).toBeFocused()
     await page.keyboard.press('Enter')
     await expect(
         sidebar.getByRole('button', { name: 'Abbrechen' })

@@ -77,7 +77,7 @@ export const de = {
         placeholder: 'Notiz schreiben …',
         save: 'Sichern',
         saving: 'Wird gesichert …',
-        saveHint: 'Strg+Enter',
+        saveHint: 'Strg+Enter oder Cmd+Enter',
         cancel: 'Abbrechen',
         edit: 'Bearbeiten',
         editLabel: (title) => `Notiz bearbeiten: ${title}`,

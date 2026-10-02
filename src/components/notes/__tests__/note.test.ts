@@ -15,7 +15,9 @@ describe('withNote', () => {
         const older = noteAt(1, '2026-10-01T10:00:00.000Z')
         const created = noteAt(2, '2026-10-02T10:00:00.000Z')
 
-        expect(withNote([older], created)).toEqual([created, older])
+        const notes = [older]
+
+        expect(withNote(notes, created)).toEqual([created, older])
     })
 
     it('replaces an edited note and moves it to the top', () => {
@@ -23,7 +25,9 @@ describe('withNote', () => {
         const second = noteAt(2, '2026-10-01T11:00:00.000Z')
         const edited = noteAt(1, '2026-10-02T09:00:00.000Z', 'Geändert')
 
-        expect(withNote([second, first], edited)).toEqual([edited, second])
+        const notes = [second, first]
+
+        expect(withNote(notes, edited)).toEqual([edited, second])
     })
 })
 
@@ -32,6 +36,8 @@ describe('withoutNote', () => {
         const kept = noteAt(1, '2026-10-01T10:00:00.000Z')
         const deleted = noteAt(2, '2026-10-01T11:00:00.000Z')
 
-        expect(withoutNote([deleted, kept], 2)).toEqual([kept])
+        const notes = [deleted, kept]
+
+        expect(withoutNote(notes, deleted.id)).toEqual([kept])
     })
 })

@@ -75,7 +75,7 @@ export const en = {
         placeholder: 'Write a note …',
         save: 'Save',
         saving: 'Saving …',
-        saveHint: 'Ctrl+Enter',
+        saveHint: 'Ctrl+Enter or Cmd+Enter',
         cancel: 'Cancel',
         edit: 'Edit',
         editLabel: (title) => `Edit note: ${title}`,

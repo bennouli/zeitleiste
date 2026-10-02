@@ -7,7 +7,7 @@ import type { NoteView } from './note'
 import { NoteEditor } from './NoteEditor'
 import { NoteRichText } from './NoteRichText'
 import { useNotes } from './NotesContext'
-import { buttonClass, iconButtonClass } from './noteStyles'
+import { buttonClass, iconButtonClass, NOTE_TITLE_CLASS } from './noteStyles'
 import { splitTitle } from './noteTitle'
 
 type CardMode = 'reading' | 'editing' | 'confirmingDelete'
@@ -83,9 +83,7 @@ function NoteCard({
 
     return (
         <article className="flex flex-col gap-1">
-            <h3 className="text-note-title font-medium break-words">
-                {shownTitle}
-            </h3>
+            <h3 className={`${NOTE_TITLE_CLASS} break-words`}>{shownTitle}</h3>
             <ClampedBody>
                 <NoteRichText body={rest} />
             </ClampedBody>

@@ -10,6 +10,7 @@ import { ClearEditorPlugin } from '@lexical/react/LexicalClearEditorPlugin'
 import { LexicalComposer } from '@lexical/react/LexicalComposer'
 import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext'
 import { ContentEditable } from '@lexical/react/LexicalContentEditable'
+import { EditorRefPlugin } from '@lexical/react/LexicalEditorRefPlugin'
 import { LexicalErrorBoundary } from '@lexical/react/LexicalErrorBoundary'
 import { HistoryPlugin } from '@lexical/react/LexicalHistoryPlugin'
 import { LinkPlugin } from '@lexical/react/LexicalLinkPlugin'
@@ -24,7 +25,7 @@ import {
     type LexicalEditor,
 } from 'lexical'
 import { Check, X } from 'lucide-react'
-import { useCallback, useEffect, useState } from 'react'
+import { type RefObject, useCallback, useEffect, useState } from 'react'
 import {
     type NoteBody,
     toEditorBody,
@@ -32,7 +33,15 @@ import {
     toStoredBody,
 } from './noteBody'
 import { NOTE_NODES, NOTE_TRANSFORMERS } from './noteMarkdown'
-import { buttonClass, iconButtonClass } from './noteStyles'
+import {
+    buttonClass,
+    iconButtonClass,
+    NOTE_BULLET_LIST_CLASS,
+    NOTE_NUMBER_LIST_CLASS,
+    NOTE_QUOTE_CLASS,
+    NOTE_SUBHEADING_CLASS,
+    NOTE_TITLE_CLASS,
+} from './noteStyles'
 
 export type NoteEditorProps = {
     /** The note being edited; a new note starts empty. */
@@ -41,18 +50,20 @@ export type NoteEditorProps = {
     /** Resolves to whether the note was stored; a new note's editor then empties. */
     onSave: (body: NoteBody) => Promise<boolean>
     onCancel?: () => void
+    /** Receives the Lexical editor, so the caller can focus it. */
+    editorRef?: RefObject<LexicalEditor | null>
 }
 
 const EDITOR_THEME = {
     paragraph: 'text-note',
     heading: {
-        h3: 'text-note-title font-medium',
-        h4: 'text-note font-medium',
+        h3: NOTE_TITLE_CLASS,
+        h4: NOTE_SUBHEADING_CLASS,
     },
-    quote: 'border-l-2 border-border pl-3 text-note',
+    quote: `${NOTE_QUOTE_CLASS} text-note`,
     list: {
-        ul: 'list-disc pl-5 text-note',
-        ol: 'list-decimal pl-5 text-note',
+        ul: `${NOTE_BULLET_LIST_CLASS} text-note`,
+        ol: `${NOTE_NUMBER_LIST_CLASS} text-note`,
     },
     link: LINK_CLASS,
     text: {
@@ -67,6 +78,7 @@ export function NoteEditor({
     label,
     onSave,
     onCancel,
+    editorRef,
 }: NoteEditorProps) {
     const initialConfig = {
         namespace: 'note',
@@ -81,6 +93,7 @@ export function NoteEditor({
     }
     return (
         <LexicalComposer initialConfig={initialConfig}>
+            {editorRef && <EditorRefPlugin editorRef={editorRef} />}
             <NoteEditorBody
                 label={label}
                 onSave={onSave}
@@ -96,7 +109,9 @@ function NoteEditorBody({
     onSave,
     onCancel,
     clearsOnSave,
-}: Omit<NoteEditorProps, 'initialBody'> & { clearsOnSave: boolean }) {
+}: Omit<NoteEditorProps, 'initialBody' | 'editorRef'> & {
+    clearsOnSave: boolean
+}) {
     const { t } = useI18n()
     const [editor] = useLexicalComposerContext()
     const [saving, setSaving] = useState(false)

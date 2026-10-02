@@ -13,16 +13,23 @@ import {
     RichText,
 } from '@payloadcms/richtext-lexical/react'
 import type { NoteBody } from './noteBody'
+import {
+    NOTE_BULLET_LIST_CLASS,
+    NOTE_NUMBER_LIST_CLASS,
+    NOTE_QUOTE_CLASS,
+    NOTE_SUBHEADING_CLASS,
+    NOTE_TITLE_CLASS,
+} from './noteStyles'
 
 const HEADING_CLASS: Partial<Record<SerializedHeadingNode['tag'], string>> = {
-    h3: 'text-note-title font-medium',
-    h4: 'text-note font-medium',
+    h3: NOTE_TITLE_CLASS,
+    h4: NOTE_SUBHEADING_CLASS,
 }
 
 const LIST_CLASS: Record<SerializedListNode['listType'], string> = {
-    bullet: 'list-disc',
-    number: 'list-decimal',
-    check: 'list-disc',
+    bullet: NOTE_BULLET_LIST_CLASS,
+    number: NOTE_NUMBER_LIST_CLASS,
+    check: NOTE_BULLET_LIST_CLASS,
 }
 
 const SAFE_URL = /^(https?:|mailto:|\/|#)/i
@@ -45,7 +52,7 @@ const noteConverters: JSXConvertersFunction<DefaultNodeTypes> = ({
     list: ({ node, nodesToJSX }) => {
         const List = node.tag
         return (
-            <List className={`pl-5 ${LIST_CLASS[node.listType]}`}>
+            <List className={LIST_CLASS[node.listType]}>
                 {nodesToJSX({ nodes: node.children })}
             </List>
         )
@@ -54,7 +61,7 @@ const noteConverters: JSXConvertersFunction<DefaultNodeTypes> = ({
         <li>{nodesToJSX({ nodes: node.children })}</li>
     ),
     quote: ({ node, nodesToJSX }) => (
-        <blockquote className="border-l-2 border-border pl-3">
+        <blockquote className={NOTE_QUOTE_CLASS}>
             {nodesToJSX({ nodes: node.children })}
         </blockquote>
     ),
