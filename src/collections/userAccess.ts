@@ -15,7 +15,6 @@ export const adminOnlyField: FieldAccess = ({ req }) => isAdmin(req.user)
 
 export const loggedIn: Access = ({ req }) => Boolean(req.user)
 
-/** A user reaches only their own documents; a request without a user gets `anonymousAccess`. */
 export const ownerOr =
     (anonymousAccess: AccessResult): Access =>
     ({ req: { user } }) =>
@@ -23,7 +22,6 @@ export const ownerOr =
 
 export const ownerOnly: Access = ownerOr(false)
 
-/** Any logged-in user creates; only the owner, admins included, reads, changes and deletes. */
 export const ownedAccess = (
     anonymousRead: AccessResult
 ): NonNullable<CollectionConfig['access']> => ({

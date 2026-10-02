@@ -1,26 +1,43 @@
 import { MigrateDownArgs, MigrateUpArgs, sql } from '@payloadcms/db-postgres'
+import { Schema } from 'effect'
 
-const OWNED_TABLES = ['entries', 'posts', 'subjects', 'tags', 'media']
+const OWNER_COLUMNS = [
+    ['entries', 'owner_id'],
+    ['_entries_v', 'version_owner_id'],
+    ['posts', 'owner_id'],
+    ['subjects', 'owner_id'],
+    ['tags', 'owner_id'],
+    ['media', 'owner_id'],
+] as const
 
-/** The oldest admin account, who owns all content that exists before this migration. */
+const IdRows = Schema.Array(Schema.Struct({ id: Schema.Number }))
+const CountRows = Schema.Tuple([Schema.Struct({ n: Schema.Number })])
+
 async function oldestAdminId(
     db: MigrateUpArgs['db']
 ): Promise<number | undefined> {
     const { rows } = await db.execute(sql`
     SELECT "id" FROM "users" WHERE "role" = 'admin' ORDER BY "created_at", "id" LIMIT 1`)
-    return rows[0]?.id as number | undefined
+    return Schema.decodeUnknownSync(IdRows)(rows)[0]?.id
 }
 
 async function contentCount(db: MigrateUpArgs['db']): Promise<number> {
     const counts = await Promise.all(
-        OWNED_TABLES.map(async (table) => {
+        OWNER_COLUMNS.map(async ([table]) => {
             const { rows } = await db.execute(
                 sql`SELECT count(*)::int AS "n" FROM ${sql.identifier(table)}`
             )
-            return rows[0]!.n as number
+            return Schema.decodeUnknownSync(CountRows)(rows)[0].n
         })
     )
     return counts.reduce((sum, n) => sum + n, 0)
+}
+
+async function fillOwners(db: MigrateUpArgs['db'], owner: number) {
+    for (const [table, column] of OWNER_COLUMNS)
+        await db.execute(
+            sql`UPDATE ${sql.identifier(table)} SET ${sql.identifier(column)} = ${owner}`
+        )
 }
 
 export async function up({ db }: MigrateUpArgs): Promise<void> {
@@ -29,11 +46,6 @@ export async function up({ db }: MigrateUpArgs): Promise<void> {
         throw new Error(
             'content_owner: content exists but no admin account to own it; create an admin first'
         )
-    if (owner !== undefined && !Number.isInteger(owner))
-        throw new Error(
-            `content_owner: admin id ${String(owner)} is not an integer`
-        )
-    const ownerValue = sql.raw(owner === undefined ? 'NULL' : String(owner))
     await db.execute(sql`
    DROP INDEX "subjects_name_idx";
   DROP INDEX "tags_name_idx";
@@ -45,13 +57,9 @@ export async function up({ db }: MigrateUpArgs): Promise<void> {
   ALTER TABLE "posts" ADD COLUMN "owner_id" integer;
   ALTER TABLE "subjects" ADD COLUMN "owner_id" integer;
   ALTER TABLE "tags" ADD COLUMN "owner_id" integer;
-  ALTER TABLE "media" ADD COLUMN "owner_id" integer;
-  UPDATE "entries" SET "owner_id" = ${ownerValue};
-  UPDATE "_entries_v" SET "version_owner_id" = ${ownerValue};
-  UPDATE "posts" SET "owner_id" = ${ownerValue};
-  UPDATE "subjects" SET "owner_id" = ${ownerValue};
-  UPDATE "tags" SET "owner_id" = ${ownerValue};
-  UPDATE "media" SET "owner_id" = ${ownerValue};
+  ALTER TABLE "media" ADD COLUMN "owner_id" integer;`)
+    if (owner !== undefined) await fillOwners(db, owner)
+    await db.execute(sql`
   ALTER TABLE "posts" ALTER COLUMN "owner_id" SET NOT NULL;
   ALTER TABLE "subjects" ALTER COLUMN "owner_id" SET NOT NULL;
   ALTER TABLE "tags" ALTER COLUMN "owner_id" SET NOT NULL;

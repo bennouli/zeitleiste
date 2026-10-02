@@ -5,8 +5,7 @@ import { slugField, type Field } from 'payload'
  * Payload's slug field, generated from `source` with German transliteration
  * until the editor unlocks it. Not `required`: the helper fills the slug in a
  * hook that runs after the required check, so a required slug fails every
- * save that leaves it to the helper. Unique per owner through the
- * collection's `uniquePerOwner` index, not globally.
+ * save that leaves it to the helper.
  */
 export function germanSlugField(source: string): Field {
     return slugField({

@@ -271,13 +271,12 @@ const linkPartOf = Effect.fn('linkPartOf')(function* (
     return parts.length
 })
 
-/** The account seeded content belongs to: the oldest admin, as in the content-owner migration. */
 const oldestAdminId = Effect.fn('oldestAdminId')(function* (payload: Payload) {
     const admins = yield* payloadCall('find oldest admin', () =>
         payload.find({
             collection: 'users',
             where: { role: { equals: 'admin' } },
-            sort: 'createdAt',
+            sort: ['createdAt', 'id'],
             limit: 1,
             depth: 0,
             pagination: false,
