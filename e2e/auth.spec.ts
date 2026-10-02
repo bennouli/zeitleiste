@@ -7,6 +7,7 @@ import {
 import type { Payload } from 'payload'
 import { MS_PER_DAY } from '../src/lib/time'
 import { localPayload } from './payload'
+import { VISITOR } from './reader'
 
 const RUN = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
 const emailFor = (name: string) => `e2e-${name}-${RUN}@example.test`
@@ -29,6 +30,7 @@ let payload: Payload
 let entryId: number
 
 test.describe.configure({ mode: 'serial' })
+test.use({ storageState: VISITOR })
 
 test.beforeAll(async () => {
     payload = await localPayload()

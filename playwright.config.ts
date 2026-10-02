@@ -1,4 +1,5 @@
 import { defineConfig, devices } from '@playwright/test'
+import { READER_STATE } from './e2e/reader'
 
 const PORT = 3100
 const PUBLISHING = /(publishing|content-language|post-images)\.spec\.ts/
@@ -14,16 +15,19 @@ export default defineConfig({
         trace: 'retain-on-failure',
     },
     projects: [
+        { name: 'login', testMatch: /login\.setup\.ts/, teardown: 'logout' },
+        { name: 'logout', testMatch: /login\.teardown\.ts/ },
         {
             name: 'chromium',
-            use: { ...devices['Desktop Chrome'] },
+            use: { ...devices['Desktop Chrome'], storageState: READER_STATE },
             testIgnore: PUBLISHING,
+            dependencies: ['login'],
         },
         {
             name: 'publishing',
-            use: { ...devices['Desktop Chrome'] },
+            use: { ...devices['Desktop Chrome'], storageState: READER_STATE },
             testMatch: PUBLISHING,
-            dependencies: ['chromium'],
+            dependencies: ['login', 'chromium'],
         },
     ],
     webServer: {

@@ -1,5 +1,7 @@
 import AxeBuilder from '@axe-core/playwright'
 import { expect, test, type Page } from '@playwright/test'
+import { messages } from '../src/i18n/messages'
+import { logIn, STRANGER, VISITOR } from './reader'
 import { openTimeline } from './timeline'
 
 const VIEWPORTS = [
@@ -53,6 +55,24 @@ for (const { name, size } of VIEWPORTS) {
                     page.getByText('Die Einladung ist abgelaufen')
                 ).toBeVisible()
                 expect(await violationsOn(page)).toEqual([])
+            })
+
+            test.describe('a visitor', () => {
+                test.use({ storageState: VISITOR })
+
+                test('the login form and its error have no violations', async ({
+                    page,
+                }) => {
+                    await page.goto('/de/login')
+                    expect(await violationsOn(page)).toEqual([])
+                    await logIn(page, STRANGER)
+                    await expect(
+                        page
+                            .getByRole('alert')
+                            .filter({ hasText: messages.de.login.invalid })
+                    ).toBeVisible()
+                    expect(await violationsOn(page)).toEqual([])
+                })
             })
         })
     }

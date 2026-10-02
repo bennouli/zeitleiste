@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test'
+import { VISITOR } from './reader'
 
 const BROWSER_LOCALES = [
     { locale: 'de-DE', lang: 'de' },
@@ -28,8 +29,12 @@ for (const { locale, lang } of BROWSER_LOCALES) {
     })
 }
 
-test('the admin is never given a locale prefix', async ({ page }) => {
-    const response = await page.goto('/admin/login')
-    expect(new URL(page.url()).pathname).toBe('/admin/login')
-    expect(response?.status()).toBe(200)
+test.describe('a visitor', () => {
+    test.use({ storageState: VISITOR })
+
+    test('is never given a locale prefix in the admin', async ({ page }) => {
+        const response = await page.goto('/admin/login')
+        expect(new URL(page.url()).pathname).toBe('/admin/login')
+        expect(response?.status()).toBe(200)
+    })
 })
