@@ -15,6 +15,7 @@ const AUTHOR = { email: emailFor('author'), password: 'author-pass-1' }
 const STRANGER = { email: emailFor('stranger'), password: 'stranger-pass-1' }
 const ADMIN = { email: emailFor('admin'), password: 'admin-pass-1' }
 const BODY = paragraphsToLexical('Nur für mich.')
+const NOTE = { body: BODY }
 
 let payload: Payload
 const userIds = new Map<string, number>()
@@ -104,7 +105,7 @@ test('a note is returned to its author only, never to another user, an admin or 
     const authorHeaders = await authHeaders(request, AUTHOR)
     const strangerHeaders = await authHeaders(request, STRANGER)
     const adminHeaders = await authHeaders(request, ADMIN)
-    const noteId = await createNote(request, authorHeaders, { body: BODY })
+    const noteId = await createNote(request, authorHeaders, NOTE)
 
     const authorRead = await request.get(`/api/notes/${noteId}`, {
         headers: authorHeaders,
@@ -127,24 +128,24 @@ test('another user can neither change nor delete a note', async ({
 }) => {
     const authorHeaders = await authHeaders(request, AUTHOR)
     const strangerHeaders = await authHeaders(request, STRANGER)
-    const noteId = await createNote(request, authorHeaders, { body: BODY })
-    const otherBody = paragraphsToLexical('Überschrieben.')
+    const noteId = await createNote(request, authorHeaders, NOTE)
+    const overwrite = { body: paragraphsToLexical('Überschrieben.') }
 
-    const change = await request.patch(`/api/notes/${noteId}`, {
+    const changeResponse = await request.patch(`/api/notes/${noteId}`, {
         headers: strangerHeaders,
-        data: { body: otherBody },
+        data: overwrite,
     })
-    expect(change.status()).toBe(403)
-    const removal = await request.delete(`/api/notes/${noteId}`, {
+    expect(changeResponse.status()).toBe(403)
+    const removalResponse = await request.delete(`/api/notes/${noteId}`, {
         headers: strangerHeaders,
     })
-    expect(removal.status()).toBe(403)
+    expect(removalResponse.status()).toBe(403)
 
     expect((await storedNote(noteId)).body).toEqual(BODY)
 })
 
 test('a visitor cannot create a note', async ({ request }) => {
-    const res = await request.post('/api/notes', { data: { body: BODY } })
+    const res = await request.post('/api/notes', { data: NOTE })
     expect(res.status()).toBe(403)
 })
 
@@ -155,17 +156,17 @@ test('the owner is always the logged-in user, whatever the request sends', async
     const strangerId = idOf(STRANGER.email)
     const authorId = idOf(AUTHOR.email)
 
-    const noteId = await createNote(request, authorHeaders, {
-        body: BODY,
-        owner: strangerId,
-    })
+    const spoofedNote = { body: BODY, owner: strangerId }
+    const reassignment = { owner: strangerId }
+
+    const noteId = await createNote(request, authorHeaders, spoofedNote)
     expect((await storedNote(noteId)).owner).toBe(authorId)
 
-    const reassign = await request.patch(`/api/notes/${noteId}`, {
+    const reassignResponse = await request.patch(`/api/notes/${noteId}`, {
         headers: authorHeaders,
-        data: { owner: strangerId },
+        data: reassignment,
     })
-    expect(reassign.status()).toBe(200)
+    expect(reassignResponse.status()).toBe(200)
     expect((await storedNote(noteId)).owner).toBe(authorId)
 })
 
@@ -184,17 +185,17 @@ test('a user creates a note in the admin and only they see it listed', async ({
     const noteId = Number(page.url().split('/').pop())
 
     expect((await storedNote(noteId)).owner).toBe(idOf(AUTHOR.email))
-    const listed = (viewer: Page) =>
+    const noteLinkIn = (viewer: Page) =>
         viewer.locator(`a[href$="/admin/collections/notes/${noteId}"]`)
     await page.goto('/admin/collections/notes', { waitUntil: 'networkidle' })
-    await expect(listed(page)).not.toHaveCount(0)
+    await expect(noteLinkIn(page)).not.toHaveCount(0)
 
     const strangerPage = await (await browser.newContext()).newPage()
     await adminLogin(strangerPage, STRANGER)
     await strangerPage.goto('/admin/collections/notes', {
         waitUntil: 'networkidle',
     })
-    await expect(listed(strangerPage)).toHaveCount(0)
+    await expect(noteLinkIn(strangerPage)).toHaveCount(0)
 })
 
 test("deleting a user deletes that user's notes", async ({ request }) => {
@@ -209,13 +210,13 @@ test("deleting a user deletes that user's notes", async ({ request }) => {
     })
     userIds.set(leaver.email, user.id)
     const leaverHeaders = await authHeaders(request, leaver)
-    const noteId = await createNote(request, leaverHeaders, { body: BODY })
+    const noteId = await createNote(request, leaverHeaders, NOTE)
     const adminHeaders = await authHeaders(request, ADMIN)
 
-    const removal = await request.delete(`/api/users/${user.id}`, {
+    const removalResponse = await request.delete(`/api/users/${user.id}`, {
         headers: adminHeaders,
     })
-    expect(removal.status()).toBe(200)
+    expect(removalResponse.status()).toBe(200)
     userIds.delete(leaver.email)
 
     const { totalDocs } = await payload.count({
