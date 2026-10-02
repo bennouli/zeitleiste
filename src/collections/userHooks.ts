@@ -16,6 +16,8 @@ import {
 import { hasNoUsers, isAdmin } from './userAccess'
 
 const INVITATION_FAILED = 'Die Einladung konnte nicht verschickt werden.'
+const OWNED_CONTENT_NOT_DELETED =
+    'Die Inhalte des Kontos konnten nicht gelöscht werden; das Konto bleibt bestehen.'
 
 const InvitationState = Schema.Struct({
     invitationAcceptedAt: Schema.optional(Schema.NullOr(Schema.String)),
@@ -66,13 +68,21 @@ export const deleteOwnedContent: CollectionBeforeDeleteHook = async ({
     id,
     req,
 }) => {
-    for (const collection of OWNED_COLLECTIONS)
-        await req.payload.delete({
+    for (const collection of OWNED_COLLECTIONS) {
+        const { errors } = await req.payload.delete({
             collection,
             where: { owner: { equals: id } },
             overrideAccess: true,
             req,
         })
+        if (errors.length > 0) {
+            req.payload.logger.error(
+                { collection, errors },
+                OWNED_CONTENT_NOT_DELETED
+            )
+            throw new APIError(OWNED_CONTENT_NOT_DELETED, 500, undefined, true)
+        }
+    }
 }
 
 export const inviteNewUser: CollectionAfterChangeHook = async ({

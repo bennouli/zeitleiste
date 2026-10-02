@@ -1,4 +1,4 @@
-import { AuthenticationError, type PayloadRequest } from 'payload'
+import { APIError, AuthenticationError, type PayloadRequest } from 'payload'
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 import {
     deleteOwnedContent,
@@ -120,7 +120,7 @@ describe('stampInvitation', () => {
 
 describe('deleteOwnedContent', () => {
     it("deletes everything the user owns, entries before what they link, inside the delete's transaction", async () => {
-        const deleteOwned = vi.fn().mockResolvedValue({ docs: [] })
+        const deleteOwned = vi.fn().mockResolvedValue({ docs: [], errors: [] })
         const req = fakeRequest({})
         req.payload.delete = deleteOwned
         const args = { id: editor.id, req } as unknown as DeleteArgs
@@ -142,6 +142,19 @@ describe('deleteOwnedContent', () => {
             overrideAccess: true,
             req,
         })
+    })
+
+    it('fails the user delete when an owned document cannot be deleted', async () => {
+        const failedEntry = { id: 7, message: 'locked' }
+        const deleteOwned = vi
+            .fn()
+            .mockResolvedValueOnce({ docs: [], errors: [] })
+            .mockResolvedValueOnce({ docs: [], errors: [failedEntry] })
+        const req = fakeRequest({})
+        req.payload.delete = deleteOwned
+        const args = { id: editor.id, req } as unknown as DeleteArgs
+        await expect(deleteOwnedContent(args)).rejects.toThrow(APIError)
+        expect(deleteOwned).toHaveBeenCalledTimes(2)
     })
 })
 

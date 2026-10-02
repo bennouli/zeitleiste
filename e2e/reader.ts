@@ -108,10 +108,12 @@ export function specAccounts(prefix: string) {
             return { ...credentials, id: user.id }
         },
         async removeAll(payload: Payload) {
-            await payload.delete({
+            const { errors } = await payload.delete({
                 collection: 'users',
                 where: { id: { in: ids } },
+                context: { disableRevalidate: true },
             })
+            expect(errors).toEqual([])
         },
     }
 }
